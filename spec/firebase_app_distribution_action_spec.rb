@@ -1,9 +1,9 @@
-describe Fastlane::Actions::FirebaseappdistroAction do
+describe Fastlane::Actions::FirebaseAppDistributionAction do
   describe '#run' do
     it 'prints a message' do
-      expect(Fastlane::UI).to receive(:message).with("The firebaseappdistro plugin is working!")
+      expect(Fastlane::UI).to receive(:message).with("The firebase_app_distribution plugin is working!")
 
-      Fastlane::Actions::FirebaseappdistroAction.run(nil)
+      Fastlane::Actions::FirebaseAppDistributionAction.run(nil)
     end
   end
 
@@ -11,7 +11,7 @@ describe Fastlane::Actions::FirebaseappdistroAction do
     it "integrates with the firebase cli" do
       command = Fastlane::FastFile.new.parse <<-CODE
         lane :test do
-          firebaseappdistro(
+          firebase_app_distribution(
             app:  "1:1234567890:ios:0a1b2c3d4e5f67890"
           )
         end

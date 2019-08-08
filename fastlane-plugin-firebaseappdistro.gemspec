@@ -2,16 +2,16 @@
 
 lib = File.expand_path("../lib", __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'fastlane/plugin/firebaseappdistro/version'
+require 'fastlane/plugin/firebase_app_distribution/version'
 
 Gem::Specification.new do |spec|
-  spec.name          = 'fastlane-plugin-firebaseappdistro'
-  spec.version       = Fastlane::Firebaseappdistro::VERSION
+  spec.name          = 'fastlane-plugin-firebase_app_distribution'
+  spec.version       = Fastlane::FirebaseAppDistribution::VERSION
   spec.author        = 'Stefan Natchev'
   spec.email         = 'snatchev@google.com'
 
   spec.summary       = 'Release your beta builds to Firebase App Distro'
-  # spec.homepage      = "https://github.com/<GITHUB_USERNAME>/fastlane-plugin-firebaseappdistro"
+  # spec.homepage      = "https://github.com/<GITHUB_USERNAME>/fastlane-plugin-firebase_app_distribution"
   spec.license       = "MIT"
 
   spec.files         = Dir["lib/**/*"] + %w(README.md LICENSE)

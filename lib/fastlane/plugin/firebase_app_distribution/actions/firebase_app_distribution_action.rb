@@ -1,16 +1,30 @@
+require 'tempfile'
 require 'fastlane/action'
-require_relative '../helper/firebaseappdistro_helper'
+require_relative '../helper/firebase_app_distribution_helper'
 
 ## TODO: should always use a file underneath? I think so.
 ## How should we document the usage of release notes?
 module Fastlane
   module Actions
-    class FirebaseappdistroAction < Action
+    class FirebaseAppDistributionAction < Action
 
       DEFAULT_FIREBASECMD = %x(which firebase).chomp
 
       def self.run(params)
         params.values # to validate all inputs before looking for the ipa/apk
+        tempfiles = []  # to keep track of which files to cleanup at the end of the run.
+
+        release_notes_file = params[:release_notes_file]
+        if release_notes_file.to_s == "" && Actions.lane_context[SharedValues::FL_CHANGELOG]
+          UI.message("firebase_app_distribution: Using FL_CHANGELOG for release notes.")
+          file = Tempfile.new("release_notes")
+          file.write(Actions.lane_context[SharedValues::FL_CHANGELOG])
+          file.close
+          release_notes_file = file.path
+          tempfiles << file
+        end
+
+        #Helper.file_for_contents(params[:release_notes] || ) unless params[:release_notes_file]
 
         cmd = []
         cmd << params[:firebasecmd]
@@ -19,7 +33,7 @@ module Fastlane
         cmd << "--app #{params[:app]}"
         cmd << "--groups-file #{params[:groups]}"
         cmd << "--testers-file #{params[:testers]}"
-        cmd << "--release-notes-file #{release_notes}"
+        cmd << "--release-notes-file #{release_notes_file}"
 
         result = Actions.sh_control_output(
           cmd.join(" "),
@@ -27,6 +41,8 @@ module Fastlane
           print_command_output: true, #TODO: if debug is set?
           error_callback: UI.user_error!
         )
+
+        tempfiles.each {|t| t.unlink }
       end
 
       def self.description
@@ -66,7 +82,7 @@ module Fastlane
                                        default_value_dynamic: true,
                                        optional: true,
                                        verify_block: proc do |value|
-                                         UI.user_error!("Couldn't find ipa file at path '#{value}'") unless File.exist?(value)
+                                         UI.user_error!("firebase_app_distribution: Couldn't find ipa file at path '#{value}'") unless File.exist?(value)
                                        end),
           # Android Specific
           FastlaneCore::ConfigItem.new(key: :apk_path,
@@ -76,7 +92,7 @@ module Fastlane
                                        default_value_dynamic: true,
                                        optional: true,
                                        verify_block: proc do |value|
-                                         UI.user_error!("Couldn't find apk file at path '#{value}'") unless File.exist?(value)
+                                         UI.user_error!("firebase_app_distribution: Couldn't find apk file at path '#{value}'") unless File.exist?(value)
                                        end),
                                        
           FastlaneCore::ConfigItem.new(key: :app,
@@ -124,12 +140,7 @@ module Fastlane
                                        env_name: "FIREBASEAPPDISTRO_RELEASE_NOTES_FILE",
                                        description: "Release notes for this build.",
                                        optional: true,
-                                       type: String,
-                                       verify_block: proc do |value|
-                                         unless File.exist?(value)
-                                         end
-                                       end),
-
+                                       type: String),
         ]
       end
 
@@ -144,7 +155,7 @@ module Fastlane
       def self.example_code
         [
           <<-CODE
-            firebaseappdistro(
+            firebase_app_distribution(
               app: "1:1234567890:ios:0a1b2c3d4e5f67890",
               testers: ""
             )
