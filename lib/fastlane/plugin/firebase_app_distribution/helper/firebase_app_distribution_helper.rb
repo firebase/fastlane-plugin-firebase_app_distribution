@@ -4,24 +4,36 @@ module Fastlane
   UI = FastlaneCore::UI unless Fastlane.const_defined?("UI")
 
   module Helper
-    class FirebaseAppDistributionHelper
-      # class methods that you define here become available in your action
-      # as `Helper::FirebaseAppDistributionHelper.your_method`
-      #
-      def self.show_message
-        UI.message("Hello from the firebase_app_distribution plugin helper!")
-      end
+    module FirebaseAppDistributionHelper
+      ##
+      # always return a file for a given content
+      # TODO: explain this more.
+      def file_for_contents(parameter_name, from: nil, contents: nil)
+        if parameter_name.to_s.end_with?("_file")
+          return parameter_name
+        end
 
-      def self.file_for_contents()
         if @tempfiles == nil
           @tempfiles = []
         end
 
+        contents ||= from[parameter_name]
+        return nil if contents.nil?
+
+        file = Tempfile.new(parameter_name.to_s)
+        file.write(contents)
+        file.close
+        @tempfiles << file
         
+        file.path
       end
 
-      def self.cleanup_tempfiles
+      def cleanup_tempfiles
+        @tempfiles.each do |f|
+          f.unlink
+        end
       end
+
     end
   end
 end

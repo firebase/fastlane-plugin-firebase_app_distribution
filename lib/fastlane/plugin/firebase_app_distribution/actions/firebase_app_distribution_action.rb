@@ -1,5 +1,6 @@
 require 'tempfile'
 require 'fastlane/action'
+require 'open3'
 require_relative '../helper/firebase_app_distribution_helper'
 
 ## TODO: should always use a file underneath? I think so.
@@ -9,40 +10,36 @@ module Fastlane
     class FirebaseAppDistributionAction < Action
 
       DEFAULT_FIREBASECMD = %x(which firebase).chomp
+      FIREBASECMD_ACTION = "appdistribution:distribute".freeze
+      
+      extend Helper::FirebaseAppDistributionHelper
 
       def self.run(params)
         params.values # to validate all inputs before looking for the ipa/apk
-        tempfiles = []  # to keep track of which files to cleanup at the end of the run.
-
-        release_notes_file = params[:release_notes_file]
-        if release_notes_file.to_s == "" && Actions.lane_context[SharedValues::FL_CHANGELOG]
+        
+        release_file = params[:release_notes_file]
+        if release_file.to_s == "" && Actions.lane_context[SharedValues::FL_CHANGELOG]
           UI.message("firebase_app_distribution: Using FL_CHANGELOG for release notes.")
-          file = Tempfile.new("release_notes")
-          file.write(Actions.lane_context[SharedValues::FL_CHANGELOG])
-          file.close
-          release_notes_file = file.path
-          tempfiles << file
+          release_file = file_for_contents(:release_notes, contents: Actions.lane_context[SharedValues::FL_CHANGELOG])
         end
 
-        #Helper.file_for_contents(params[:release_notes] || ) unless params[:release_notes_file]
+        groups_file = file_for_contents(:groups, from: params)
+        testers_file = file_for_contents(:testers, from: params)
 
-        cmd = []
-        cmd << params[:firebasecmd]
-        cmd << "appdistribution:distribute"
+        cmd = [params[:firebasecmd], FIREBASECMD_ACTION]
         cmd << params[:ipa_path] || params[:apk_path]
         cmd << "--app #{params[:app]}"
-        cmd << "--groups-file #{params[:groups]}"
-        cmd << "--testers-file #{params[:testers]}"
-        cmd << "--release-notes-file #{release_notes_file}"
+        cmd << "--groups-file #{groups_file}" if groups_file
+        cmd << "--testers-file #{testers_file}" if testers_file
+        cmd << "--release-notes-file #{release_file}" if release_file
 
         result = Actions.sh_control_output(
           cmd.join(" "),
           print_command: false,
-          print_command_output: true, #TODO: if debug is set?
-          error_callback: UI.user_error!
+          print_command_output: true
         )
 
-        tempfiles.each {|t| t.unlink }
+        cleanup_tempfiles
       end
 
       def self.description
@@ -56,10 +53,6 @@ module Fastlane
       # supports markdown.
       def self.details
         "Release your beta builds to Firebase App Distro"
-      end
-
-      def self.release_notes
-        Actions.lane_context[SharedValues::FL_CHANGELOG]
       end
 
       def self.available_options
@@ -97,20 +90,24 @@ module Fastlane
                                        
           FastlaneCore::ConfigItem.new(key: :app,
                                        env_name: "FIREBASEAPPDISTRO_APP",
-                                       description: "Your app's Firebase App ID. You can find the App ID in the Firebase console, on the General Settings page.",
+                                       description: "Your app's Firebase App ID. You can find the App ID in the Firebase console, on the General Settings page",
                                        optional: false,
                                        type: String),
 
           FastlaneCore::ConfigItem.new(key: :firebasecmd,
                                        env_name: "FIREBASEAPPDISTRO_FIREBASECMD",
-                                       description: "The full path of the firebase cli command.",
+                                       description: "The absolute path of the firebase cli command",
                                        default_value: DEFAULT_FIREBASECMD,
                                        default_value_dynamic: true,
-                                       optional: true,
+                                       optional: false,
                                        type: String,
                                        verify_block: proc do |value|
                                          if value.to_s == "" || !File.exist?(value)
-                                           UI.user_error!("firebasecmd: missing path to firebase cli tool. Please install firebase in $PATH or specify path.")
+                                           UI.user_error!("firebasecmd: missing path to firebase cli tool. Please install firebase in $PATH or specify path")
+                                         end
+
+                                         unless is_firebasecmd_supported?(value)
+                                          UI.user_error!("firebasecmd: `#{value}` does not support the `#{FIREBASECMD_ACTION}` command. Please upgrade or specify the path to the correct version of firebse")
                                          end
                                        end),
 
@@ -138,7 +135,7 @@ module Fastlane
 
           FastlaneCore::ConfigItem.new(key: :release_notes_file,
                                        env_name: "FIREBASEAPPDISTRO_RELEASE_NOTES_FILE",
-                                       description: "Release notes for this build.",
+                                       description: "Release notes for this build",
                                        optional: true,
                                        type: String),
         ]
@@ -161,6 +158,21 @@ module Fastlane
             )
           CODE
         ]
+      end
+
+      private
+
+      ## TODO: figure out if we can surpress color output.
+      def self.is_firebasecmd_supported?(cmd)
+        outerr, status = Open3.capture2e(cmd, "--non-interactive", FIREBASECMD_ACTION, "--help")
+
+        return false unless status.success?
+
+        if outerr =~ /is not a Firebase command/
+          return false
+        end
+
+        true
       end
     end
   end
