@@ -1,6 +1,7 @@
 require 'tempfile'
 require 'fastlane/action'
 require 'open3'
+require 'shellwords'
 require_relative '../helper/firebase_app_distribution_helper'
 
 ## TODO: should always use a file underneath? I think so.
@@ -9,7 +10,7 @@ module Fastlane
   module Actions
     class FirebaseAppDistributionAction < Action
 
-      DEFAULT_FIREBASECMD = %x(which firebase).chomp
+      DEFAULT_FIREBASE_CLI_PATH = %x(which firebase).chomp
       FIREBASECMD_ACTION = "appdistribution:distribute".freeze
       
       extend Helper::FirebaseAppDistributionHelper
@@ -27,7 +28,7 @@ module Fastlane
         testers_file = file_for_contents(:testers, from: params)
 
         cmd = [params[:firebasecmd], FIREBASECMD_ACTION]
-        cmd << params[:ipa_path] || params[:apk_path]
+        cmd << Shellwords.escape(params[:ipa_path] || params[:apk_path])
         cmd << "--app #{params[:app]}"
         cmd << "--groups-file #{groups_file}" if groups_file
         cmd << "--testers-file #{testers_file}" if testers_file
@@ -94,20 +95,20 @@ module Fastlane
                                        optional: false,
                                        type: String),
 
-          FastlaneCore::ConfigItem.new(key: :firebasecmd,
-                                       env_name: "FIREBASEAPPDISTRO_FIREBASECMD",
+          FastlaneCore::ConfigItem.new(key: :firebase_cli_path,
+                                       env_name: "FIREBASEAPPDISTRO_FIREBASE_CLI_PATH",
                                        description: "The absolute path of the firebase cli command",
-                                       default_value: DEFAULT_FIREBASECMD,
+                                       default_value: DEFAULT_FIREBASE_CLI_PATH,
                                        default_value_dynamic: true,
                                        optional: false,
                                        type: String,
                                        verify_block: proc do |value|
                                          if value.to_s == "" || !File.exist?(value)
-                                           UI.user_error!("firebasecmd: missing path to firebase cli tool. Please install firebase in $PATH or specify path")
+                                           UI.user_error!("firebase_cli_path: missing path to firebase cli tool. Please install firebase in $PATH or specify path")
                                          end
 
                                          unless is_firebasecmd_supported?(value)
-                                          UI.user_error!("firebasecmd: `#{value}` does not support the `#{FIREBASECMD_ACTION}` command. Please upgrade or specify the path to the correct version of firebse")
+                                          UI.user_error!("firebase_cli_path: `#{value}` does not support the `#{FIREBASECMD_ACTION}` command. Please upgrade or specify the path to the correct version of firebse")
                                          end
                                        end),
 
@@ -154,7 +155,7 @@ module Fastlane
           <<-CODE
             firebase_app_distribution(
               app: "1:1234567890:ios:0a1b2c3d4e5f67890",
-              testers: ""
+              testers: "snatchev@google.com, rebeccahe@google.com"
             )
           CODE
         ]
