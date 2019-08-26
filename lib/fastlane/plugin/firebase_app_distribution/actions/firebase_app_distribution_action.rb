@@ -9,15 +9,14 @@ require_relative '../helper/firebase_app_distribution_helper'
 module Fastlane
   module Actions
     class FirebaseAppDistributionAction < Action
-
-      DEFAULT_FIREBASE_CLI_PATH = %x(which firebase).chomp
+      DEFAULT_FIREBASE_CLI_PATH = `which firebase`.chomp
       FIREBASECMD_ACTION = "appdistribution:distribute".freeze
-      
+
       extend Helper::FirebaseAppDistributionHelper
 
       def self.run(params)
         params.values # to validate all inputs before looking for the ipa/apk
-        
+
         release_file = params[:release_notes_file]
 
         release_notes = params[:release_notes] || Actions.lane_context[SharedValues::FL_CHANGELOG]
@@ -45,7 +44,7 @@ module Fastlane
       end
 
       def self.description
-        "Release your beta builds to Firebase App Distro"
+        "Release your beta builds with Firebase App Distribution"
       end
 
       def self.authors
@@ -54,7 +53,7 @@ module Fastlane
 
       # supports markdown.
       def self.details
-        "Release your beta builds to Firebase App Distro"
+        "Release your beta builds with Firebase App Distribution"
       end
 
       def self.available_options
@@ -107,7 +106,7 @@ module Fastlane
                                          end
 
                                          unless is_firebasecmd_supported?(value)
-                                          UI.user_error!("firebase_cli_path: `#{value}` does not support the `#{FIREBASECMD_ACTION}` command. Please download (https://appdistro.page.link/firebase-cli-download) or specify the path to the correct version of firebse")
+                                           UI.user_error!("firebase_cli_path: `#{value}` does not support the `#{FIREBASECMD_ACTION}` command. Please download (https://appdistro.page.link/firebase-cli-download) or specify the path to the correct version of firebse")
                                          end
                                        end),
           FastlaneCore::ConfigItem.new(key: :groups,
@@ -139,7 +138,7 @@ module Fastlane
                                        env_name: "FIREBASEAPPDISTRO_RELEASE_NOTES_FILE",
                                        description: "Release notes file for this build",
                                        optional: true,
-                                       type: String),
+                                       type: String)
         ]
       end
 

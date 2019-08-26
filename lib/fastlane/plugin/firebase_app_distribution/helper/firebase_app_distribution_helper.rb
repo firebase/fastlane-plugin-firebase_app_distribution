@@ -13,7 +13,7 @@ module Fastlane
           return parameter_name
         end
 
-        if @tempfiles == nil
+        if @tempfiles.nil?
           @tempfiles = []
         end
 
@@ -24,16 +24,13 @@ module Fastlane
         file.write(contents)
         file.close
         @tempfiles << file
-        
+
         file.path
       end
 
       def cleanup_tempfiles
-        @tempfiles.each do |f|
-          f.unlink
-        end
+        @tempfiles.each(&:unlink)
       end
-
     end
   end
 end
