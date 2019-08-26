@@ -19,15 +19,16 @@ module Fastlane
         params.values # to validate all inputs before looking for the ipa/apk
         
         release_file = params[:release_notes_file]
-        if release_file.to_s == "" && Actions.lane_context[SharedValues::FL_CHANGELOG]
-          UI.message("firebase_app_distribution: Using FL_CHANGELOG for release notes.")
-          release_file = file_for_contents(:release_notes, contents: Actions.lane_context[SharedValues::FL_CHANGELOG])
+
+        release_notes = params[:release_notes] || Actions.lane_context[SharedValues::FL_CHANGELOG]
+        if release_notes
+          release_file = file_for_contents(:release_notes, contents: release_notes)
         end
 
         groups_file = file_for_contents(:groups, from: params)
         testers_file = file_for_contents(:testers, from: params)
 
-        cmd = [params[:firebasecmd], FIREBASECMD_ACTION]
+        cmd = [params[:firebase_cli_path], FIREBASECMD_ACTION]
         cmd << Shellwords.escape(params[:ipa_path] || params[:apk_path])
         cmd << "--app #{params[:app]}"
         cmd << "--groups-file #{groups_file}" if groups_file
@@ -88,13 +89,11 @@ module Fastlane
                                        verify_block: proc do |value|
                                          UI.user_error!("firebase_app_distribution: Couldn't find apk file at path '#{value}'") unless File.exist?(value)
                                        end),
-                                       
           FastlaneCore::ConfigItem.new(key: :app,
                                        env_name: "FIREBASEAPPDISTRO_APP",
                                        description: "Your app's Firebase App ID. You can find the App ID in the Firebase console, on the General Settings page",
                                        optional: false,
                                        type: String),
-
           FastlaneCore::ConfigItem.new(key: :firebase_cli_path,
                                        env_name: "FIREBASEAPPDISTRO_FIREBASE_CLI_PATH",
                                        description: "The absolute path of the firebase cli command",
@@ -108,10 +107,9 @@ module Fastlane
                                          end
 
                                          unless is_firebasecmd_supported?(value)
-                                          UI.user_error!("firebase_cli_path: `#{value}` does not support the `#{FIREBASECMD_ACTION}` command. Please upgrade or specify the path to the correct version of firebse")
+                                          UI.user_error!("firebase_cli_path: `#{value}` does not support the `#{FIREBASECMD_ACTION}` command. Please download (https://appdistro.page.link/firebase-cli-download) or specify the path to the correct version of firebse")
                                          end
                                        end),
-
           FastlaneCore::ConfigItem.new(key: :groups,
                                        env_name: "FIREBASEAPPDISTRO_GROUPS",
                                        description: "The groups used for distribution, separated by commas",
@@ -122,7 +120,6 @@ module Fastlane
                                        description: "The groups used for distribution, separated by commas",
                                        optional: true,
                                        type: String),
-
           FastlaneCore::ConfigItem.new(key: :testers,
                                        env_name: "FIREBASEAPPDISTRO_TESTERS",
                                        description: "Pass email addresses of testers, separated by commas",
@@ -133,10 +130,14 @@ module Fastlane
                                        description: "Pass email addresses of testers, separated by commas",
                                        optional: true,
                                        type: String),
-
+          FastlaneCore::ConfigItem.new(key: :release_notes,
+                                       env_name: "FIREBASEAPPDISTRO_RELEASE_NOTES",
+                                       description: "Release notes for this build",
+                                       optional: true,
+                                       type: String),
           FastlaneCore::ConfigItem.new(key: :release_notes_file,
                                        env_name: "FIREBASEAPPDISTRO_RELEASE_NOTES_FILE",
-                                       description: "Release notes for this build",
+                                       description: "Release notes file for this build",
                                        optional: true,
                                        type: String),
         ]
@@ -166,7 +167,6 @@ module Fastlane
       ## TODO: figure out if we can surpress color output.
       def self.is_firebasecmd_supported?(cmd)
         outerr, status = Open3.capture2e(cmd, "--non-interactive", FIREBASECMD_ACTION, "--help")
-
         return false unless status.success?
 
         if outerr =~ /is not a Firebase command/
