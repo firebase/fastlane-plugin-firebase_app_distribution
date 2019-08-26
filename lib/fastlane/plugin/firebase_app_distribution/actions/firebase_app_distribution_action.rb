@@ -34,7 +34,7 @@ module Fastlane
         cmd << "--testers-file #{testers_file}" if testers_file
         cmd << "--release-notes-file #{release_file}" if release_file
 
-        result = Actions.sh_control_output(
+        Actions.sh_control_output(
           cmd.join(" "),
           print_command: false,
           print_command_output: true
@@ -160,8 +160,6 @@ module Fastlane
           CODE
         ]
       end
-
-      private
 
       ## TODO: figure out if we can surpress color output.
       def self.is_firebasecmd_supported?(cmd)
