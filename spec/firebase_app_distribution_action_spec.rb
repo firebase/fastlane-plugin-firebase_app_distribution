@@ -6,7 +6,6 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
         app: "abc:123",
         ipa_path: "/tmp/FakeApp.ipa",
         firebase_cli_path: "/tmp/fake-firebase-cli"
-
       }
       Fastlane::Actions::FirebaseAppDistributionAction.run(params)
     end

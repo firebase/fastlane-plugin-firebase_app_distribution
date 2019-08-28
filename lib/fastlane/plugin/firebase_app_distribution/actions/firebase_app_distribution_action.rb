@@ -17,29 +17,21 @@ module Fastlane
       def self.run(params)
         params.values # to validate all inputs before looking for the ipa/apk
 
-        release_file = params[:release_notes_file]
-
-        release_notes = params[:release_notes] || Actions.lane_context[SharedValues::FL_CHANGELOG]
-        if release_notes
-          release_file = file_for_contents(:release_notes, contents: release_notes)
-        end
-
-        groups_file = file_for_contents(:groups, from: params)
-        testers_file = file_for_contents(:testers, from: params)
-
         cmd = [params[:firebase_cli_path], FIREBASECMD_ACTION]
         cmd << Shellwords.escape(params[:ipa_path] || params[:apk_path])
         cmd << "--app #{params[:app]}"
-        cmd << "--groups-file #{groups_file}" if groups_file
-        cmd << "--testers-file #{testers_file}" if testers_file
-        cmd << "--release-notes-file #{release_file}" if release_file
+
+        cmd << groups_flag(params)
+        cmd << testers_flag(params)
+        cmd << release_notes_flag(params)
 
         Actions.sh_control_output(
-          cmd.join(" "),
+          cmd.compact.join(" "),
           print_command: false,
           print_command_output: true
         )
-
+      # make sure we do this, even in the case of an error.
+      ensure
         cleanup_tempfiles
       end
 
@@ -132,6 +124,8 @@ module Fastlane
           FastlaneCore::ConfigItem.new(key: :release_notes,
                                        env_name: "FIREBASEAPPDISTRO_RELEASE_NOTES",
                                        description: "Release notes for this build",
+                                       default_value: Actions.lane_context[SharedValues::FL_CHANGELOG],
+                                       default_value_dynamic: true,
                                        optional: true,
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :release_notes_file,
