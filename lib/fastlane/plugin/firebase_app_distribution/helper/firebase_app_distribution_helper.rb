@@ -22,7 +22,7 @@ module Fastlane
         file ||= file_for_contents(param_name.to_sym, params)
 
         if file
-          return "--#{flag} #{file}"
+          return "#{flag} #{file}"
         end
       end
 
