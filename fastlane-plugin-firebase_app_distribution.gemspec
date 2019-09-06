@@ -7,21 +7,16 @@ require 'fastlane/plugin/firebase_app_distribution/version'
 Gem::Specification.new do |spec|
   spec.name          = 'fastlane-plugin-firebase_app_distribution'
   spec.version       = Fastlane::FirebaseAppDistribution::VERSION
-  spec.author        = 'Stefan Natchev'
-  spec.email         = 'snatchev@google.com'
+  spec.authors       = ['Stefan Natchev']
+  spec.email         = ['snatchev@google.com']
 
-  spec.summary       = 'Release your beta builds to Firebase App Distro'
-  # spec.homepage      = "https://github.com/<GITHUB_USERNAME>/fastlane-plugin-firebase_app_distribution"
+  spec.summary       = 'Release your beta builds to Firebase App Distribution. https://firebase.google.com/docs/app-distribution'
+  spec.homepage      = "https://github.com/fastlane-community/fastlane-plugin-firebase_app_distribution"
   spec.license       = "MIT"
 
   spec.files         = Dir["lib/**/*"] + %w(README.md LICENSE)
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ['lib']
-
-  # Don't add a dependency to fastlane or fastlane_re
-  # since this would cause a circular dependency
-
-  # spec.add_dependency 'your-dependency', '~> 1.0.0'
 
   spec.add_development_dependency('pry')
   spec.add_development_dependency('bundler')
