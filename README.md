@@ -1,19 +1,15 @@
-# Firebase App Distribution
+
+
+# ![Firebase App Distribution](fad-icon.png) Firebase App Distribution
 
 [![fastlane Plugin Badge](https://rawcdn.githack.com/fastlane/fastlane/master/fastlane/assets/plugin-badge.svg)](https://rubygems.org/gems/fastlane-plugin-firebase_app_distribution)
 
+Firebase App Distribution makes distributing your apps to trusted testers painless. By getting your apps onto testers' devices quickly, you can get feedback early and often. To learn more about Firebase App Distribution, go [here](https://firebase.google.com/docs/app-distribution).
+
+
 ## Getting Started
-
-This project is a [_fastlane_](https://github.com/fastlane/fastlane) plugin. To get started with `fastlane-plugin-firebase_app_distribution`, add it to your project by running:
-
-```bash
-fastlane add_plugin firebase_app_distribution
-```
-
-## About firebase_app_distribution
-
-
-## Example
+ - [iOS](https://firebase.google.com/docs/app-distribution/ios/distribute-fastlane)
+ - [Android](https://firebase.google.com/docs/app-distribution/android/distribute-fastlane)
 
 ## Run tests for this plugin
 
