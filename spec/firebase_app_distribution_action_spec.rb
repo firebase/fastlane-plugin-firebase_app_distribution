@@ -43,12 +43,12 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
         params = {
             firebase_cli_token: 'fake-token'
         }
-        expect(action.flag_if_supplied('--token', :firebase_cli_token, params)).to eq("--token fake-token")
+        expect(action.flag_value_if_supplied('--token', :firebase_cli_token, params)).to eq("--token fake-token")
       end
 
       it "returns nil if param does not exist" do
         params = {}
-        expect(action.flag_if_supplied('--token', :firebåse_cli_token, params)).to be_nil
+        expect(action.flag_value_if_supplied('--token', :firebåse_cli_token, params)).to be_nil
       end
     end
 

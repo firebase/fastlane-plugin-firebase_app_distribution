@@ -23,7 +23,7 @@ module Fastlane
         cmd << groups_flag(params)
         cmd << testers_flag(params)
         cmd << release_notes_flag(params)
-        cmd << flag_if_supplied('--token', :firebase_cli_token, params)
+        cmd << flag_value_if_supplied('--token', :firebase_cli_token, params)
 
         Actions.sh_control_output(
           cmd.compact.join(" "),

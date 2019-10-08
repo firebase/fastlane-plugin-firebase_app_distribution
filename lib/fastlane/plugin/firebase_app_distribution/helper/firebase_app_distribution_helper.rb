@@ -26,7 +26,7 @@ module Fastlane
         end
       end
 
-      def flag_if_supplied(flag, param_name, params)
+      def flag_value_if_supplied(flag, param_name, params)
         "#{flag} #{params[param_name]}" if params[param_name]
       end
 
