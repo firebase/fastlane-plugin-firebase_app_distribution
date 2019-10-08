@@ -23,6 +23,7 @@ module Fastlane
         cmd << groups_flag(params)
         cmd << testers_flag(params)
         cmd << release_notes_flag(params)
+        cmd << flag_if_supplied('--token', :firebase_cli_token, params)
 
         Actions.sh_control_output(
           cmd.compact.join(" "),
@@ -131,6 +132,10 @@ module Fastlane
           FastlaneCore::ConfigItem.new(key: :release_notes_file,
                                        env_name: "FIREBASEAPPDISTRO_RELEASE_NOTES_FILE",
                                        description: "Release notes file for this build",
+                                       optional: true,
+                                       type: String),
+          FastlaneCore::ConfigItem.new(key: :firebase_cli_token,
+                                       description: "Auth token for firebase cli",
                                        optional: true,
                                        type: String)
         ]
