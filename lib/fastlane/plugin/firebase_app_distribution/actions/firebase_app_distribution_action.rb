@@ -92,7 +92,6 @@ module Fastlane
                                        optional: false,
                                        type: String,
                                        verify_block: proc do |value|
-                                         # value is chomped
                                          value.chomp!
                                          if value.to_s == "" || !File.exist?(value)
                                            UI.user_error!("firebase_cli_path: missing path to firebase cli tool. Please install firebase in $PATH or specify path")
