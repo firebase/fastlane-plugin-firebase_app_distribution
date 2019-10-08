@@ -30,6 +30,10 @@ module Fastlane
         "#{flag} #{params[param_name]}" if params[param_name]
       end
 
+      def flag_if_supplied(flag, param_name, params)
+        flag if params[param_name]
+      end
+
       ##
       # always return a file for a given content
       def file_for_contents(parameter_name, params)

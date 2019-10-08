@@ -24,6 +24,7 @@ module Fastlane
         cmd << testers_flag(params)
         cmd << release_notes_flag(params)
         cmd << flag_value_if_supplied('--token', :firebase_cli_token, params)
+        cmd << flag_if_supplied('--debug', :debug, params)
 
         Actions.sh_control_output(
           cmd.compact.join(" "),
@@ -137,7 +138,12 @@ module Fastlane
           FastlaneCore::ConfigItem.new(key: :firebase_cli_token,
                                        description: "Auth token for firebase cli",
                                        optional: true,
-                                       type: String)
+                                       type: String),
+          FastlaneCore::ConfigItem.new(key: :debug,
+                                       description: "Print verbose debug output",
+                                       optional: true,
+                                       default_value: false,
+                                       is_string: false)
         ]
       end
 
