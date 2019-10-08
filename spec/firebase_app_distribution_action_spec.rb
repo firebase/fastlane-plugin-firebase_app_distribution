@@ -19,6 +19,18 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
       }
       Fastlane::Actions::FirebaseAppDistributionAction.run(params)
     end
+
+    it 'removes trailing newlines from firebase_cli_path' do
+      expect(Fastlane::Actions).to receive(:sh_control_output).with("/tmp/fake-firebase-cli appdistribution:distribute /tmp/FakeApp.ipa --app abc:123 --testers-file /tmp/testers.txt --release-notes-file /tmp/release_notes.txt", { print_command: false, print_command_output: true })
+      params = {
+          app: "abc:123",
+          ipa_path: "/tmp/FakeApp.ipa",
+          firebase_cli_path: "/tmp/fake-firebase-cli\n",
+          testers_file: "/tmp/testers.txt",
+          release_notes_file: "/tmp/release_notes.txt"
+      }
+      Fastlane::Actions::FirebaseAppDistributionAction.run(params)
+    end
   end
 
   describe "flag helpers" do

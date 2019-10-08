@@ -9,15 +9,14 @@ require_relative '../helper/firebase_app_distribution_helper'
 module Fastlane
   module Actions
     class FirebaseAppDistributionAction < Action
-      DEFAULT_FIREBASE_CLI_PATH = `which firebase`.chomp
+      DEFAULT_FIREBASE_CLI_PATH = `which firebase`
       FIREBASECMD_ACTION = "appdistribution:distribute".freeze
 
       extend Helper::FirebaseAppDistributionHelper
 
       def self.run(params)
         params.values # to validate all inputs before looking for the ipa/apk
-
-        cmd = [params[:firebase_cli_path], FIREBASECMD_ACTION]
+        cmd = [params[:firebase_cli_path].chomp, FIREBASECMD_ACTION]
         cmd << Shellwords.escape(params[:ipa_path] || params[:apk_path])
         cmd << "--app #{params[:app]}"
 
@@ -93,6 +92,8 @@ module Fastlane
                                        optional: false,
                                        type: String,
                                        verify_block: proc do |value|
+                                         # value is chomped
+                                         value.chomp!
                                          if value.to_s == "" || !File.exist?(value)
                                            UI.user_error!("firebase_cli_path: missing path to firebase cli tool. Please install firebase in $PATH or specify path")
                                          end
