@@ -38,7 +38,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
   describe "flag helpers" do
     let(:action) { Fastlane::Actions::FirebaseAppDistributionAction }
 
-    describe "flag_if_supplied" do
+    describe "flag_value_if_supplied" do
       it "returns flag and param value when it exists" do
         params = {
             firebase_cli_token: 'fake-token'
