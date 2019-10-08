@@ -9,25 +9,27 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
 
   describe '#run' do
     it 'shells out to firebase' do
-      expect(Fastlane::Actions).to receive(:sh_control_output).with("/tmp/fake-firebase-cli appdistribution:distribute /tmp/FakeApp.ipa --app abc:123 --testers-file /tmp/testers.txt --release-notes-file /tmp/release_notes.txt", { print_command: false, print_command_output: true })
+      expect(Fastlane::Actions).to receive(:sh_control_output).with("/tmp/fake-firebase-cli appdistribution:distribute /tmp/FakeApp.ipa --app abc:123 --testers-file /tmp/testers.txt --release-notes-file /tmp/release_notes.txt --token fake-token", { print_command: false, print_command_output: true })
       params = {
         app: "abc:123",
         ipa_path: "/tmp/FakeApp.ipa",
         firebase_cli_path: "/tmp/fake-firebase-cli",
         testers_file: "/tmp/testers.txt",
-        release_notes_file: "/tmp/release_notes.txt"
+        release_notes_file: "/tmp/release_notes.txt",
+        firebase_cli_token: "fake-token"
       }
       Fastlane::Actions::FirebaseAppDistributionAction.run(params)
     end
 
     it 'removes trailing newlines from firebase_cli_path' do
-      expect(Fastlane::Actions).to receive(:sh_control_output).with("/tmp/fake-firebase-cli appdistribution:distribute /tmp/FakeApp.ipa --app abc:123 --testers-file /tmp/testers.txt --release-notes-file /tmp/release_notes.txt", { print_command: false, print_command_output: true })
+      expect(Fastlane::Actions).to receive(:sh_control_output).with("/tmp/fake-firebase-cli appdistribution:distribute /tmp/FakeApp.ipa --app abc:123 --testers-file /tmp/testers.txt --release-notes-file /tmp/release_notes.txt --token fake-token", { print_command: false, print_command_output: true })
       params = {
           app: "abc:123",
           ipa_path: "/tmp/FakeApp.ipa",
           firebase_cli_path: "/tmp/fake-firebase-cli\n",
           testers_file: "/tmp/testers.txt",
-          release_notes_file: "/tmp/release_notes.txt"
+          release_notes_file: "/tmp/release_notes.txt",
+          firebase_cli_token: "fake-token"
       }
       Fastlane::Actions::FirebaseAppDistributionAction.run(params)
     end
@@ -35,6 +37,20 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
 
   describe "flag helpers" do
     let(:action) { Fastlane::Actions::FirebaseAppDistributionAction }
+
+    describe "flag_value_if_supplied" do
+      it "returns flag and param value when it exists" do
+        params = {
+            firebase_cli_token: 'fake-token'
+        }
+        expect(action.flag_value_if_supplied('--token', :firebase_cli_token, params)).to eq("--token fake-token")
+      end
+
+      it "returns nil if param does not exist" do
+        params = {}
+        expect(action.flag_value_if_supplied('--token', :firebåse_cli_token, params)).to be_nil
+      end
+    end
 
     describe "testers" do
       it "wraps string parameters as temp files" do
