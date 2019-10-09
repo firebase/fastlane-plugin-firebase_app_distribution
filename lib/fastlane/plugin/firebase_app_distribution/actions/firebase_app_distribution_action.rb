@@ -16,7 +16,7 @@ module Fastlane
 
       def self.run(params)
         params.values # to validate all inputs before looking for the ipa/apk
-        cmd = [params[:firebase_cli_path].chomp, FIREBASECMD_ACTION]
+        cmd = [Shellwords.escape(params[:firebase_cli_path].chomp), FIREBASECMD_ACTION]
         cmd << Shellwords.escape(params[:ipa_path] || params[:apk_path])
         cmd << "--app #{params[:app]}"
 
