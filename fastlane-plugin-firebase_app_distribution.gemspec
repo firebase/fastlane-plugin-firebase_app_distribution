@@ -11,7 +11,7 @@ Gem::Specification.new do |spec|
   spec.email         = ['snatchev@google.com']
 
   spec.summary       = 'Release your beta builds to Firebase App Distribution. https://firebase.google.com/docs/app-distribution'
-  spec.homepage      = "https://github.com/fastlane-community/fastlane-plugin-firebase_app_distribution"
+  spec.homepage      = "https://github.com/fastlane/fastlane-plugin-firebase_app_distribution"
   spec.license       = "MIT"
 
   spec.files         = Dir["lib/**/*"] + %w(README.md LICENSE)
