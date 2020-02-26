@@ -18,7 +18,20 @@ module Fastlane
         params.values # to validate all inputs before looking for the ipa/apk
         cmd = [Shellwords.escape(params[:firebase_cli_path].chomp), FIREBASECMD_ACTION]
         cmd << Shellwords.escape(params[:ipa_path] || params[:apk_path])
-        cmd << "--app #{params[:app]}"
+        if params[:app]
+          cmd << "--app #{params[:app]}"
+        else
+          platform = Actions.lane_context[Actions::SharedValues::PLATFORM_NAME]
+          case platform
+          when :android
+          else
+            archivePath = Actions.lane_context[SharedValues::XCODEBUILD_ARCHIVE]
+            if archivePath
+              cmd << "--app"
+              cmd << findout_ios_app_id_from_archive(archivePath)
+            end
+          end
+        end
 
         cmd << groups_flag(params)
         cmd << testers_flag(params)
@@ -84,7 +97,7 @@ module Fastlane
           FastlaneCore::ConfigItem.new(key: :app,
                                        env_name: "FIREBASEAPPDISTRO_APP",
                                        description: "Your app's Firebase App ID. You can find the App ID in the Firebase console, on the General Settings page",
-                                       optional: false,
+                                       optional: true,
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :firebase_cli_path,
                                        env_name: "FIREBASEAPPDISTRO_FIREBASE_CLI_PATH",
