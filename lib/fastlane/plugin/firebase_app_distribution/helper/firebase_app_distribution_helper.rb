@@ -28,10 +28,10 @@ module Fastlane
         CFPropertyList.native_types(CFPropertyList::List.new(file: path).value)
       end
 
-      def get_ios_app_id_from_archive(path)
-        app_path = parse_plist("#{path}/Info.plist")["ApplicationProperties"]["ApplicationPath"]
-        UI.shell_error!("can't extract application path from Info.plist at #{path}") if app_path.empty?
-        identifier = parse_plist("#{path}/Products/#{app_path}/GoogleService-Info.plist")["GOOGLE_APP_ID"]
+      def get_ios_app_id_from_archive_plist(archive_path, plist_path)
+        app_path = parse_plist("#{archive_path}/Info.plist")["ApplicationProperties"]["ApplicationPath"]
+        UI.shell_error!("can't extract application path from Info.plist at #{archive_path}") if app_path.empty?
+        identifier = parse_plist("#{archive_path}/Products/#{app_path}/#{plist_path}")["GOOGLE_APP_ID"]
         UI.shell_error!("can't extract GOOGLE_APP_ID") if identifier.empty?
         return identifier
       end
