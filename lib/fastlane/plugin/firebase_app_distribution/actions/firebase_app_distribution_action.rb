@@ -2,6 +2,7 @@ require 'tempfile'
 require 'fastlane/action'
 require 'open3'
 require 'shellwords'
+require 'googleauth'
 require_relative '../helper/firebase_app_distribution_helper'
 
 ## TODO: should always use a file underneath? I think so.

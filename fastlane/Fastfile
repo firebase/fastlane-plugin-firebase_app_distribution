@@ -1,3 +1,0 @@
-lane :test do
-  firebase_app_distribution
-end
