@@ -18,7 +18,7 @@ module Fastlane
         authorizer = Google::Auth::UserAuthorizer.new(client_id, scope, token_store)
         url = authorizer.get_authorization_url(base_url: "urn:ietf:wg:oauth:2.0:oob")
 
-        UI.message("Please open the following address in your browser:") # \n#{url}"
+        UI.message("Please open the following address in your browser:")
         UI.message(url.to_s)
         UI.message(" ")
         code = UI.input("Enter the resulting code here: ")
@@ -55,7 +55,7 @@ module Fastlane
       end
 
       def self.authors
-        ["Manny Jimenez Github: mannyjimenez0810, Alonso Infante Github: alonsosalasinfante"]
+        ["Manny Jimenez Github: mannyjimenez0810, Alonso Salas Infante Github: alonsosalasinfante"]
       end
 
       def self.is_supported?(platform)
