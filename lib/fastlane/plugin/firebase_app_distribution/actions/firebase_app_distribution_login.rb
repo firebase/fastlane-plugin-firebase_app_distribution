@@ -15,7 +15,7 @@ module Fastlane
         client_id = Google::Auth::ClientId.new(CLIENT_ID,CLIENT_SECRET)
         token_store = nil
         authorizer = Google::Auth::UserAuthorizer.new(client_id, SCOPE, token_store)
-        url = authorizer.get_authorization_url(base_url: "urn:ietf:wg:oauth:2.0:oob")
+        url = authorizer.get_authorization_url(base_url: OOB_URI)
 
         UI.message("Please open the following address in your browser:")
         UI.message(url.to_s)
@@ -39,11 +39,11 @@ module Fastlane
       #####################################################
 
       def self.description
-        "Allow the user to login by getting a refresh token from the web and then setting an environmental variable to that token "
+        "Login by getting a refresh token from the web and then setting an environmental variable to that token."
       end
 
       def self.details
-        "You can use this action to do not have to login multiple times."
+        "You can use this action to not have to login multiple times."
       end
 
       def self.authors
