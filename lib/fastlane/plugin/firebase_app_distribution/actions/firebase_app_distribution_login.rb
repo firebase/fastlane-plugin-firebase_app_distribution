@@ -5,7 +5,7 @@ require "fileutils"
 
 module Fastlane
   module Actions
-    class LoginAction < Action
+    class FirebaseAppDistributionLoginAction < Action
       OOB_URI = "urn:ietf:wg:oauth:2.0:oob"
       SCOPE = 'https://www.googleapis.com/auth/cloud-platform'
       CLIENT_ID = "563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"
