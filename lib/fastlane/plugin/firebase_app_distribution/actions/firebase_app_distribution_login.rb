@@ -39,11 +39,12 @@ module Fastlane
       #####################################################
 
       def self.description
-        "Login by getting a refresh token from the web and then setting an environmental variable to that token."
+        "Authenticate with Firebase App Distribution using a Google account."
       end
 
       def self.details
-        "You can use this action to not have to login multiple times."
+        ["Log in to Firebase App Distribution using a Google account to generate an authentication token. This token is stored within an environment variable and used to authenticate with your Firebase project.", 
+        "See https://firebase.google.com/docs/app-distribution/ios/distribute-fastlane for more information."]
       end
 
       def self.authors
@@ -51,6 +52,7 @@ module Fastlane
       end
 
       def self.is_supported?(platform)
+        [:ios, :android].include?(platform)
       end
     end
   end
