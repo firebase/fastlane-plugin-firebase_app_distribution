@@ -7,24 +7,22 @@ module Fastlane
   module Actions
     class FirebaseAppDistributionLoginAction < Action
       OOB_URI = "urn:ietf:wg:oauth:2.0:oob"
-      SCOPE = 'https://www.googleapis.com/auth/cloud-platform'
+      SCOPE = "https://www.googleapis.com/auth/cloud-platform"
       CLIENT_ID = "563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"
       CLIENT_SECRET = "j9iVZfS8kkCEFUPaAeJV0sAi"
 
       def self.run(params)
-        client_id = Google::Auth::ClientId.new(CLIENT_ID,CLIENT_SECRET)
-        token_store = nil
-        authorizer = Google::Auth::UserAuthorizer.new(client_id, SCOPE, token_store)
+        client_id = Google::Auth::ClientId.new(CLIENT_ID, CLIENT_SECRET)
+        authorizer = Google::Auth::UserAuthorizer.new(client_id, SCOPE, nil)
         url = authorizer.get_authorization_url(base_url: OOB_URI)
 
         UI.message("Please open the following address in your browser:")
-        UI.message(url.to_s)
+        UI.message(url)
         UI.message("")
         code = UI.input("Enter the resulting code here: ")
         credentials = authorizer.get_credentials_from_code(code: code, base_url: OOB_URI)
-        token = credentials.refresh_token
 
-        UI.message("Refresh Token: #{token}")
+        UI.message("Refresh Token: #{credentials.refresh_token}")
         UI.message("")
         UI.message("Set the refresh token as a FIREBASE_TOKEN environment variable")
       rescue Signet::AuthorizationError
@@ -43,8 +41,9 @@ module Fastlane
       end
 
       def self.details
-        ["Log in to Firebase App Distribution using a Google account to generate an authentication token. This token is stored within an environment variable and used to authenticate with your Firebase project.", 
-        "See https://firebase.google.com/docs/app-distribution/ios/distribute-fastlane for more information."]
+        "Log in to Firebase App Distribution using a Google account to generate an authentication "\
+        "token. This token is stored within an environment variable and used to authenticate with your Firebase project."\
+        "See https://firebase.google.com/docs/app-distribution/ios/distribute-fastlane for more information."
       end
 
       def self.authors
