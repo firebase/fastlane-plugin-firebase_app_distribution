@@ -42,7 +42,7 @@ module Fastlane
 
       def self.details
         "Log in to Firebase App Distribution using a Google account to generate an authentication "\
-        "token. This token is stored within an environment variable and used to authenticate with your Firebase project."\
+        "token. This token is stored within an environment variable and used to authenticate with your Firebase project. "\
         "See https://firebase.google.com/docs/app-distribution/ios/distribute-fastlane for more information."
       end
 
