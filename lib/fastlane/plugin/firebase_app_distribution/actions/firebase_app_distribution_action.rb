@@ -3,6 +3,7 @@ require 'fastlane/action'
 require 'open3'
 require 'shellwords'
 require 'googleauth'
+require_relative './firebase_app_distribution_login'
 require_relative '../helper/firebase_app_distribution_helper'
 
 ## TODO: should always use a file underneath? I think so.
@@ -12,13 +13,13 @@ module Fastlane
     class FirebaseAppDistributionAction < Action
       DEFAULT_FIREBASE_CLI_PATH = `which firebase`
       FIREBASECMD_ACTION = "appdistribution:distribute".freeze
-      CLIENT_ID = "563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"
-      CLIENT_SECRET = "j9iVZfS8kkCEFUPaAeJV0sAi"
+      BASE_URL = "https://firebaseappdistribution.googleapis.com"
+      PATH = "/v1alpha/apps/"
 
       extend Helper::FirebaseAppDistributionHelper
 
       def self.run(params)
-        params.values
+        params.values # to validate all inputs before looking for the ipa/apk
         get_app(params)
       ensure
         cleanup_tempfiles
@@ -29,7 +30,7 @@ module Fastlane
       end
 
       def self.authors
-        ["Manny Jimenez Github: mannyjimenez0810, Alonso Salas Infante Github: alonsosalasinfante"]
+        ["Stefan Natchev", "Manny Jimenez Github: mannyjimenez0810, Alonso Salas Infante Github: alonsosalasinfante"]
       end
 
       # supports markdown.
@@ -169,47 +170,42 @@ module Fastlane
       def self.get_token
         client = Signet::OAuth2::Client.new(
           token_credential_uri: 'https://oauth2.googleapis.com/token',
-          client_id: CLIENT_ID,
-          client_secret: CLIENT_SECRET,
+          client_id: FirebaseAppDistributionLoginAction::CLIENT_ID,
+          client_secret: FirebaseAppDistributionLoginAction::CLIENT_SECRET,
           refresh_token: ENV["FIREBASE_TOKEN"]
         )
+
         client.fetch_access_token!
         return client.access_token
       rescue Signet::AuthorizationError => error
-        UI.crash!("Failed to retrieve FIREBASE_TOKEN")
+        UI.crash!("Wrong value for FIREBASE_TOKEN")
       end
 
       def self.get_app(params)
         token = get_token
 
         # begin
-        base_url = "https://firebaseappdistribution.googleapis.com"
-        subD = "/v1alpha/apps/"
         appId = (params[:app]).to_s
-        url = subD + appId
 
-        connection = Faraday.new(url: base_url) do |conn|
+        connection = Faraday.new(url: BASE_URL) do |conn|
           conn.response(:json, parser_options: { symbolize_names: true })
-          conn.response(:raise_error)
+          conn.response(:raise_error) # raise_error middleware will run before the json middleware
           conn.adapter(Faraday.default_adapter)
         end
 
-        response = connection.get(url) do |request|
+        response = connection.get("#{PATH}#{appId}") do |request|
           request.headers["Authorization"] = "Bearer " + token
         end
 
         contactEmail = response.body[:contactEmail]
-        UI.message(contactEmail)
 
         if contactEmail.strip.empty?
-          UI.error("Empty contact email")
+          UI.error("We could not find a contact email for app #{appId}. Please visit App Distribution within the Firebase Console to set one up.")
         end
+      rescue Faraday::ResourceNotFound => error
+        UI.crash!("App Distribution could not find your app #{params[:app]}. Make sure to onboard your app by pressing the "Get started" button on the App Distribution page in the Firebase console: https://console.firebase.google.com/project/_/appdistribution")
       rescue => error
-        if error.class == Faraday::ResourceNotFound
-          UI.crash!("Failed to onboard.")
-        else
-          UI.crash!("Failed to fetch app information")
-        end
+        UI.crash!("Failed to fetch app information: #{error.message}")
       end
     end
   end
