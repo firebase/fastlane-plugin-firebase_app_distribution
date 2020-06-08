@@ -1,3 +1,9 @@
 lane :test do
   firebase_app_distribution
 end
+
+lane :testApp do
+  firebase_app_distribution(
+    app: "1:313248282411:android:9cc964812b1a80e73ff76e"
+  )
+end

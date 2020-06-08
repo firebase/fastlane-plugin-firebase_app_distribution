@@ -12,40 +12,14 @@ module Fastlane
     class FirebaseAppDistributionAction < Action
       DEFAULT_FIREBASE_CLI_PATH = `which firebase`
       FIREBASECMD_ACTION = "appdistribution:distribute".freeze
+      CLIENT_ID = "563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"
+      CLIENT_SECRET = "j9iVZfS8kkCEFUPaAeJV0sAi"
 
       extend Helper::FirebaseAppDistributionHelper
 
       def self.run(params)
-        params.values # to validate all inputs before looking for the ipa/apk
-        cmd = [Shellwords.escape(params[:firebase_cli_path].chomp), FIREBASECMD_ACTION]
-        cmd << Shellwords.escape(params[:ipa_path] || params[:apk_path])
-        if params[:app]
-          cmd << "--app #{params[:app]}"
-        else
-          platform = Actions.lane_context[Actions::SharedValues::PLATFORM_NAME]
-          case platform
-          when :android
-          else
-            archivePath = Actions.lane_context[SharedValues::XCODEBUILD_ARCHIVE]
-            if archivePath
-              cmd << "--app"
-              cmd << findout_ios_app_id_from_archive(archivePath)
-            end
-          end
-        end
-
-        cmd << groups_flag(params)
-        cmd << testers_flag(params)
-        cmd << release_notes_flag(params)
-        cmd << flag_value_if_supplied('--token', :firebase_cli_token, params)
-        cmd << flag_if_supplied('--debug', :debug, params)
-
-        Actions.sh_control_output(
-          cmd.compact.join(" "),
-          print_command: false,
-          print_command_output: true
-        )
-      # make sure we do this, even in the case of an error.
+        params.values
+        get_app(params)
       ensure
         cleanup_tempfiles
       end
@@ -55,7 +29,7 @@ module Fastlane
       end
 
       def self.authors
-        ["Stefan Natchev"]
+        ["Manny Jimenez Github: mannyjimenez0810, Alonso Salas Infante Github: alonsosalasinfante"]
       end
 
       # supports markdown.
@@ -190,6 +164,52 @@ module Fastlane
         end
 
         true
+      end
+
+      def self.get_token
+        client = Signet::OAuth2::Client.new(
+          token_credential_uri: 'https://oauth2.googleapis.com/token',
+          client_id: CLIENT_ID,
+          client_secret: CLIENT_SECRET,
+          refresh_token: ENV["FIREBASE_TOKEN"]
+        )
+        client.fetch_access_token!
+        return client.access_token
+      rescue Signet::AuthorizationError => error
+        UI.crash!("Failed to retrieve FIREBASE_TOKEN")
+      end
+
+      def self.get_app(params)
+        token = get_token
+
+        # begin
+        base_url = "https://firebaseappdistribution.googleapis.com"
+        subD = "/v1alpha/apps/"
+        appId = (params[:app]).to_s
+        url = subD + appId
+
+        connection = Faraday.new(url: base_url) do |conn|
+          conn.response(:json, parser_options: { symbolize_names: true })
+          conn.response(:raise_error)
+          conn.adapter(Faraday.default_adapter)
+        end
+
+        response = connection.get(url) do |request|
+          request.headers["Authorization"] = "Bearer " + token
+        end
+
+        contactEmail = response.body[:contactEmail]
+        UI.message(contactEmail)
+
+        if contactEmail.strip.empty?
+          UI.error("Empty contact email")
+        end
+      rescue => error
+        if error.class == Faraday::ResourceNotFound
+          UI.crash!("Failed to onboard.")
+        else
+          UI.crash!("Failed to fetch app information")
+        end
       end
     end
   end
