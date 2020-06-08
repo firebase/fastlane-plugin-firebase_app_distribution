@@ -203,7 +203,7 @@ module Fastlane
           UI.error("We could not find a contact email for app #{appId}. Please visit App Distribution within the Firebase Console to set one up.")
         end
       rescue Faraday::ResourceNotFound => error
-        UI.crash!("App Distribution could not find your app #{params[:app]}. Make sure to onboard your app by pressing the "Get started" button on the App Distribution page in the Firebase console: https://console.firebase.google.com/project/_/appdistribution")
+        UI.crash!("App Distribution could not find your app #{params[:app]}. Make sure to onboard your app by pressing the \"Get started\" button on the App Distribution page in the Firebase console: https://console.firebase.google.com/project/_/appdistribution")
       rescue => error
         UI.crash!("Failed to fetch app information: #{error.message}")
       end
