@@ -3,6 +3,7 @@ require 'fastlane/action'
 require 'open3'
 require 'shellwords'
 require 'googleauth'
+require_relative './firebase_app_distribution_login'
 require_relative '../helper/firebase_app_distribution_helper'
 
 ## TODO: should always use a file underneath? I think so.
@@ -12,40 +13,14 @@ module Fastlane
     class FirebaseAppDistributionAction < Action
       DEFAULT_FIREBASE_CLI_PATH = `which firebase`
       FIREBASECMD_ACTION = "appdistribution:distribute".freeze
+      BASE_URL = "https://firebaseappdistribution.googleapis.com"
+      PATH = "/v1alpha/apps/"
 
       extend Helper::FirebaseAppDistributionHelper
 
       def self.run(params)
         params.values # to validate all inputs before looking for the ipa/apk
-        cmd = [Shellwords.escape(params[:firebase_cli_path].chomp), FIREBASECMD_ACTION]
-        cmd << Shellwords.escape(params[:ipa_path] || params[:apk_path])
-        if params[:app]
-          cmd << "--app #{params[:app]}"
-        else
-          platform = Actions.lane_context[Actions::SharedValues::PLATFORM_NAME]
-          case platform
-          when :android
-          else
-            archivePath = Actions.lane_context[SharedValues::XCODEBUILD_ARCHIVE]
-            if archivePath
-              cmd << "--app"
-              cmd << findout_ios_app_id_from_archive(archivePath)
-            end
-          end
-        end
-
-        cmd << groups_flag(params)
-        cmd << testers_flag(params)
-        cmd << release_notes_flag(params)
-        cmd << flag_value_if_supplied('--token', :firebase_cli_token, params)
-        cmd << flag_if_supplied('--debug', :debug, params)
-
-        Actions.sh_control_output(
-          cmd.compact.join(" "),
-          print_command: false,
-          print_command_output: true
-        )
-      # make sure we do this, even in the case of an error.
+        validate_app!(params[:app])
       ensure
         cleanup_tempfiles
       end
@@ -55,7 +30,7 @@ module Fastlane
       end
 
       def self.authors
-        ["Stefan Natchev"]
+        ["Stefan Natchev", "Manny Jimenez Github: mannyjimenez0810, Alonso Salas Infante Github: alonsosalasinfante"]
       end
 
       # supports markdown.
@@ -190,6 +165,45 @@ module Fastlane
         end
 
         true
+      end
+
+      def self.get_token
+        client = Signet::OAuth2::Client.new(
+          token_credential_uri: 'https://oauth2.googleapis.com/token',
+          client_id: FirebaseAppDistributionLoginAction::CLIENT_ID,
+          client_secret: FirebaseAppDistributionLoginAction::CLIENT_SECRET,
+          refresh_token: ENV["FIREBASE_TOKEN"]
+        )
+
+        client.fetch_access_token!
+        return client.access_token
+      rescue Signet::AuthorizationError => error
+        UI.crash!("Wrong value for FIREBASE_TOKEN")
+      end
+
+      def self.validate_app!(app_id)
+        token = get_token
+
+        connection = Faraday.new(url: BASE_URL) do |conn|
+          conn.response(:json, parser_options: { symbolize_names: true })
+          conn.response(:raise_error) # raise_error middleware will run before the json middleware
+          conn.adapter(Faraday.default_adapter)
+        end
+        begin
+          response = connection.get("#{PATH}#{app_id}") do |request|
+            request.headers["Authorization"] = "Bearer " + token
+          end
+        rescue Faraday::ResourceNotFound => error
+          UI.user_error!("App Distribution could not find your app #{app_id}. Make sure to onboard your app by pressing the \"Get started\" button on the App Distribution page in the Firebase console: https://console.firebase.google.com/project/_/appdistribution")
+        rescue => error
+          UI.crash!("Failed to fetch app information: #{error.message}")
+        end
+
+        contact_email = response.body[:contactEmail]
+
+        if contact_email.strip.empty?
+          UI.user_error!("We could not find a contact email for app #{app_id}. Please visit App Distribution within the Firebase Console to set one up.")
+        end
       end
     end
   end
