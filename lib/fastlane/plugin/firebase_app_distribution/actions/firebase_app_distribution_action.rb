@@ -20,7 +20,7 @@ module Fastlane
 
       def self.run(params)
         params.values # to validate all inputs before looking for the ipa/apk
-        get_app(params)
+        validate_app!(params)
       ensure
         cleanup_tempfiles
       end
@@ -181,31 +181,30 @@ module Fastlane
         UI.crash!("Wrong value for FIREBASE_TOKEN")
       end
 
-      def self.get_app(params)
+      def self.validate_app!(params)
+        app_id = (params[:app])
         token = get_token
-
-        # begin
-        appId = (params[:app]).to_s
 
         connection = Faraday.new(url: BASE_URL) do |conn|
           conn.response(:json, parser_options: { symbolize_names: true })
           conn.response(:raise_error) # raise_error middleware will run before the json middleware
           conn.adapter(Faraday.default_adapter)
         end
-
-        response = connection.get("#{PATH}#{appId}") do |request|
-          request.headers["Authorization"] = "Bearer " + token
+        begin
+          response = connection.get("#{PATH}#{app_id}") do |request|
+            request.headers["Authorization"] = "Bearer " + token
+          end
+        rescue Faraday::ResourceNotFound => error
+          UI.user_error!("App Distribution could not find your app #{app_id}. Make sure to onboard your app by pressing the \"Get started\" button on the App Distribution page in the Firebase console: https://console.firebase.google.com/project/#{app_id}/appdistribution")
+        rescue => error
+          UI.crash!("Failed to fetch app information: #{error.message}")
         end
 
-        contactEmail = response.body[:contactEmail]
+        contact_email = response.body[:contactEmail]
 
-        if contactEmail.strip.empty?
-          UI.error("We could not find a contact email for app #{appId}. Please visit App Distribution within the Firebase Console to set one up.")
+        if contact_email.strip.empty?
+          UI.user_error!("We could not find a contact email for app #{app_id}. Please visit App Distribution within the Firebase Console to set one up.")
         end
-      rescue Faraday::ResourceNotFound => error
-        UI.crash!("App Distribution could not find your app #{params[:app]}. Make sure to onboard your app by pressing the \"Get started\" button on the App Distribution page in the Firebase console: https://console.firebase.google.com/project/_/appdistribution")
-      rescue => error
-        UI.crash!("Failed to fetch app information: #{error.message}")
       end
     end
   end
