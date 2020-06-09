@@ -20,7 +20,7 @@ module Fastlane
 
       def self.run(params)
         params.values # to validate all inputs before looking for the ipa/apk
-        validate_app!(params)
+        validate_app!(params[:app])
       ensure
         cleanup_tempfiles
       end
@@ -181,8 +181,7 @@ module Fastlane
         UI.crash!("Wrong value for FIREBASE_TOKEN")
       end
 
-      def self.validate_app!(params)
-        app_id = (params[:app])
+      def self.validate_app!(app_id)
         token = get_token
 
         connection = Faraday.new(url: BASE_URL) do |conn|
@@ -195,7 +194,7 @@ module Fastlane
             request.headers["Authorization"] = "Bearer " + token
           end
         rescue Faraday::ResourceNotFound => error
-          UI.user_error!("App Distribution could not find your app #{app_id}. Make sure to onboard your app by pressing the \"Get started\" button on the App Distribution page in the Firebase console: https://console.firebase.google.com/project/#{app_id}/appdistribution")
+          UI.user_error!("App Distribution could not find your app #{app_id}. Make sure to onboard your app by pressing the \"Get started\" button on the App Distribution page in the Firebase console: https://console.firebase.google.com/project/_/appdistribution")
         rescue => error
           UI.crash!("Failed to fetch app information: #{error.message}")
         end
