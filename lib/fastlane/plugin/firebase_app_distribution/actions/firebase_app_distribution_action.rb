@@ -15,8 +15,8 @@ module Fastlane
       FIREBASECMD_ACTION = "appdistribution:distribute".freeze
       BASE_URL = "https://firebaseappdistribution.googleapis.com"
       PATH = "/v1alpha/apps/"
-      MAX_UPLOAD_RETRIES = 3
-      MAX_UPLOAD_CHECKS = 5
+      MAX_POLLING_RETRIES = 60
+      POLLING_INTERVAL_S = 2
 
       extend Helper::FirebaseAppDistributionHelper
 
@@ -24,30 +24,24 @@ module Fastlane
         params.values # to validate all inputs before looking for the ipa/apk
         token_string = validate_app!(params[:app])
         begin
-           for checks in 1..MAX_UPLOAD_CHECKS
-             status = upload_status!(token_string, params[:app], params[:apk_path])
-             # UI.message(status)
-             if status == "SUCCESS"
-               UI.message("Nice! That was a success!") # Probably want something like it had before of apk has already been uploaded so no need to upload again
-               break
-             elsif status == "IN_PROGRESS"
-               UI.message("Still in progress, checking again in 30 seconds")
-               sleep(30)
-             else
-               UI.message("I'm going to upload")
-               for try in 1..MAX_UPLOAD_RETRIES
-                 begin
-                   upload_binary!(params[:app], params[:apk_path])
-                 rescue => error
-                   if try == MAX_UPLOAD_RETRIES
-                     UI.crash!("Max number of upload tries reached: #{error.message}")
-                   end
-                   UI.message("Failed to upload, trying again")
-                 end
-               end
-             end
-           end
-         rescue 
+          for checks in 1..MAX_POLLING_RETRIES
+            status = upload_status!(token_string, params[:app], params[:apk_path])
+            if status == "SUCCESS"
+              UI.message("Nice! That was a success!") # Probably want something like it had before of apk has already been uploaded so no need to upload again
+              break
+            elsif status == "IN_PROGRESS"
+              UI.message("Still in progress, checking again in #{POLLING_INTERVAL_S} seconds")
+              sleep(POLLING_INTERVAL_S)
+            else
+              UI.message("I'm going to upload")
+              begin
+                upload_binary!(params[:app], params[:apk_path])
+              rescue => error
+                UI.message("Failed to upload: " + error.message)
+              end
+            end
+          end
+         rescue
            UI.error("Failed to process binary.") # Some error handling for max tries or error TBD
          end
       ensure
