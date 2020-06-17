@@ -27,23 +27,23 @@ module Fastlane
           for checks in 1..MAX_POLLING_RETRIES
             status = upload_status!(token_string, params[:app], params[:apk_path])
             if status == "SUCCESS"
-              UI.message("Nice! That was a success!") # Probably want something like it had before of apk has already been uploaded so no need to upload again
+              UI.message("App Uploaded Successfully!") # Probably want something like it had before of apk has already been uploaded so no need to upload again
               break
             elsif status == "IN_PROGRESS"
-              UI.message("Still in progress, checking again in #{POLLING_INTERVAL_S} seconds")
+              UI.message("Still in progress...")
               sleep(POLLING_INTERVAL_S)
             else
               UI.message("Uploading APK")
               begin
                 upload_binary!(params[:app], params[:apk_path])
               rescue => error
-                UI.message("Failed to upload: " + error.message)
+                UI.message("Failed to upload APK: " + error.message)
               end
             end
           end
-         rescue
-           UI.error("It took longer than expected to process your APK, please try again") # Same error message as Gradle plugin
-         end
+        rescue
+          UI.error("It took longer than expected to process your APK, please try again") # Same error message as Gradle plugin
+        end
       ensure
         cleanup_tempfiles
       end
