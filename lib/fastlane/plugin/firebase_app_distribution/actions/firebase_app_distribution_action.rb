@@ -33,7 +33,7 @@ module Fastlane
               UI.message("Still in progress, checking again in #{POLLING_INTERVAL_S} seconds")
               sleep(POLLING_INTERVAL_S)
             else
-              UI.message("I'm going to upload")
+              UI.message("Uploading APK")
               begin
                 upload_binary!(params[:app], params[:apk_path])
               rescue => error
@@ -42,7 +42,7 @@ module Fastlane
             end
           end
          rescue
-           UI.error("Failed to process binary.") # Some error handling for max tries or error TBD
+           UI.error("It took longer than expected to process your APK, please try again") # Same error message as Gradle plugin
          end
       ensure
         cleanup_tempfiles
