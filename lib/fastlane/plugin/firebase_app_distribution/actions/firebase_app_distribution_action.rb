@@ -15,12 +15,41 @@ module Fastlane
       FIREBASECMD_ACTION = "appdistribution:distribute".freeze
       BASE_URL = "https://firebaseappdistribution.googleapis.com"
       PATH = "/v1alpha/apps/"
+      MAX_UPLOAD_RETRIES = 3
+      MAX_UPLOAD_CHECKS = 5
 
       extend Helper::FirebaseAppDistributionHelper
 
       def self.run(params)
         params.values # to validate all inputs before looking for the ipa/apk
-        validate_app!(params[:app])
+        token_string = validate_app!(params[:app])
+        begin
+           for checks in 1..MAX_UPLOAD_CHECKS
+             status = upload_status!(token_string, params[:app], params[:apk_path])
+             # UI.message(status)
+             if status == "SUCCESS"
+               UI.message("Nice! That was a success!") # Probably want something like it had before of apk has already been uploaded so no need to upload again
+               break
+             elsif status == "IN_PROGRESS"
+               UI.message("Still in progress, checking again in 30 seconds")
+               sleep(30)
+             else
+               UI.message("I'm going to upload")
+               for try in 1..MAX_UPLOAD_RETRIES
+                 begin
+                   upload_binary!(params[:app], params[:apk_path])
+                 rescue => error
+                   if try == MAX_UPLOAD_RETRIES
+                     UI.crash!("Max number of upload tries reached: #{error.message}")
+                   end
+                   UI.message("Failed to upload, trying again")
+                 end
+               end
+             end
+           end
+         rescue 
+           UI.error("Failed to process binary.") # Some error handling for max tries or error TBD
+         end
       ensure
         cleanup_tempfiles
       end
@@ -198,11 +227,51 @@ module Fastlane
         rescue => error
           UI.crash!("Failed to fetch app information: #{error.message}")
         end
-
         contact_email = response.body[:contactEmail]
 
         if contact_email.strip.empty?
           UI.user_error!("We could not find a contact email for app #{app_id}. Please visit App Distribution within the Firebase Console to set one up.")
+        end
+        return "projects/#{response.body[:projectNumber]}/apps/#{response.body[:appId]}/releases/-/binaries/"
+      end
+
+      def self.upload_binary!(app_id, binary_path)
+        connection = Faraday.new(url: BASE_URL) do |conn|
+          conn.response(:json, parser_options: { symbolize_names: true })
+          conn.response(:raise_error) # raise_error middleware will run before the json middleware
+          conn.request(:multipart)
+          conn.adapter(Faraday.default_adapter)
+        end
+        token = get_token
+        begin
+          response = connection.post("/app-binary-uploads?app_id=#{app_id}", File.open(binary_path).read) do |request|
+            request.headers["Authorization"] = "Bearer " + token
+            # request.headers["X-APP-DISTRO-API-CLIENT-ID"] = "FastLane"
+          end
+          response.status
+        rescue Faraday::ResourceNotFound => error
+          UI.user_error!("App Distribution could not find your app #{app_id}. Make sure to onboard your app by pressing the \"Get started\" button on the App Distribution page in the Firebase console: https://console.firebase.google.com/project/_/appdistribution")
+        rescue => error
+          UI.crash!("Failed to upload distribution: #{error.message}")
+        end
+      end
+
+      def self.upload_status!(app_token, app_id, binary_path)
+        connection = Faraday.new(url: BASE_URL) do |conn|
+          conn.response(:json, parser_options: { symbolize_names: true })
+          conn.response(:raise_error) # raise_error middleware will run before the json middleware
+          conn.adapter(Faraday.default_adapter)
+        end
+        token = get_token
+        upload_token = CGI.escape(app_token + Digest::SHA256.hexdigest(File.open(binary_path).read))
+
+        begin
+          response = connection.get("#{PATH}#{app_id}/upload_status/#{upload_token}") do |request|
+            request.headers["Authorization"] = "Bearer " + token
+          end
+          response.body[:status]
+        rescue => error
+          UI.crash!(" #{error.message}")
         end
       end
     end
