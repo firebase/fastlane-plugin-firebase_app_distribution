@@ -17,20 +17,15 @@ module Fastlane
       PATH = "/v1alpha/apps/"
       MAX_POLLING_RETRIES = 60
       POLLING_INTERVAL_S = 2
-      CONNECTION = Faraday.new(url: BASE_URL) do |conn|
-        conn.response(:json, parser_options: { symbolize_names: true })
-        conn.response(:raise_error) # raise_error middleware will run before the json middleware
-        conn.adapter(Faraday.default_adapter)
-      end
 
       extend Helper::FirebaseAppDistributionHelper
 
       def self.run(params)
         params.values # to validate all inputs before looking for the ipa/apk
-        token_string = validate_app!(params[:app])
+        upload_token = get_upload_token(params[:app], params[:apk_path])
         begin
-          for checks in 1..MAX_POLLING_RETRIES
-            status = upload_status!(token_string, params[:app], params[:apk_path])
+          MAX_POLLING_RETRIES.times do
+            status = upload_status(upload_token, params[:app])
             if status == "SUCCESS"
               UI.message("App Uploaded Successfully!") # Probably want something like it had before of apk has already been uploaded so no need to upload again
               break
@@ -40,7 +35,7 @@ module Fastlane
             else
               UI.message("Uploading APK")
               begin
-                upload_binary!(params[:app], params[:apk_path])
+                upload_binary(params[:app], params[:apk_path])
               rescue => error
                 UI.message("Failed to upload APK: " + error.message)
               end
@@ -51,6 +46,29 @@ module Fastlane
         end
       ensure
         cleanup_tempfiles
+      end
+
+      def self.connection
+        @connection ||= Faraday.new(url: BASE_URL) do |conn|
+          conn.response(:json, parser_options: { symbolize_names: true })
+          conn.response(:raise_error) # raise_error middleware will run before the json middleware
+          conn.adapter(Faraday.default_adapter)
+        end
+      end     
+
+      def self.auth_token
+        @auth_token ||= begin
+          client = Signet::OAuth2::Client.new(
+            token_credential_uri: 'https://oauth2.googleapis.com/token',
+            client_id: FirebaseAppDistributionLoginAction::CLIENT_ID,
+            client_secret: FirebaseAppDistributionLoginAction::CLIENT_SECRET,
+            refresh_token: ENV["FIREBASE_TOKEN"]
+          )
+          client.fetch_access_token!
+          return client.access_token
+        rescue Signet::AuthorizationError => error
+          UI.crash!("Wrong value for FIREBASE_TOKEN")
+        end
       end
 
       def self.description
@@ -195,47 +213,28 @@ module Fastlane
         true
       end
 
-      def self.get_token
-        client = Signet::OAuth2::Client.new(
-          token_credential_uri: 'https://oauth2.googleapis.com/token',
-          client_id: FirebaseAppDistributionLoginAction::CLIENT_ID,
-          client_secret: FirebaseAppDistributionLoginAction::CLIENT_SECRET,
-          refresh_token: ENV["FIREBASE_TOKEN"]
-        )
-
-        client.fetch_access_token!
-        return client.access_token
-      rescue Signet::AuthorizationError => error
-        UI.crash!("Wrong value for FIREBASE_TOKEN")
-      end
-
-      def self.validate_app!(app_id)
-        token = get_token
-        begin
-          response = CONNECTION.get("#{PATH}#{app_id}") do |request|
-            request.headers["Authorization"] = "Bearer " + token
-          end
+      def self.get_upload_token(app_id, binary_path)
+        binary_hash = Digest::SHA256.hexdigest(File.open(binary_path).read)
+        response = connection.get("#{PATH}#{app_id}") do |request|
+          request.headers["Authorization"] = "Bearer " + auth_token
         rescue Faraday::ResourceNotFound => error
           UI.user_error!("App Distribution could not find your app #{app_id}. Make sure to onboard your app by pressing the \"Get started\" button on the App Distribution page in the Firebase console: https://console.firebase.google.com/project/_/appdistribution")
         rescue => error
           UI.crash!("Failed to fetch app information: #{error.message}")
         end
         contact_email = response.body[:contactEmail]
-
         if contact_email.strip.empty?
           UI.user_error!("We could not find a contact email for app #{app_id}. Please visit App Distribution within the Firebase Console to set one up.")
         end
-        return "projects/#{response.body[:projectNumber]}/apps/#{response.body[:appId]}/releases/-/binaries/"
+        return CGI.escape("projects/#{response.body[:projectNumber]}/apps/#{response.body[:appId]}/releases/-/binaries/#{binary_hash}")
       end
 
-      def self.upload_binary!(app_id, binary_path)
-        token = get_token
+      def self.upload_binary(app_id, binary_path)
         begin
-          response = CONNECTION.post("/app-binary-uploads?app_id=#{app_id}", File.open(binary_path).read) do |request|
-            request.headers["Authorization"] = "Bearer " + token
+          response = connection.post("/app-binary-uploads?app_id=#{app_id}", File.open(binary_path).read) do |request|
+            request.headers["Authorization"] = "Bearer " + auth_token
             # request.headers["X-APP-DISTRO-API-CLIENT-ID"] = "FastLane"
           end
-          response.status
         rescue Faraday::ResourceNotFound => error
           UI.user_error!("App Distribution could not find your app #{app_id}. Make sure to onboard your app by pressing the \"Get started\" button on the App Distribution page in the Firebase console: https://console.firebase.google.com/project/_/appdistribution")
         rescue => error
@@ -243,13 +242,10 @@ module Fastlane
         end
       end
 
-      def self.upload_status!(app_token, app_id, binary_path)
-        token = get_token
-        upload_token = CGI.escape(app_token + Digest::SHA256.hexdigest(File.open(binary_path).read))
-
+      def self.upload_status(app_token, app_id)
         begin
-          response = CONNECTION.get("#{PATH}#{app_id}/upload_status/#{upload_token}") do |request|
-            request.headers["Authorization"] = "Bearer " + token
+          response = connection.get("#{PATH}#{app_id}/upload_status/#{app_token}") do |request|
+            request.headers["Authorization"] = "Bearer " + auth_token
           end
           response.body[:status]
         rescue => error
