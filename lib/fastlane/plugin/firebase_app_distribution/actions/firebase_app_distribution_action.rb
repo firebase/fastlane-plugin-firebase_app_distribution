@@ -17,6 +17,11 @@ module Fastlane
       PATH = "/v1alpha/apps/"
       MAX_POLLING_RETRIES = 60
       POLLING_INTERVAL_S = 2
+      CONNECTION = Faraday.new(url: BASE_URL) do |conn|
+        conn.response(:json, parser_options: { symbolize_names: true })
+        conn.response(:raise_error) # raise_error middleware will run before the json middleware
+        conn.adapter(Faraday.default_adapter)
+      end
 
       extend Helper::FirebaseAppDistributionHelper
 
@@ -206,14 +211,8 @@ module Fastlane
 
       def self.validate_app!(app_id)
         token = get_token
-
-        connection = Faraday.new(url: BASE_URL) do |conn|
-          conn.response(:json, parser_options: { symbolize_names: true })
-          conn.response(:raise_error) # raise_error middleware will run before the json middleware
-          conn.adapter(Faraday.default_adapter)
-        end
         begin
-          response = connection.get("#{PATH}#{app_id}") do |request|
+          response = CONNECTION.get("#{PATH}#{app_id}") do |request|
             request.headers["Authorization"] = "Bearer " + token
           end
         rescue Faraday::ResourceNotFound => error
@@ -230,15 +229,9 @@ module Fastlane
       end
 
       def self.upload_binary!(app_id, binary_path)
-        connection = Faraday.new(url: BASE_URL) do |conn|
-          conn.response(:json, parser_options: { symbolize_names: true })
-          conn.response(:raise_error) # raise_error middleware will run before the json middleware
-          conn.request(:multipart)
-          conn.adapter(Faraday.default_adapter)
-        end
         token = get_token
         begin
-          response = connection.post("/app-binary-uploads?app_id=#{app_id}", File.open(binary_path).read) do |request|
+          response = CONNECTION.post("/app-binary-uploads?app_id=#{app_id}", File.open(binary_path).read) do |request|
             request.headers["Authorization"] = "Bearer " + token
             # request.headers["X-APP-DISTRO-API-CLIENT-ID"] = "FastLane"
           end
@@ -251,16 +244,11 @@ module Fastlane
       end
 
       def self.upload_status!(app_token, app_id, binary_path)
-        connection = Faraday.new(url: BASE_URL) do |conn|
-          conn.response(:json, parser_options: { symbolize_names: true })
-          conn.response(:raise_error) # raise_error middleware will run before the json middleware
-          conn.adapter(Faraday.default_adapter)
-        end
         token = get_token
         upload_token = CGI.escape(app_token + Digest::SHA256.hexdigest(File.open(binary_path).read))
 
         begin
-          response = connection.get("#{PATH}#{app_id}/upload_status/#{upload_token}") do |request|
+          response = CONNECTION.get("#{PATH}#{app_id}/upload_status/#{upload_token}") do |request|
             request.headers["Authorization"] = "Bearer " + token
           end
           response.body[:status]
