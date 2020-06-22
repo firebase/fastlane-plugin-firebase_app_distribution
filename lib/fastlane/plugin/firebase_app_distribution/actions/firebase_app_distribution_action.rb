@@ -5,7 +5,7 @@ require 'shellwords'
 require 'googleauth'
 require_relative './firebase_app_distribution_login'
 require_relative '../helper/firebase_app_distribution_helper'
-require_relative '../helper/firebase_exceptions'
+require_relative '../helper/firebase_app_distribution_error_message'
 
 ## TODO: should always use a file underneath? I think so.
 ## How should we document the usage of release notes?
