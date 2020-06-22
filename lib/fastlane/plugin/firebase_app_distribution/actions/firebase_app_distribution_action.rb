@@ -30,7 +30,6 @@ module Fastlane
               UI.message("App Uploaded Successfully!") # Probably want something like it had before of apk has already been uploaded so no need to upload again
               break
             elsif status == "IN_PROGRESS"
-              UI.message("Still in progress...")
               sleep(POLLING_INTERVAL_S)
             else
               UI.message("Uploading APK")
@@ -215,10 +214,12 @@ module Fastlane
 
       def self.get_upload_token(app_id, binary_path)
         binary_hash = Digest::SHA256.hexdigest(File.open(binary_path).read)
-        response = connection.get("#{PATH}#{app_id}") do |request|
-          request.headers["Authorization"] = "Bearer " + auth_token
+        begin
+          response = connection.get("#{PATH}#{app_id}") do |request|
+            request.headers["Authorization"] = "Bearer " + auth_token
+          end
         rescue Faraday::ResourceNotFound => error
-          UI.user_error!("App Distribution could not find your app #{app_id}. Make sure to onboard your app by pressing the \"Get started\" button on the App Distribution page in the Firebase console: https://console.firebase.google.com/project/_/appdistribution")
+          UI.user_error!(unknown_app_error(app_id))
         rescue => error
           UI.crash!("Failed to fetch app information: #{error.message}")
         end
@@ -233,12 +234,9 @@ module Fastlane
         begin
           response = connection.post("/app-binary-uploads?app_id=#{app_id}", File.open(binary_path).read) do |request|
             request.headers["Authorization"] = "Bearer " + auth_token
-            # request.headers["X-APP-DISTRO-API-CLIENT-ID"] = "FastLane"
           end
         rescue Faraday::ResourceNotFound => error
-          UI.user_error!("App Distribution could not find your app #{app_id}. Make sure to onboard your app by pressing the \"Get started\" button on the App Distribution page in the Firebase console: https://console.firebase.google.com/project/_/appdistribution")
-        rescue => error
-          UI.crash!("Failed to upload distribution: #{error.message}")
+          UI.user_error!(unknown_app_error(app_id))
         end
       end
 
@@ -247,10 +245,14 @@ module Fastlane
           response = connection.get("#{PATH}#{app_id}/upload_status/#{app_token}") do |request|
             request.headers["Authorization"] = "Bearer " + auth_token
           end
-          response.body[:status]
-        rescue => error
-          UI.crash!(" #{error.message}")
+        rescue Faraday::ResourceNotFound => error
+          UI.user_error!(unknown_app_error(app_id))
         end
+          response.body[:status]
+      end
+
+      def self.unknown_app_error(app_id)
+        "App Distribution could not find your app #{app_id}. Make sure to onboard your app by pressing the \"Get started\" button on the App Distribution page in the Firebase console: https://console.firebase.google.com/project/_/appdistribution"
       end
     end
   end
