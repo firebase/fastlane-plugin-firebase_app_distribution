@@ -23,27 +23,36 @@ module Fastlane
 
       def self.run(params)
         params.values # to validate all inputs before looking for the ipa/apk
-        upload_token = get_upload_token(params[:app], params[:apk_path])   
-        begin
-#raise StandardError.new "exempt"
-          MAX_POLLING_RETRIES.times do
-            status = upload_status(upload_token, params[:app])
-            if status == "SUCCESS"
-              UI.message("App Uploaded Successfully!") # Probably want something like it had before of apk has already been uploaded so no need to upload again
-              break
-            elsif status == "IN_PROGRESS"
-              sleep(POLLING_INTERVAL_S)
-            else
-              UI.message("Uploading APK")
-              begin
-                upload_binary(params[:app], params[:apk_path])
-              rescue => error
-                UI.message("Failed to upload APK: " + error.message)
-              end
+        app_id = nil
+        platform = Actions.lane_context[Actions::SharedValues::PLATFORM_NAME]
+        binary_path = Shellwords.escape(params[:ipa_path] || params[:apk_path])
+
+        if params[:app] # Set app_id if it is specified as a parameter
+          app_id = params[:app]
+        else
+          if platform == :ios
+            archive_path = Actions.lane_context[SharedValues::XCODEBUILD_ARCHIVE]
+            if archive_patharchive_path
+              app_id = findout_ios_app_id_from_archive(archive_path)
             end
           end
-        rescue => e
-          UI.crash!(FirebaseAppDistributionError::APK_NOT_FOUND)#MISSING_CREDENTIALS)#{}"It took longer than expected to process your APK, please try again " +  e.thing) # Same error message as Gradle plugin
+          if app_id.nil?
+            app_id = UI.input("Your app's Firebase App ID. You can find the App ID in the Firebase console, on the General Settings page: ")
+          end
+        end
+
+        upload_token = get_upload_token(app_id, binary_path)
+        MAX_POLLING_RETRIES.times do
+          status = upload_status(upload_token, app_id)
+          if status == "SUCCESS"
+            UI.message("App Uploaded Successfully!")
+            break
+          elsif status == "IN_PROGRESS"
+            sleep(POLLING_INTERVAL_S)
+          else
+            UI.message("Uploading APK")
+            upload_binary(app_id, binary_path)
+          end
         end
       ensure
         cleanup_tempfiles
@@ -55,7 +64,7 @@ module Fastlane
           conn.response(:raise_error) # raise_error middleware will run before the json middleware
           conn.adapter(Faraday.default_adapter)
         end
-      end     
+      end
 
       def self.auth_token
         @auth_token ||= begin
@@ -67,7 +76,7 @@ module Fastlane
           )
           client.fetch_access_token!
           return client.access_token
-        rescue Signet::AuthorizationError => error
+        rescue Signet::AuthorizationError
           UI.crash!(FirebaseAppDistributionError::REFRESH_TOKEN_ERROR)
         end
       end
@@ -220,10 +229,10 @@ module Fastlane
           response = connection.get("#{PATH}#{app_id}") do |request|
             request.headers["Authorization"] = "Bearer " + auth_token
           end
-        rescue Faraday::ResourceNotFound => error
-          UI.user_error!(unknown_app_error(app_id))
-        rescue => error
-          UI.crash!(FirebaseAppDistributionError::GET_APP_ERROR)#{}"Failed to fetch app information: #{error.message}")
+        rescue Faraday::ResourceNotFound
+          UI.user_error!(FirebaseAppDistributionError::MISSING_APP_ID)
+        rescue
+          UI.crash!(FirebaseAppDistributionError::GET_APP_ERROR)
         end
         contact_email = response.body[:contactEmail]
         if contact_email.strip.empty?
@@ -233,14 +242,14 @@ module Fastlane
       end
 
       def self.upload_binary(app_id, binary_path)
-        begin
-          #check error on wrong binary path
-          response = connection.post("/app-binary-uploads?app_id=#{app_id}", File.open(binary_path).read) do |request|
-            request.headers["Authorization"] = "Bearer " + auth_token
-          end
-        rescue Faraday::ResourceNotFound => error
-          UI.user_error!(unknown_app_error(app_id))
+        # check error on wrong binary path
+        connection.post("/app-binary-uploads?app_id=#{app_id}", File.open(binary_path).read) do |request|
+          request.headers["Authorization"] = "Bearer " + auth_token
         end
+      rescue Faraday::ResourceNotFound
+        UI.user_error!(FirebaseAppDistributionError::MISSING_APP_ID)
+      rescue
+        UI.crash!(FirebaseAppDistributionError::GET_APP_ERROR)
       end
 
       def self.upload_status(app_token, app_id)
@@ -248,14 +257,12 @@ module Fastlane
           response = connection.get("#{PATH}#{app_id}/upload_status/#{app_token}") do |request|
             request.headers["Authorization"] = "Bearer " + auth_token
           end
-        rescue Faraday::ResourceNotFound => error
-          UI.user_error!(unknown_app_error(app_id))
+        rescue Faraday::ResourceNotFound
+          UI.user_error!(FirebaseAppDistributionError::MISSING_APP_ID)
+        rescue
+          UI.crash!(FirebaseAppDistributionError::GET_APP_ERROR)
         end
-          response.body[:status]
-      end
-
-      def self.unknown_app_error(app_id)
-        "App Distribution could not find your app #{app_id}. Make sure to onboard your app by pressing the \"Get started\" button on the App Distribution page in the Firebase console: https://console.firebase.google.com/project/_/appdistribution"
+        response.body[:status]
       end
     end
   end
