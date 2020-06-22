@@ -5,6 +5,7 @@ require 'shellwords'
 require 'googleauth'
 require_relative './firebase_app_distribution_login'
 require_relative '../helper/firebase_app_distribution_helper'
+require_relative '../helper/firebase_exceptions'
 
 ## TODO: should always use a file underneath? I think so.
 ## How should we document the usage of release notes?
@@ -22,8 +23,9 @@ module Fastlane
 
       def self.run(params)
         params.values # to validate all inputs before looking for the ipa/apk
-        upload_token = get_upload_token(params[:app], params[:apk_path])
+        upload_token = get_upload_token(params[:app], params[:apk_path])   
         begin
+#raise StandardError.new "exempt"
           MAX_POLLING_RETRIES.times do
             status = upload_status(upload_token, params[:app])
             if status == "SUCCESS"
@@ -40,8 +42,8 @@ module Fastlane
               end
             end
           end
-        rescue
-          UI.error("It took longer than expected to process your APK, please try again") # Same error message as Gradle plugin
+        rescue => e
+          UI.crash!(FirebaseAppDistributionError::APK_NOT_FOUND)#MISSING_CREDENTIALS)#{}"It took longer than expected to process your APK, please try again " +  e.thing) # Same error message as Gradle plugin
         end
       ensure
         cleanup_tempfiles
@@ -66,7 +68,7 @@ module Fastlane
           client.fetch_access_token!
           return client.access_token
         rescue Signet::AuthorizationError => error
-          UI.crash!("Wrong value for FIREBASE_TOKEN")
+          UI.crash!(FirebaseAppDistributionError::REFRESH_TOKEN_ERROR)
         end
       end
 
@@ -221,17 +223,18 @@ module Fastlane
         rescue Faraday::ResourceNotFound => error
           UI.user_error!(unknown_app_error(app_id))
         rescue => error
-          UI.crash!("Failed to fetch app information: #{error.message}")
+          UI.crash!(FirebaseAppDistributionError::GET_APP_ERROR)#{}"Failed to fetch app information: #{error.message}")
         end
         contact_email = response.body[:contactEmail]
         if contact_email.strip.empty?
-          UI.user_error!("We could not find a contact email for app #{app_id}. Please visit App Distribution within the Firebase Console to set one up.")
+          UI.user_error!(FirebaseAppDistributionError::GET_APP_NO_CONTACT_EMAIL_ERROR)
         end
         return CGI.escape("projects/#{response.body[:projectNumber]}/apps/#{response.body[:appId]}/releases/-/binaries/#{binary_hash}")
       end
 
       def self.upload_binary(app_id, binary_path)
         begin
+          #check error on wrong binary path
           response = connection.post("/app-binary-uploads?app_id=#{app_id}", File.open(binary_path).read) do |request|
             request.headers["Authorization"] = "Bearer " + auth_token
           end
