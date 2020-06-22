@@ -23,9 +23,8 @@ module Fastlane
 
       def self.run(params)
         params.values # to validate all inputs before looking for the ipa/apk
-        app_id = nil
         platform = Actions.lane_context[Actions::SharedValues::PLATFORM_NAME]
-        binary_path = Shellwords.escape(params[:ipa_path] || params[:apk_path])
+        binary_path = params[:ipa_path] || params[:apk_path]
 
         if params[:app] # Set app_id if it is specified as a parameter
           app_id = params[:app]
@@ -42,16 +41,20 @@ module Fastlane
         end
 
         upload_token = get_upload_token(app_id, binary_path)
-        MAX_POLLING_RETRIES.times do
-          status = upload_status(upload_token, app_id)
-          if status == "SUCCESS"
-            UI.message("App Uploaded Successfully!")
-            break
-          elsif status == "IN_PROGRESS"
-            sleep(POLLING_INTERVAL_S)
-          else
-            UI.message("Uploading APK")
-            upload_binary(app_id, binary_path)
+        if upload_status(upload_token, app_id) == "SUCCESS"
+          UI.message("This APK/IPA has been uploaded before. Skipping upload step.")
+        else
+          MAX_POLLING_RETRIES.times do
+            status = upload_status(upload_token, app_id)
+            if status == "SUCCESS"
+              UI.message("Uploaded APK/IPA Successfully!")
+              break
+            elsif status == "IN_PROGRESS"
+              sleep(POLLING_INTERVAL_S)
+            else
+              UI.message("Uploading the APK/IPA")
+              upload_binary(app_id, binary_path)
+            end
           end
         end
       ensure
@@ -77,7 +80,7 @@ module Fastlane
           client.fetch_access_token!
           return client.access_token
         rescue Signet::AuthorizationError
-          UI.crash!(FirebaseAppDistributionError::REFRESH_TOKEN_ERROR)
+          UI.crash!(ErrorMessage::REFRESH_TOKEN_ERROR)
         end
       end
 
@@ -229,38 +232,25 @@ module Fastlane
           response = connection.get("#{PATH}#{app_id}") do |request|
             request.headers["Authorization"] = "Bearer " + auth_token
           end
-        rescue Faraday::ResourceNotFound
-          UI.user_error!(FirebaseAppDistributionError::MISSING_APP_ID)
-        rescue
-          UI.crash!(FirebaseAppDistributionError::GET_APP_ERROR)
+        rescue => error
+          UI.crash!(error)
         end
         contact_email = response.body[:contactEmail]
         if contact_email.strip.empty?
-          UI.user_error!(FirebaseAppDistributionError::GET_APP_NO_CONTACT_EMAIL_ERROR)
+          UI.user_error!(ErrorMessage::GET_APP_NO_CONTACT_EMAIL_ERROR)
         end
         return CGI.escape("projects/#{response.body[:projectNumber]}/apps/#{response.body[:appId]}/releases/-/binaries/#{binary_hash}")
       end
 
       def self.upload_binary(app_id, binary_path)
-        # check error on wrong binary path
         connection.post("/app-binary-uploads?app_id=#{app_id}", File.open(binary_path).read) do |request|
           request.headers["Authorization"] = "Bearer " + auth_token
         end
-      rescue Faraday::ResourceNotFound
-        UI.user_error!(FirebaseAppDistributionError::MISSING_APP_ID)
-      rescue
-        UI.crash!(FirebaseAppDistributionError::GET_APP_ERROR)
       end
 
       def self.upload_status(app_token, app_id)
-        begin
-          response = connection.get("#{PATH}#{app_id}/upload_status/#{app_token}") do |request|
-            request.headers["Authorization"] = "Bearer " + auth_token
-          end
-        rescue Faraday::ResourceNotFound
-          UI.user_error!(FirebaseAppDistributionError::MISSING_APP_ID)
-        rescue
-          UI.crash!(FirebaseAppDistributionError::GET_APP_ERROR)
+        response = connection.get("#{PATH}#{app_id}/upload_status/#{app_token}") do |request|
+          request.headers["Authorization"] = "Bearer " + auth_token
         end
         response.body[:status]
       end

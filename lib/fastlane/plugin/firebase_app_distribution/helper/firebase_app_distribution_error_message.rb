@@ -1,4 +1,4 @@
-class FirebaseAppDistributionError < StandardError
+class ErrorMessage
   MISSING_CREDENTIALS = "Missing credentials. Please check that a refresh token was set or service credentials were passed in and try again"
   APK_NOT_FOUND = "Could not find the APK/IPA. Make sure you set the apk_path parameter to point to your APK/IPA"
   MISSING_APP_ID = "Missing app id. Please check that it was passed in and try again"
