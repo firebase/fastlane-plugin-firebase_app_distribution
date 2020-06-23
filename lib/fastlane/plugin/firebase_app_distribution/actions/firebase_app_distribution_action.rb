@@ -232,6 +232,8 @@ module Fastlane
           response = connection.get("#{PATH}#{app_id}") do |request|
             request.headers["Authorization"] = "Bearer " + auth_token
           end
+        rescue Faraday::ResourceNotFound
+            UI.user_error!("App Distribution could not find your app #{app_id}. Make sure to onboard your app by pressing the \"Get started\" button on the App Distribution page in the Firebase console: https://console.firebase.google.com/project/_/appdistribution")
         rescue => error
           UI.crash!(error)
         end
