@@ -28,20 +28,16 @@ module Fastlane
 
         if params[:app] # Set app_id if it is specified as a parameter
           app_id = params[:app]
-        else
-          if platform == :ios
-            archive_path = Actions.lane_context[SharedValues::XCODEBUILD_ARCHIVE]
-            if archive_patharchive_path
-              app_id = findout_ios_app_id_from_archive(archive_path)
-            end
-          end
-          if app_id.nil?
-            app_id = UI.input("Your app's Firebase App ID. You can find the App ID in the Firebase console, on the General Settings page: ")
+        elsif platform == :ios
+          archive_path = Actions.lane_context[SharedValues::XCODEBUILD_ARCHIVE]
+          if archive_path
+            app_id = findout_ios_app_id_from_archive(archive_path)
           end
         end
 
         upload_token = get_upload_token(app_id, binary_path)
-        if upload_status(upload_token, app_id) == "SUCCESS"
+        status = upload_status(upload_token, app_id)
+        if status == "SUCCESS"
           UI.message("This APK/IPA has been uploaded before. Skipping upload step.")
         else
           MAX_POLLING_RETRIES.times do
@@ -233,13 +229,11 @@ module Fastlane
             request.headers["Authorization"] = "Bearer " + auth_token
           end
         rescue Faraday::ResourceNotFound
-            UI.user_error!("App Distribution could not find your app #{app_id}. Make sure to onboard your app by pressing the \"Get started\" button on the App Distribution page in the Firebase console: https://console.firebase.google.com/project/_/appdistribution")
-        rescue => error
-          UI.crash!(error)
+          UI.crash!("App Distribution could not find your app #{app_id}. Make sure to onboard your app by pressing the \"Get started\" button on the App Distribution page in the Firebase console: https://console.firebase.google.com/project/_/appdistribution")
         end
         contact_email = response.body[:contactEmail]
         if contact_email.strip.empty?
-          UI.user_error!(ErrorMessage::GET_APP_NO_CONTACT_EMAIL_ERROR)
+          UI.crash!(ErrorMessage::GET_APP_NO_CONTACT_EMAIL_ERROR)
         end
         return CGI.escape("projects/#{response.body[:projectNumber]}/apps/#{response.body[:appId]}/releases/-/binaries/#{binary_hash}")
       end
