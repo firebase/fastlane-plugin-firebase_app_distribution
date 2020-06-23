@@ -1,14 +1,13 @@
 describe Fastlane::Actions::FirebaseAppDistributionAction do
   let(:fake_file) { StringIO.new }
-  let(:temp_connection) { double("Connection") }
+  let(:temp_connection) {double("Connection") }
   let(:fake_response) { double("Response", body: { status: 200 , projectNumber: 1, appId: 1, contactEmail: "HelloWorld"})}
+  let(:fake_response_no_email) { double("Response", body: { status: 200 , projectNumber: 1, appId: 1, contactEmail: ""})}
   let(:fake_binary) {double("Binary")}
-  #file = instance_double(File, read: 'stubbed read')
-#allow(File).to receive(:open).and_call_original
-#allow(File).to receive(:open).with('file.txt') { |&block| block.call(file) }
 
   before(:each) do
-    allow(Faraday).to receive(:new).and_return(temp_connection)
+    #(Faraday).to receive(:new).and_return(temp_connection)
+    allow(Fastlane::Actions::FirebaseAppDistributionAction).to receive(:connection).and_return(temp_connection)
     allow(temp_connection).to receive(:get).and_return(fake_response)
     allow(fake_binary).to receive(:read).and_return("Hello World")
     allow(File).to receive(:open).and_return(fake_binary)
@@ -43,13 +42,17 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
 
 
   describe '#get_upload_token' do
-    it 'checks the contact email' do 
+    it 'checks the upload token' do 
       expect(temp_connection).to receive(:get).with("/v1alpha/apps/app_id")
       upload_token = Fastlane::Actions::FirebaseAppDistributionAction.get_upload_token("app_id","binary_path")
       binary_hash = Digest::SHA256.hexdigest(File.open(fake_binary).read)
       expect(upload_token).to eq(CGI.escape("projects/1/apps/1/releases/-/binaries/#{binary_hash}"))
-  end
+    end
 
+    it 'error handling when contact has no email' do 
+      expect(temp_connection).to receive(:get).with("/v1alpha/apps/app_id").and_return(fake_response_no_email)
+      expect { Fastlane::Actions::FirebaseAppDistributionAction.get_upload_token("app_id","binary_path")}.to raise_error(ErrorMessage::GET_APP_NO_CONTACT_EMAIL_ERROR)
+    end
   end
 
   describe "flag helpers" do
