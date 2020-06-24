@@ -46,6 +46,7 @@ module Fastlane
       def self.connection
         @connection ||= Faraday.new(url: BASE_URL) do |conn|
           conn.response(:json, parser_options: { symbolize_names: true })
+          # TODO: Comment out raise_error middleware to show error jsons
           conn.response(:raise_error) # raise_error middleware will run before the json middleware
           conn.adapter(Faraday.default_adapter)
         end
@@ -209,16 +210,24 @@ module Fastlane
       end
 
       def self.get_upload_token(app_id, binary_path)
-        binary_hash = Digest::SHA256.hexdigest(File.open(binary_path).read)
+        begin
+          binary_hash = Digest::SHA256.hexdigest(File.open(binary_path).read)
+        rescue
+          UI.crash!(ErrorMessage::APK_NOT_FOUND)
+        end
+
         begin
           response = connection.get("#{PATH}#{app_id}") do |request|
             request.headers["Authorization"] = "Bearer " + auth_token
           end
-        rescue Faraday::ResourceNotFound
-          UI.crash!("App Distribution could not find your app #{app_id}. Make sure to onboard your app by pressing the \"Get started\" button on the App Distribution page in the Firebase console: https://console.firebase.google.com/project/_/appdistribution")
+          puts response.body
+          puts response.status
+        rescue # TODO: This does not get triggered with mocked response, why?
+          UI.crash!(ErrorMessage::INVALID_APP_ID)
         end
+
         contact_email = response.body[:contactEmail]
-        if contact_email.strip.empty?
+        if contact_email.nil? or contact_email.strip.empty?
           UI.crash!(ErrorMessage::GET_APP_NO_CONTACT_EMAIL_ERROR)
         end
         return CGI.escape("projects/#{response.body[:projectNumber]}/apps/#{response.body[:appId]}/releases/-/binaries/#{binary_hash}")
