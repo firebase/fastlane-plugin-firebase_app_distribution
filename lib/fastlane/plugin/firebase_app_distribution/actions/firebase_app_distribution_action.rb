@@ -35,13 +35,16 @@ module Fastlane
           end
         end
 
+        if app_id.nil?
+          UI.crash!(ErrorMessage::MISSING_APP_ID)
+        end
+
         upload_token = get_upload_token(app_id, binary_path)
         status = upload_status(upload_token, app_id)
         if status == "SUCCESS"
           UI.message("This APK/IPA has been uploaded before. Skipping upload step.")
         else
           MAX_POLLING_RETRIES.times do
-            status = upload_status(upload_token, app_id)
             if status == "SUCCESS"
               UI.message("Uploaded APK/IPA Successfully!")
               break
@@ -51,6 +54,7 @@ module Fastlane
               UI.message("Uploading the APK/IPA")
               upload_binary(app_id, binary_path)
             end
+            status = upload_status(upload_token, app_id)
           end
         end
       ensure
