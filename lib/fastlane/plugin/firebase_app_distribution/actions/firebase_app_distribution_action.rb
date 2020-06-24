@@ -38,25 +38,7 @@ module Fastlane
         if app_id.nil?
           UI.crash!(ErrorMessage::MISSING_APP_ID)
         end
-
-        upload_token = get_upload_token(app_id, binary_path)
-        status = upload_status(upload_token, app_id)
-        if status == "SUCCESS"
-          UI.message("This APK/IPA has been uploaded before. Skipping upload step.")
-        else
-          MAX_POLLING_RETRIES.times do
-            if status == "SUCCESS"
-              UI.message("Uploaded APK/IPA Successfully!")
-              break
-            elsif status == "IN_PROGRESS"
-              sleep(POLLING_INTERVAL_S)
-            else
-              UI.message("Uploading the APK/IPA")
-              upload_binary(app_id, binary_path)
-            end
-            status = upload_status(upload_token, app_id)
-          end
-        end
+        upload(app_id, binary_path)
       ensure
         cleanup_tempfiles
       end
@@ -245,6 +227,27 @@ module Fastlane
       def self.upload_binary(app_id, binary_path)
         connection.post("/app-binary-uploads?app_id=#{app_id}", File.open(binary_path).read) do |request|
           request.headers["Authorization"] = "Bearer " + auth_token
+        end
+      end
+
+      def self.upload(app_id, binary_path)
+        upload_token = get_upload_token(app_id, binary_path)
+        status = upload_status(upload_token, app_id)
+        if status == "SUCCESS"
+          UI.message("This APK/IPA has been uploaded before. Skipping upload step.")
+        else
+          MAX_POLLING_RETRIES.times do
+            if status == "SUCCESS"
+              UI.message("Uploaded APK/IPA Successfully!")
+              break
+            elsif status == "IN_PROGRESS"
+              sleep(POLLING_INTERVAL_S)
+            else
+              UI.message("Uploading the APK/IPA")
+              upload_binary(app_id, binary_path)
+            end
+            status = upload_status(upload_token, app_id)
+          end
         end
       end
 
