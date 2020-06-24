@@ -31,6 +31,8 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
   #     Fastlane::Actions::FirebaseAppDistributionAction.run(params)
   #   end
   # end
+
+  #TODO change order of tests to be with the action file
   describe '#upload_status' do
     it 'checks that you get a response' do
       expected_path = "/v1alpha/apps/app_id/upload_status/token"
@@ -52,6 +54,13 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
     it 'error handling when contact has no email' do 
       expect(temp_connection).to receive(:get).with("/v1alpha/apps/app_id").and_return(fake_response_no_email)
       expect { Fastlane::Actions::FirebaseAppDistributionAction.get_upload_token("app_id","binary_path")}.to raise_error(ErrorMessage::GET_APP_NO_CONTACT_EMAIL_ERROR)
+    end
+  end
+
+  describe '#upload_binary' do
+    it 'checks we are reading the binary correctly' do
+      expect(temp_connection).to receive(:post).with("/app-binary-uploads?app_id=app_id" , "Hello World").and_return(fake_response_no_email)
+      Fastlane::Actions::FirebaseAppDistributionAction.upload_binary("app_id","binary_path")
     end
   end
 
