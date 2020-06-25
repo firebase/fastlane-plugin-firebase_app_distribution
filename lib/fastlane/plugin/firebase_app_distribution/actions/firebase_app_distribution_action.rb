@@ -215,8 +215,6 @@ module Fastlane
       end
       def self.post_notes(app_id, release_id, release_notes)
         payload = {releaseNotes: {releaseNotes: release_notes}}
-        UI.message(release_id)
-        UI.message(release_notes)
         connection.post("#{PATH}#{app_id}/releases/#{release_id}/notes", payload.to_json) do |request|
           request.headers["Authorization"] = "Bearer " + auth_token
         end
