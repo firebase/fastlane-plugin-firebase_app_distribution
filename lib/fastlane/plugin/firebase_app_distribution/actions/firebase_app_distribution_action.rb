@@ -211,11 +211,15 @@ module Fastlane
       end
       
       def self.post_notes(app_id, release_id, release_notes)
+<<<<<<< HEAD
         payload = { releaseNotes: { releaseNotes: release_notes } }
         if release_notes.nil? || release_notes.empty?
           UI.message("No release notes passed in. Skipping this step.")
           return
         end
+=======
+        payload = {releaseNotes: {releaseNotes: release_notes}}
+>>>>>>> 2baf796... initial post notes
         connection.post("#{PATH}#{app_id}/releases/#{release_id}/notes", payload.to_json) do |request|
           request.headers["Authorization"] = "Bearer " + auth_token
         end

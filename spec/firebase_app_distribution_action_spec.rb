@@ -1,5 +1,6 @@
 describe Fastlane::Actions::FirebaseAppDistributionAction do
   let(:fake_file) { StringIO.new }
+<<<<<<< HEAD
   let(:fake_connection) { double("Connection") }
   let(:fake_binary) { double("Binary") }
 
