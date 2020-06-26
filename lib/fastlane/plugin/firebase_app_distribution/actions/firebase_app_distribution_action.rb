@@ -215,7 +215,7 @@ module Fastlane
       end
       def self.post_notes(app_id, release_id, release_notes)
        # payload = {releaseNotes: {releaseNotes: release_notes}}
-       if(release_notes.nil?)
+       if(release_notes.nil? || release_notes.empty?)
         UI.message("No Release notes passed in. Skipping this step")
         return
        end
