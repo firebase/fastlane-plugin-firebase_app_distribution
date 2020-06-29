@@ -214,7 +214,6 @@ module Fastlane
         true
       end
 
-
       def self.post_notes(app_id, release_id, release_notes)
         payload = { releaseNotes: { releaseNotes: release_notes } }
         if release_notes.nil? || release_notes.empty?
@@ -273,7 +272,11 @@ module Fastlane
 
       # Uploads the binary
       #
+<<<<<<< HEAD
       # Returns the id of the release. Only happens on a successful release, on a fail release a messsage notifies the user.
+=======
+      # Returns the id of the release"> <explain "Only happens on a successful release
+>>>>>>> 66f2cd4... Fixing comments
       def self.upload(app_id, binary_path)
         upload_token = get_upload_token(app_id, binary_path)
         upload_status_response = get_upload_status(app_id, upload_token)
@@ -302,6 +305,7 @@ module Fastlane
 
       # Gets the upload status for the app release
       #
+<<<<<<< HEAD
       # Returns the status of the release. On success the release id exists and is nil in all other cases.
       def self.get_upload_status(app_id, app_token)
         begin
@@ -310,6 +314,12 @@ module Fastlane
           end
         rescue Faraday::ResourceNotFound
           UI.crash!(ErrorMessage::INVALID_APP_ID)
+=======
+      # Returns the status and the id of the release of applicable
+      def self.upload_status(app_token, app_id)
+        response = connection.get("#{PATH}#{app_id}/upload_status/#{app_token}") do |request|
+          request.headers["Authorization"] = "Bearer " + auth_token
+>>>>>>> 66f2cd4... Fixing comments
         end
         return UploadStatusResponse.new(response.body)
       end
