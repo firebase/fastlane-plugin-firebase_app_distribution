@@ -16,8 +16,9 @@ module Fastlane
       FIREBASECMD_ACTION = "appdistribution:distribute".freeze
       BASE_URL = "https://firebaseappdistribution.googleapis.com"
       PATH = "/v1alpha/apps/"
+      TOKEN_PATH = "https://oauth2.googleapis.com/token"
       MAX_POLLING_RETRIES = 60
-      POLLING_INTERVAL_S = 2
+      POLLING_INTERVAL_SECONDS = 2
 
       extend Helper::FirebaseAppDistributionHelper
 
@@ -31,7 +32,7 @@ module Fastlane
         elsif platform == :ios
           archive_path = Actions.lane_context[SharedValues::XCODEBUILD_ARCHIVE]
           if archive_path
-            app_id = findout_ios_app_id_from_archive(archive_path)
+            app_id = get_ios_app_id_from_archive(archive_path)
           end
         end
 
@@ -54,7 +55,7 @@ module Fastlane
       def self.auth_token
         @auth_token ||= begin
           client = Signet::OAuth2::Client.new(
-            token_credential_uri: 'https://oauth2.googleapis.com/token',
+            token_credential_uri: TOKEN_PATH,
             client_id: FirebaseAppDistributionLoginAction::CLIENT_ID,
             client_secret: FirebaseAppDistributionLoginAction::CLIENT_SECRET,
             refresh_token: ENV["FIREBASE_TOKEN"]
@@ -252,7 +253,7 @@ module Fastlane
               UI.message("Uploaded APK/IPA Successfully!")
               break
             elsif status == "IN_PROGRESS"
-              sleep(POLLING_INTERVAL_S)
+              sleep(POLLING_INTERVAL_SECONDS)
             else
               UI.message("Uploading the APK/IPA.")
               upload_binary(app_id, binary_path)
