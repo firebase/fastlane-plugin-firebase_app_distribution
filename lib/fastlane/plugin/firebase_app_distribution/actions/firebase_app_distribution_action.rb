@@ -39,6 +39,11 @@ module Fastlane
         if app_id.nil?
           UI.crash!(ErrorMessage::MISSING_APP_ID)
         end
+<<<<<<< HEAD
+=======
+        # Should be fine since we will have an error message if it goes over the limit of tries and every other time that it does not succed should end in some error so there shouldn't be any invalid input at this stage
+        # Release notes may need to check before passing it in that it isnt nil.
+>>>>>>> bca0b30... Addressing first PR comments
         release_id = upload(app_id, binary_path)
         post_notes(app_id, release_id, params[:release_notes])
       ensure
@@ -213,17 +218,18 @@ module Fastlane
 
         true
       end
+
       def self.post_notes(app_id, release_id, release_notes)
-       # payload = {releaseNotes: {releaseNotes: release_notes}}
-       if(release_notes.nil? || release_notes.empty?)
-        UI.message("No Release notes passed in. Skipping this step")
-        return
-       end
-        connection.post("#{PATH}#{app_id}/releases/#{release_id}/notes", {releaseNotes: {releaseNotes: release_notes}}.to_json) do |request|
+        payload = { releaseNotes: { releaseNotes: release_notes } }
+        if release_notes.nil? || release_notes.empty?
+          UI.message("No Release notes passed in. Skipping this step")
+          return
+        end
+        connection.post("#{PATH}#{app_id}/releases/#{release_id}/notes", payload.to_json) do |request|
           request.headers["Authorization"] = "Bearer " + auth_token
         end
         UI.message("Release notes have been posted.")
-      end 
+      end
 
       def self.post_notes(app_id, release_id, release_notes)
         payload = { releaseNotes: { releaseNotes: release_notes } }
@@ -269,9 +275,13 @@ module Fastlane
         UI.crash!(ErrorMessage::APK_NOT_FOUND)
       end
 
+<<<<<<< HEAD
       # Uploads the binary
       #
       # Returns the id of the release. Only happens on a successful release, on a fail release a messsage notifies the user.
+=======
+      # When the binary is uploaded response body includes the release id and so that is stored for future upload methods.
+>>>>>>> bca0b30... Addressing first PR comments
       def self.upload(app_id, binary_path)
         upload_token = get_upload_token(app_id, binary_path)
         upload_status_response = get_upload_status(app_id, upload_token)
