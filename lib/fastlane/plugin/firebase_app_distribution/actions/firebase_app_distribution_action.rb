@@ -211,15 +211,11 @@ module Fastlane
       end
       
       def self.post_notes(app_id, release_id, release_notes)
-<<<<<<< HEAD
         payload = { releaseNotes: { releaseNotes: release_notes } }
         if release_notes.nil? || release_notes.empty?
-          UI.message("No release notes passed in. Skipping this step.")
+          UI.message("No Release notes passed in. Skipping this step")
           return
         end
-=======
-        payload = {releaseNotes: {releaseNotes: release_notes}}
->>>>>>> 2baf796... initial post notes
         connection.post("#{PATH}#{app_id}/releases/#{release_id}/notes", payload.to_json) do |request|
           request.headers["Authorization"] = "Bearer " + auth_token
         end
@@ -260,7 +256,7 @@ module Fastlane
 
       def self.upload(app_id, binary_path)
         upload_token = get_upload_token(app_id, binary_path)
-        status, release_id = upload_status(app_id, upload_token)
+        status, release_id = upload_status(upload_token, app_id)
         if status == "SUCCESS"
           UI.message("This APK/IPA has been uploaded before. Skipping upload step.")
         else
