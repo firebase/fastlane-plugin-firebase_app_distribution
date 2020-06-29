@@ -1,141 +1,131 @@
 describe Fastlane::Actions::FirebaseAppDistributionAction do
   let(:fake_file) { StringIO.new }
+  let(:fake_connection) { double("Connection") }
+  let(:fake_binary) { double("Binary") }
 
-  before do
-    allow(Tempfile).to receive(:new).and_return(fake_file)
-    allow(fake_file).to receive(:unlink)
-    allow(fake_file).to receive(:path).and_return("/tmp/string")
+  before(:each) do
+    allow(Fastlane::Actions::FirebaseAppDistributionAction).to receive(:connection).and_return(fake_connection)
+    allow(fake_binary).to receive(:read).and_return("Hello World")
+    allow(File).to receive(:open).and_return(fake_binary)
   end
 
-  describe '#run' do
-    it 'shells out to firebase' do
-      expect(Fastlane::Actions).to receive(:sh_control_output).with("/tmp/fake-firebase-cli appdistribution:distribute /tmp/FakeApp.ipa --app abc:123 --testers-file /tmp/testers.txt --release-notes-file /tmp/release_notes.txt --token fake-token --debug", { print_command: false, print_command_output: true })
-      params = {
-        app: "abc:123",
-        ipa_path: "/tmp/FakeApp.ipa",
-        firebase_cli_path: "/tmp/fake-firebase-cli",
-        testers_file: "/tmp/testers.txt",
-        release_notes_file: "/tmp/release_notes.txt",
-        firebase_cli_token: "fake-token",
-        debug: true
-      }
-      Fastlane::Actions::FirebaseAppDistributionAction.run(params)
-    end
-
-    it 'removes trailing newlines from firebase_cli_path' do
-      expect(Fastlane::Actions).to receive(:sh_control_output).with("/tmp/fake-firebase-cli appdistribution:distribute /tmp/FakeApp.ipa --app abc:123 --testers-file /tmp/testers.txt --release-notes-file /tmp/release_notes.txt --token fake-token --debug", { print_command: false, print_command_output: true })
-      params = {
-          app: "abc:123",
-          ipa_path: "/tmp/FakeApp.ipa",
-          firebase_cli_path: "/tmp/fake-firebase-cli\n",
-          testers_file: "/tmp/testers.txt",
-          release_notes_file: "/tmp/release_notes.txt",
-          firebase_cli_token: "fake-token",
-          debug: true
-      }
-      Fastlane::Actions::FirebaseAppDistributionAction.run(params)
-    end
-  end
-
-  describe "flag helpers" do
-    let(:action) { Fastlane::Actions::FirebaseAppDistributionAction }
-
-    describe "flag_value_if_supplied" do
-      it "returns flag and param value when it exists" do
-        params = {
-            firebase_cli_token: 'fake-token'
-        }
-        expect(action.flag_value_if_supplied('--token', :firebase_cli_token, params)).to eq("--token fake-token")
-      end
-
-      it "returns nil if param does not exist" do
-        params = {}
-        expect(action.flag_value_if_supplied('--token', :firebåse_cli_token, params)).to be_nil
-      end
-    end
-
-    describe "flag_if_supplied" do
-      it "returns flag and param value when it exists" do
-        params = {
-            debug: true
-        }
-        expect(action.flag_if_supplied('--debug', :debug, params)).to eq("--debug")
-      end
-
-      it "returns nil if param does not exist" do
-        params = {}
-        expect(action.flag_if_supplied('--debug', :debug, params)).to be_nil
-      end
-    end
-
-    describe "testers" do
-      it "wraps string parameters as temp files" do
-        params = {
-          testers: "someone@example.com"
-        }
-        expect(fake_file).to receive(:write).with("someone@example.com")
-        expect(action.testers_flag(params)).to eq("--testers-file /tmp/string")
-      end
-
-      it "will use a path if supplied" do
-        params = {
-          testers_file: "/tmp/testers_file"
-        }
-        expect(action.testers_flag(params)).to eq("--testers-file /tmp/testers_file")
-      end
-    end
-
-    describe "groups" do
-      it "wraps string parameters as temp files" do
-        params = {
-          groups: "somepeople"
-        }
-        expect(fake_file).to receive(:write).with("somepeople")
-        expect(action.groups_flag(params)).to eq("--groups-file /tmp/string")
-      end
-
-      it "will use a path if supplied" do
-        params = {
-          groups_file: "/tmp/groups_file"
-        }
-        expect(action.groups_flag(params)).to eq("--groups-file /tmp/groups_file")
-      end
-    end
-
-    describe "release_notes" do
-      it "wraps string parameters as temp files" do
-        params = {
-          release_notes: "cool version"
-        }
-        expect(fake_file).to receive(:write).with("cool version")
-        expect(action.release_notes_flag(params)).to eq("--release-notes-file /tmp/string")
-      end
-
-      it "will use a path if supplied" do
-        params = {
-          release_notes_file: "/tmp/release_notes.txt"
-        }
-        expect(action.release_notes_flag(params)).to eq("--release-notes-file /tmp/release_notes.txt")
-      end
-    end
-  end
-
-  describe "fastfiles" do
-    it "integrates with the firebase cli" do
-      expect(subject.class).to receive(:is_firebasecmd_supported?).and_return(true)
-      expect(File).to receive(:exist?).with("/tmp/fake-firebase-cli").and_return(true)
-      expect(Fastlane::Actions::FirebaseAppDistributionAction).to receive(:cleanup_tempfiles)
-
-      command = Fastlane::FastFile.new.parse(<<-CODE)
-        lane :test do
-          firebase_app_distribution(
-            app:  "1:1234567890:ios:0a1b2c3d4e5f67890",
-            firebase_cli_path: "/tmp/fake-firebase-cli"
+  describe '#get_upload_token' do
+    context 'when testing with valid parameters' do
+      it 'should make a GET call to the app endpoint and return the upload token' do
+        expect(fake_connection).to receive(:get)
+          .with("/v1alpha/apps/app_id")
+          .and_return(
+            double("Response", status: 200, body: {
+              projectNumber: "project_number",
+              appId: "app_id",
+              platform: "android",
+              bundleId: "bundle_id",
+              contactEmail: "Hello@world.com"
+            })
           )
-        end
-      CODE
+        upload_token = Fastlane::Actions::FirebaseAppDistributionAction.get_upload_token("app_id", "binary_path")
+        binary_hash = Digest::SHA256.hexdigest("Hello World")
+        expect(upload_token).to eq(CGI.escape("projects/project_number/apps/app_id/releases/-/binaries/#{binary_hash}"))
+      end
+    end
 
-      command.test
+    context 'when testing with invalid parameters' do
+      it 'should crash if the app has no contact email' do
+        expect(fake_connection).to receive(:get)
+          .with("/v1alpha/apps/app_id")
+          .and_return(
+            double("Response", status: 200, body: {
+              projectNumber: "project_number",
+              appId: "app_id",
+              platform: "android",
+              bundleId: "bundle_id",
+              contactEmail: ""
+            })
+          )
+        expect { Fastlane::Actions::FirebaseAppDistributionAction.get_upload_token("app_id", "binary_path") }
+          .to raise_error(ErrorMessage::GET_APP_NO_CONTACT_EMAIL_ERROR)
+      end
+
+      it 'should crash if given an invalid app_id' do
+        expect(fake_connection).to receive(:get)
+          .with("/v1alpha/apps/invalid_app_id")
+          .and_raise(Faraday::ResourceNotFound.new("404"))
+        expect { Fastlane::Actions::FirebaseAppDistributionAction.get_upload_token("invalid_app_id", "binary_path") }
+          .to raise_error(ErrorMessage::INVALID_APP_ID)
+      end
+
+      it 'should crash if given an invalid binary_path' do
+        expect(File).to receive(:open)
+          .with("invalid_binary_path")
+          .and_raise(Errno::ENOENT.new("file not found"))
+        expect { Fastlane::Actions::FirebaseAppDistributionAction.get_upload_token("app_id", "invalid_binary_path") }
+          .to raise_error(ErrorMessage::APK_NOT_FOUND)
+      end
+    end
+  end
+
+  describe '#upload_binary' do
+    context 'when testing with valid parameters' do
+      it 'should upload the binary successfully' do
+        expect(fake_connection).to receive(:post)
+          .with("/app-binary-uploads?app_id=app_id", "Hello World")
+          .and_return(
+            double("Response", status: 202, body: {
+              token: "projects/project_id/apps/app_id/releases/-/binaries/binary_hash"
+            })
+          )
+        Fastlane::Actions::FirebaseAppDistributionAction.upload_binary("app_id", "binary_path")
+      end
+    end
+
+    context 'when testing with invalid parameters' do
+      it 'should crash if given an invalid app_id' do
+        expect(fake_connection).to receive(:post)
+          .with("/app-binary-uploads?app_id=invalid_app_id", "Hello World")
+          .and_raise(Faraday::ResourceNotFound.new("404"))
+        expect { Fastlane::Actions::FirebaseAppDistributionAction.upload_binary("invalid_app_id", "binary_path") }
+          .to raise_error(ErrorMessage::INVALID_APP_ID)
+      end
+
+      it 'should crash if given an invalid binary_path' do
+        expect(File).to receive(:open)
+          .with("invalid_binary_path")
+          .and_raise(Errno::ENOENT.new("file not found"))
+        expect { Fastlane::Actions::FirebaseAppDistributionAction.upload_binary("app_id", "invalid_binary_path") }
+          .to raise_error(ErrorMessage::APK_NOT_FOUND)
+      end
+    end
+  end
+
+  describe '#upload' do
+    # Empty for now
+  end
+
+  describe '#upload_status' do
+    context 'when testing with valid parameters' do
+      it 'should return the proper status' do
+        expected_path = "/v1alpha/apps/app_id/upload_status/app_token"
+        expect(fake_connection).to receive(:get)
+          .with(expected_path)
+          .and_return(
+            double("Response", status: 200, body: {
+              status: "SUCCESS"
+            })
+          )
+        status = Fastlane::Actions::FirebaseAppDistributionAction.upload_status("app_id", "app_token")
+        expect(status).to eq("SUCCESS")
+      end
+    end
+
+    context 'when testing with invalid parameters' do
+      it 'should crash if given an invalid app_id' do
+        expected_path = "/v1alpha/apps/invalid_app_id/upload_status/app_token"
+        expect(fake_connection).to receive(:get)
+          .with(expected_path)
+          .and_raise(Faraday::ResourceNotFound.new("404"))
+        expect { Fastlane::Actions::FirebaseAppDistributionAction.upload_status("invalid_app_id", "app_token") }
+          .to raise_error(ErrorMessage::INVALID_APP_ID)
+      end
     end
   end
 end
