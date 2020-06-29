@@ -63,9 +63,9 @@ module Fastlane
       end
 
       def get_ios_app_id_from_archive(path)
-        appPath = parse_plist("#{path}/Info.plist")["ApplicationProperties"]["ApplicationPath"]
-        UI.shell_error!("can't extract application path from Info.plist at #{path}") if appPath.empty?
-        identifier = parse_plist("#{path}/Products/#{appPath}/GoogleService-Info.plist")["GOOGLE_APP_ID"]
+        app_path = parse_plist("#{path}/Info.plist")["ApplicationProperties"]["ApplicationPath"]
+        UI.shell_error!("can't extract application path from Info.plist at #{path}") if app_path.empty?
+        identifier = parse_plist("#{path}/Products/#{app_path}/GoogleService-Info.plist")["GOOGLE_APP_ID"]
         UI.shell_error!("can't extract GOOGLE_APP_ID") if identifier.empty?
         return identifier
       end
