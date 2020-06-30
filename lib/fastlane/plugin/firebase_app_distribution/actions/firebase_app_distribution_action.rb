@@ -39,7 +39,8 @@ module Fastlane
         if app_id.nil?
           UI.crash!(ErrorMessage::MISSING_APP_ID)
         end
-        upload(app_id, binary_path)
+        release_id = upload(app_id, binary_path)
+        post_notes(app_id, release_id, params[:release_notes])
       ensure
         cleanup_tempfiles
       end
@@ -208,6 +209,18 @@ module Fastlane
 
         true
       end
+      
+      def self.post_notes(app_id, release_id, release_notes)
+        payload = { releaseNotes: { releaseNotes: release_notes } }
+        if release_notes.nil? || release_notes.empty?
+          UI.message("No release notes passed in. Skipping this step.")
+          return
+        end
+        connection.post("#{PATH}#{app_id}/releases/#{release_id}/notes", payload.to_json) do |request|
+          request.headers["Authorization"] = "Bearer " + auth_token
+        end
+        UI.message("Release notes have been posted.")
+      end
 
       def self.get_upload_token(app_id, binary_path)
         begin
@@ -243,7 +256,7 @@ module Fastlane
 
       def self.upload(app_id, binary_path)
         upload_token = get_upload_token(app_id, binary_path)
-        status = upload_status(app_id, upload_token)
+        status, release_id = upload_status(app_id, upload_token)
         if status == "SUCCESS"
           UI.message("This APK/IPA has been uploaded before. Skipping upload step.")
         else
@@ -258,12 +271,13 @@ module Fastlane
               UI.message("Uploading the APK/IPA.")
               upload_binary(app_id, binary_path)
             end
-            status = upload_status(app_id, upload_token)
+            status, release_id = upload_status(app_id, upload_token)
           end
           if status != "SUCCESS"
             UI.message("It took longer than expected to process your APK/IPA, please try again")
           end
         end
+        release_id
       end
 
       def self.upload_status(app_id, app_token)
@@ -274,7 +288,7 @@ module Fastlane
         rescue Faraday::ResourceNotFound
           UI.crash!(ErrorMessage::INVALID_APP_ID)
         end
-        response.body[:status]
+        return response.body[:status], response.body[:release][:id]
       end
     end
   end
