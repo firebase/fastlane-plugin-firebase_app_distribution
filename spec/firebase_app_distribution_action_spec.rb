@@ -140,3 +140,4 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
     end
   end
 end
+
