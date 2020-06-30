@@ -56,7 +56,7 @@ module Fastlane
       def self.v1_apps_path(app_id)
         "/v1alpha/apps/#{app_id}"
       end
-
+      
       def self.auth_token
         @auth_token ||= begin
           client = Signet::OAuth2::Client.new(

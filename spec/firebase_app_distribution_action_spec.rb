@@ -64,6 +64,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
     end
   end
 
+
   describe '#upload_binary' do
     context 'when testing with valid parameters' do
       it 'should upload the binary successfully' do
@@ -77,6 +78,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
         Fastlane::Actions::FirebaseAppDistributionAction.upload_binary("app_id", "binary_path")
       end
     end
+  end
 
     context 'when testing with invalid parameters' do
       it 'should crash if given an invalid app_id' do
@@ -110,6 +112,10 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
         Fastlane::Actions::FirebaseAppDistributionAction.post_notes("app_id", "release_id", "release_notes")
       end
     end
+  end
+
+  describe '#upload' do
+    # Empty for now
   end
 
   describe '#upload_status' do
