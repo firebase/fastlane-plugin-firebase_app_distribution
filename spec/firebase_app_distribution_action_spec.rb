@@ -1,6 +1,5 @@
 describe Fastlane::Actions::FirebaseAppDistributionAction do
   let(:fake_file) { StringIO.new }
-<<<<<<< HEAD
   let(:fake_connection) { double("Connection") }
   let(:fake_binary) { double("Binary") }
 
@@ -102,6 +101,17 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
     # Empty for now
   end
 
+  describe '#post_notes' do
+    context 'when testing with valid parameters' do
+      it 'should post the notes successfully' do
+        expected_path = "/v1alpha/apps/app_id/releases/release_id/notes"
+        expect(fake_connection).to receive(:post)
+          .with(expected_path, "{\"releaseNotes\":{\"releaseNotes\":\"release_notes\"}}")
+        Fastlane::Actions::FirebaseAppDistributionAction.post_notes("app_id", "release_id", "release_notes")
+      end
+    end
+  end
+
   describe '#upload_status' do
     context 'when testing with valid parameters' do
       it 'should return the proper status' do
@@ -113,8 +123,8 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
               status: "SUCCESS"
             })
           )
-        status = Fastlane::Actions::FirebaseAppDistributionAction.upload_status("app_id", "app_token")
-        expect(status).to eq("SUCCESS")
+        status = Fastlane::Actions::FirebaseAppDistributionAction.get_upload_status("app_id", "app_token")
+        expect(status.success?).to eq(true)
       end
     end
 
@@ -124,7 +134,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
         expect(fake_connection).to receive(:get)
           .with(expected_path)
           .and_raise(Faraday::ResourceNotFound.new("404"))
-        expect { Fastlane::Actions::FirebaseAppDistributionAction.upload_status("invalid_app_id", "app_token") }
+        expect { Fastlane::Actions::FirebaseAppDistributionAction.get_upload_status("invalid_app_id", "app_token") }
           .to raise_error(ErrorMessage::INVALID_APP_ID)
       end
     end

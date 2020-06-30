@@ -4,6 +4,7 @@ require 'open3'
 require 'shellwords'
 require 'googleauth'
 require_relative './firebase_app_distribution_login'
+require_relative '../helper/upload_status_response'
 require_relative '../helper/firebase_app_distribution_helper'
 require_relative '../helper/firebase_app_distribution_error_message'
 
@@ -15,7 +16,6 @@ module Fastlane
       DEFAULT_FIREBASE_CLI_PATH = `which firebase`
       FIREBASECMD_ACTION = "appdistribution:distribute".freeze
       BASE_URL = "https://firebaseappdistribution.googleapis.com"
-      PATH = "/v1alpha/apps/"
       TOKEN_PATH = "https://oauth2.googleapis.com/token"
       MAX_POLLING_RETRIES = 60
       POLLING_INTERVAL_SECONDS = 2
@@ -51,6 +51,10 @@ module Fastlane
           conn.response(:raise_error) # raise_error middleware will run before the json middleware
           conn.adapter(Faraday.default_adapter)
         end
+      end
+
+      def self.v1_apps_path(app_id)
+        "/v1alpha/apps/#{app_id}"
       end
 
       def self.auth_token
@@ -209,14 +213,14 @@ module Fastlane
 
         true
       end
-      
+
       def self.post_notes(app_id, release_id, release_notes)
         payload = { releaseNotes: { releaseNotes: release_notes } }
         if release_notes.nil? || release_notes.empty?
-          UI.message("No Release notes passed in. Skipping this step")
+          UI.message("No release notes passed in. Skipping this step.")
           return
         end
-        connection.post("#{PATH}#{app_id}/releases/#{release_id}/notes", payload.to_json) do |request|
+        connection.post("#{v1_apps_path(app_id)}/releases/#{release_id}/notes", payload.to_json) do |request|
           request.headers["Authorization"] = "Bearer " + auth_token
         end
         UI.message("Release notes have been posted.")
@@ -230,7 +234,7 @@ module Fastlane
         end
 
         begin
-          response = connection.get("#{PATH}#{app_id}") do |request|
+          response = connection.get(v1_apps_path(app_id).to_s) do |request|
             request.headers["Authorization"] = "Bearer " + auth_token
           end
         rescue Faraday::ResourceNotFound
@@ -254,41 +258,47 @@ module Fastlane
         UI.crash!(ErrorMessage::APK_NOT_FOUND)
       end
 
+      # Uploads the binary
+      #
+      # Returns the id of the release. Only happens on a successful release, on a fail release a messsage notifies the user.
       def self.upload(app_id, binary_path)
         upload_token = get_upload_token(app_id, binary_path)
-        status, release_id = upload_status(upload_token, app_id)
-        if status == "SUCCESS"
+        upload_status_response = get_upload_status(app_id, upload_token)
+        if upload_status_response.success?
           UI.message("This APK/IPA has been uploaded before. Skipping upload step.")
         else
           UI.message("This APK has not been uploaded before.")
           MAX_POLLING_RETRIES.times do
-            if status == "SUCCESS"
+            if upload_status_response.success?
               UI.message("Uploaded APK/IPA Successfully!")
               break
-            elsif status == "IN_PROGRESS"
+            elsif upload_status_response.in_progress?
               sleep(POLLING_INTERVAL_SECONDS)
             else
               UI.message("Uploading the APK/IPA.")
               upload_binary(app_id, binary_path)
             end
-            status, release_id = upload_status(app_id, upload_token)
+            upload_status_response = get_upload_status(app_id, upload_token)
           end
-          if status != "SUCCESS"
+          unless upload_status_response.success?
             UI.message("It took longer than expected to process your APK/IPA, please try again")
           end
         end
-        release_id
+        upload_status_response.release_id
       end
 
-      def self.upload_status(app_id, app_token)
+      # Gets the upload status for the app release
+      #
+      # Returns the status of the release. On success the release id exists and is nil in all other cases.
+      def self.get_upload_status(app_id, app_token)
         begin
-          response = connection.get("#{PATH}#{app_id}/upload_status/#{app_token}") do |request|
+          response = connection.get("#{v1_apps_path(app_id)}/upload_status/#{app_token}") do |request|
             request.headers["Authorization"] = "Bearer " + auth_token
           end
         rescue Faraday::ResourceNotFound
           UI.crash!(ErrorMessage::INVALID_APP_ID)
         end
-        return response.body[:status], response.body[:release][:id]
+        return UploadStatusResponse.new(response.body)
       end
     end
   end
