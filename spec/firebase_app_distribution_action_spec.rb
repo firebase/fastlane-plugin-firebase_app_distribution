@@ -1,6 +1,5 @@
 describe Fastlane::Actions::FirebaseAppDistributionAction do
   let(:fake_file) { StringIO.new }
-  let(:fake_connection) { double("Connection") }
   let(:fake_binary) { double("Binary") }
   let(:stubs) { Faraday::Adapter::Test::Stubs.new }
   let(:conn) do
@@ -135,12 +134,12 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
     end
 
     it 'should not post if release notes are empty' do
-      expect(fake_connection).not_to(receive(:post))
+      expect(stubs).not_to(receive(:post))
       Fastlane::Actions::FirebaseAppDistributionAction.post_notes("app_id", "release_id", "")
     end
 
     it 'should not post if release notes are nil' do
-      expect(fake_connection).not_to(receive(:post))
+      expect(stubs).not_to(receive(:post))
       Fastlane::Actions::FirebaseAppDistributionAction.post_notes("app_id", "release_id", nil)
     end
   end
