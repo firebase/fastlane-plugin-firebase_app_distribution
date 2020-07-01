@@ -230,15 +230,15 @@ module Fastlane
         begin
           binary_hash = Digest::SHA256.hexdigest(File.open(binary_path).read)
         rescue Errno::ENOENT
-          UI.crash!(ErrorMessage::APK_NOT_FOUND + binary_path)
+          UI.crash!("#{ErrorMessage::APK_NOT_FOUND}: #{binary_path}")
         end
 
         begin
-          response = connection.get(v1_apps_path(app_id).to_s) do |request|
+          response = connection.get(v1_apps_path(app_id)) do |request|
             request.headers["Authorization"] = "Bearer " + auth_token
           end
         rescue Faraday::ResourceNotFound
-          UI.crash!(ErrorMessage::INVALID_APP_ID + app_id)
+          UI.crash!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
         end
 
         contact_email = response.body[:contactEmail]
@@ -253,9 +253,9 @@ module Fastlane
           request.headers["Authorization"] = "Bearer " + auth_token
         end
       rescue Faraday::ResourceNotFound
-        UI.crash!(ErrorMessage::INVALID_APP_ID + app_id)
+        UI.crash!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
       rescue Errno::ENOENT
-        UI.crash!(ErrorMessage::APK_NOT_FOUND + binary_path)
+        UI.crash!("#{ErrorMessage::APK_NOT_FOUND}: #{binary_path}")
       end
 
       # Uploads the binary
@@ -281,7 +281,7 @@ module Fastlane
             upload_status_response = get_upload_status(app_id, upload_token)
           end
           unless upload_status_response.success?
-            UI.message("It took longer than expected to process your APK/IPA, please try again.")
+            UI.crash!("It took longer than expected to process your APK/IPA, please try again.")
           end
         end
         upload_status_response.release_id
@@ -296,7 +296,7 @@ module Fastlane
             request.headers["Authorization"] = "Bearer " + auth_token
           end
         rescue Faraday::ResourceNotFound
-          UI.crash!(ErrorMessage::INVALID_APP_ID + app_id)
+          UI.crash!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
         end
         return UploadStatusResponse.new(response.body)
       end

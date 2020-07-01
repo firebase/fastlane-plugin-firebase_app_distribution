@@ -48,7 +48,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
         .with("/v1alpha/apps/invalid_app_id")
         .and_raise(Faraday::ResourceNotFound.new("404"))
       expect { Fastlane::Actions::FirebaseAppDistributionAction.get_upload_token("invalid_app_id", "binary_path") }
-        .to raise_error(ErrorMessage::INVALID_APP_ID + "invalid_app_id")
+        .to raise_error("#{ErrorMessage::INVALID_APP_ID}: invalid_app_id")
     end
 
     it 'should crash if given an invalid binary_path' do
@@ -56,7 +56,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
         .with("invalid_binary_path")
         .and_raise(Errno::ENOENT.new("file not found"))
       expect { Fastlane::Actions::FirebaseAppDistributionAction.get_upload_token("app_id", "invalid_binary_path") }
-        .to raise_error(ErrorMessage::APK_NOT_FOUND + "invalid_binary_path")
+        .to raise_error("#{ErrorMessage::APK_NOT_FOUND}: invalid_binary_path")
     end
   end
 
@@ -77,7 +77,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
         .with("/app-binary-uploads?app_id=invalid_app_id", "Hello World")
         .and_raise(Faraday::ResourceNotFound.new("404"))
       expect { Fastlane::Actions::FirebaseAppDistributionAction.upload_binary("invalid_app_id", "binary_path") }
-        .to raise_error(ErrorMessage::INVALID_APP_ID + "invalid_app_id")
+        .to raise_error("#{ErrorMessage::INVALID_APP_ID}: invalid_app_id")
     end
 
     it 'should crash if given an invalid binary_path' do
@@ -85,7 +85,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
         .with("invalid_binary_path")
         .and_raise(Errno::ENOENT.new("file not found"))
       expect { Fastlane::Actions::FirebaseAppDistributionAction.upload_binary("app_id", "invalid_binary_path") }
-        .to raise_error(ErrorMessage::APK_NOT_FOUND + "invalid_binary_path")
+        .to raise_error("#{ErrorMessage::APK_NOT_FOUND}: invalid_binary_path")
     end
   end
 
@@ -99,6 +99,16 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
       expect(fake_connection).to receive(:post)
         .with(expected_path, "{\"releaseNotes\":{\"releaseNotes\":\"release_notes\"}}")
       Fastlane::Actions::FirebaseAppDistributionAction.post_notes("app_id", "release_id", "release_notes")
+    end
+
+    it 'should not post if release notes are empty' do
+      expect(fake_connection).not_to(receive(:post))
+      Fastlane::Actions::FirebaseAppDistributionAction.post_notes("app_id", "release_id", "")
+    end
+
+    it 'should not post if release notes are nil' do
+      expect(fake_connection).not_to(receive(:post))
+      Fastlane::Actions::FirebaseAppDistributionAction.post_notes("app_id", "release_id", nil)
     end
   end
 
@@ -126,7 +136,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
         .with(expected_path)
         .and_raise(Faraday::ResourceNotFound.new("404"))
       expect { Fastlane::Actions::FirebaseAppDistributionAction.get_upload_status("invalid_app_id", "app_token") }
-        .to raise_error(ErrorMessage::INVALID_APP_ID + "invalid_app_id")
+        .to raise_error("#{ErrorMessage::INVALID_APP_ID}: invalid_app_id")
     end
   end
 end
