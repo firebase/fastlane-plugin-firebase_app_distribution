@@ -2,51 +2,71 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
   let(:fake_file) { StringIO.new }
   let(:fake_connection) { double("Connection") }
   let(:fake_binary) { double("Binary") }
+  let(:stubs) { Faraday::Adapter::Test::Stubs.new }
+  let(:conn) do
+    Faraday.new(url: "https://firebaseappdistribution.googleapis.com") do |b|
+      b.response(:json, parser_options: { symbolize_names: true })
+      b.response(:raise_error)
+      b.adapter(:test, stubs)
+    end
+  end
 
   before(:each) do
-    allow(Fastlane::Actions::FirebaseAppDistributionAction).to receive(:connection).and_return(fake_connection)
+    allow(Fastlane::Actions::FirebaseAppDistributionAction).to receive(:connection).and_return(conn)
     allow(fake_binary).to receive(:read).and_return("Hello World")
     allow(File).to receive(:open).and_return(fake_binary)
   end
 
+  after(:each) do
+    stubs.verify_stubbed_calls
+    Faraday.default_connection = nil
+  end
+
   describe '#get_upload_token' do
     it 'should make a GET call to the app endpoint and return the upload token' do
-      expect(fake_connection).to receive(:get)
-        .with("/v1alpha/apps/app_id")
-        .and_return(
-          double("Response", status: 200, body: {
+      stubs.get("/v1alpha/apps/app_id") do |env|
+        expect(env.url.path).to eq("/v1alpha/apps/app_id")
+        [
+          200,
+          {},
+          {
             projectNumber: "project_number",
             appId: "app_id",
-            platform: "android",
-            bundleId: "bundle_id",
             contactEmail: "Hello@world.com"
-          })
-        )
+          }
+        ]
+      end
       upload_token = Fastlane::Actions::FirebaseAppDistributionAction.get_upload_token("app_id", "binary_path")
       binary_hash = Digest::SHA256.hexdigest("Hello World")
       expect(upload_token).to eq(CGI.escape("projects/project_number/apps/app_id/releases/-/binaries/#{binary_hash}"))
     end
 
     it 'should crash if the app has no contact email' do
-      expect(fake_connection).to receive(:get)
-        .with("/v1alpha/apps/app_id")
-        .and_return(
-          double("Response", status: 200, body: {
+      stubs.get("/v1alpha/apps/app_id") do |env|
+        expect(env.url.path).to eq("/v1alpha/apps/app_id")
+        [
+          200,
+          {},
+          {
             projectNumber: "project_number",
             appId: "app_id",
-            platform: "android",
-            bundleId: "bundle_id",
             contactEmail: ""
-          })
-        )
+          }
+        ]
+      end
       expect { Fastlane::Actions::FirebaseAppDistributionAction.get_upload_token("app_id", "binary_path") }
         .to raise_error(ErrorMessage::GET_APP_NO_CONTACT_EMAIL_ERROR)
     end
 
     it 'should crash if given an invalid app_id' do
-      expect(fake_connection).to receive(:get)
-        .with("/v1alpha/apps/invalid_app_id")
-        .and_raise(Faraday::ResourceNotFound.new("404"))
+      stubs.get("/v1alpha/apps/invalid_app_id") do |env|
+        expect(env.url.path).to eq("/v1alpha/apps/invalid_app_id")
+        [
+          404,
+          {},
+          {}
+        ]
+      end
       expect { Fastlane::Actions::FirebaseAppDistributionAction.get_upload_token("invalid_app_id", "binary_path") }
         .to raise_error("#{ErrorMessage::INVALID_APP_ID}: invalid_app_id")
     end
@@ -62,20 +82,28 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
 
   describe '#upload_binary' do
     it 'should upload the binary successfully' do
-      expect(fake_connection).to receive(:post)
-        .with("/app-binary-uploads?app_id=app_id", "Hello World")
-        .and_return(
-          double("Response", status: 202, body: {
+      stubs.post("/app-binary-uploads?app_id=app_id", "Hello World") do |env|
+        expect(env.url.path).to eq("/app-binary-uploads")
+        [
+          202,
+          {},
+          {
             token: "projects/project_id/apps/app_id/releases/-/binaries/binary_hash"
-          })
-        )
+          }
+        ]
+      end
       Fastlane::Actions::FirebaseAppDistributionAction.upload_binary("app_id", "binary_path")
     end
 
     it 'should crash if given an invalid app_id' do
-      expect(fake_connection).to receive(:post)
-        .with("/app-binary-uploads?app_id=invalid_app_id", "Hello World")
-        .and_raise(Faraday::ResourceNotFound.new("404"))
+      stubs.post("/app-binary-uploads?app_id=invalid_app_id", "Hello World") do |env|
+        expect(env.url.path).to eq("/app-binary-uploads")
+        [
+          404,
+          {},
+          {}
+        ]
+      end
       expect { Fastlane::Actions::FirebaseAppDistributionAction.upload_binary("invalid_app_id", "binary_path") }
         .to raise_error("#{ErrorMessage::INVALID_APP_ID}: invalid_app_id")
     end
@@ -95,9 +123,14 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
 
   describe '#post_notes' do
     it 'should post the notes successfully' do
-      expected_path = "/v1alpha/apps/app_id/releases/release_id/notes"
-      expect(fake_connection).to receive(:post)
-        .with(expected_path, "{\"releaseNotes\":{\"releaseNotes\":\"release_notes\"}}")
+      stubs.post("/v1alpha/apps/app_id/releases/release_id/notes", "{\"releaseNotes\":{\"releaseNotes\":\"release_notes\"}}") do |env|
+        expect(env.url.path).to eq("/v1alpha/apps/app_id/releases/release_id/notes")
+        [
+          200,
+          {},
+          {}
+        ]
+      end
       Fastlane::Actions::FirebaseAppDistributionAction.post_notes("app_id", "release_id", "release_notes")
     end
 
@@ -118,23 +151,27 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
 
   describe '#upload_status' do
     it 'should return the proper status' do
-      expected_path = "/v1alpha/apps/app_id/upload_status/app_token"
-      expect(fake_connection).to receive(:get)
-        .with(expected_path)
-        .and_return(
-          double("Response", status: 200, body: {
-            status: "SUCCESS"
-          })
-        )
+      stubs.get("/v1alpha/apps/app_id/upload_status/app_token") do |env|
+        expect(env.url.path).to eq("/v1alpha/apps/app_id/upload_status/app_token")
+        [
+          200,
+          {},
+          { status: "SUCCESS" }
+        ]
+      end
       status = Fastlane::Actions::FirebaseAppDistributionAction.get_upload_status("app_id", "app_token")
       expect(status.success?).to eq(true)
     end
 
     it 'should crash if given an invalid app_id' do
-      expected_path = "/v1alpha/apps/invalid_app_id/upload_status/app_token"
-      expect(fake_connection).to receive(:get)
-        .with(expected_path)
-        .and_raise(Faraday::ResourceNotFound.new("404"))
+      stubs.get("/v1alpha/apps/invalid_app_id/upload_status/app_token") do |env|
+        expect(env.url.path).to eq("/v1alpha/apps/invalid_app_id/upload_status/app_token")
+        [
+          404,
+          {},
+          {}
+        ]
+      end
       expect { Fastlane::Actions::FirebaseAppDistributionAction.get_upload_status("invalid_app_id", "app_token") }
         .to raise_error("#{ErrorMessage::INVALID_APP_ID}: invalid_app_id")
     end

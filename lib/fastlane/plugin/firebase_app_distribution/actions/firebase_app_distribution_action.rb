@@ -23,7 +23,6 @@ module Fastlane
       extend Helper::FirebaseAppDistributionHelper
 
       def self.run(params)
-
         params.values # to validate all inputs before looking for the ipa/apk
         platform = Actions.lane_context[Actions::SharedValues::PLATFORM_NAME]
         binary_path = params[:ipa_path] || params[:apk_path]
@@ -43,7 +42,7 @@ module Fastlane
         release_id = upload(app_id, binary_path)
         if release_id.nil?
           return
-        end 
+        end
         post_notes(app_id, release_id, params[:release_notes])
       ensure
         cleanup_tempfiles
