@@ -240,10 +240,9 @@ module Fastlane
         rescue Faraday::ResourceNotFound
           UI.crash!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
         end
-
         contact_email = response.body[:contactEmail]
         if contact_email.nil? || contact_email.strip.empty?
-          UI.crash!("#{ErrorMessage::GET_APP_NO_CONTACT_EMAIL_ERROR}: \"#{contact_email}\"")
+          UI.crash!(ErrorMessage::GET_APP_NO_CONTACT_EMAIL_ERROR)
         end
         return CGI.escape("projects/#{response.body[:projectNumber]}/apps/#{response.body[:appId]}/releases/-/binaries/#{binary_hash}")
       end
