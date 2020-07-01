@@ -13,6 +13,6 @@ module ErrorMessage
   REFRESH_TOKEN_ERROR = "Could not generate credentials from the refresh token specified"
   GET_APP_ERROR = "App Distribution failed to fetch app information"
   APP_NOT_ONBOARDED_ERROR = "App Distribution not onboarded"
-  GET_APP_NO_CONTACT_EMAIL_ERROR = "App Distribution could not find a contact email associated with this app"
-  INVALID_APP_ID = "App Distribution could not find your app. Make sure to onboard your app by pressing the \"Get started\" button on the App Distribution page in the Firebase console: https://console.firebase.google.com/project/_/appdistribution"
+  GET_APP_NO_CONTACT_EMAIL_ERROR = "App Distribution could not find a contact email associated with this app. Contact Email: "
+  INVALID_APP_ID = "App Distribution could not find your app. Make sure to onboard your app by pressing the \"Get started\" button on the App Distribution page in the Firebase console: https://console.firebase.google.com/project/_/appdistribution. APP ID: "
 end
