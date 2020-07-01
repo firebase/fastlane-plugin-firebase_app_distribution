@@ -260,7 +260,7 @@ module Fastlane
 
       # Uploads the binary
       #
-      # Returns the id of the release. Only happens on a successful release, on a fail release a messsage notifies the user.
+      # Returns the id of the release. Only happens on a successful release, on a fail it crashes.
       def self.upload(app_id, binary_path)
         upload_token = get_upload_token(app_id, binary_path)
         upload_status_response = get_upload_status(app_id, upload_token)
