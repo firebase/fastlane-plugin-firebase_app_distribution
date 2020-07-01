@@ -40,7 +40,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
           })
         )
       expect { Fastlane::Actions::FirebaseAppDistributionAction.get_upload_token("app_id", "binary_path") }
-        .to raise_error(ErrorMessage::GET_APP_NO_CONTACT_EMAIL_ERROR + "\"\"")
+        .to raise_error("#{ErrorMessage::GET_APP_NO_CONTACT_EMAIL_ERROR}: \"\"")
     end
 
     it 'should crash if given an invalid app_id' do
