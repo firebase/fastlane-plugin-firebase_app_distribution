@@ -23,6 +23,7 @@ module Fastlane
       extend Helper::FirebaseAppDistributionHelper
 
       def self.run(params)
+
         params.values # to validate all inputs before looking for the ipa/apk
         platform = Actions.lane_context[Actions::SharedValues::PLATFORM_NAME]
         binary_path = params[:ipa_path] || params[:apk_path]
@@ -40,6 +41,9 @@ module Fastlane
           UI.crash!(ErrorMessage::MISSING_APP_ID)
         end
         release_id = upload(app_id, binary_path)
+        if release_id.nil?
+          return
+        end 
         post_notes(app_id, release_id, params[:release_notes])
       ensure
         cleanup_tempfiles
@@ -217,13 +221,13 @@ module Fastlane
       def self.post_notes(app_id, release_id, release_notes)
         payload = { releaseNotes: { releaseNotes: release_notes } }
         if release_notes.nil? || release_notes.empty?
-          UI.message("No release notes passed in. Skipping this step.")
+          UI.success("No release notes passed in. Skipping this step.")
           return
         end
         connection.post("#{v1_apps_path(app_id)}/releases/#{release_id}/notes", payload.to_json) do |request|
           request.headers["Authorization"] = "Bearer " + auth_token
         end
-        UI.message("Release notes have been posted.")
+        UI.success("Release notes have been posted.")
       end
 
       def self.get_upload_token(app_id, binary_path)
@@ -264,12 +268,12 @@ module Fastlane
         upload_token = get_upload_token(app_id, binary_path)
         upload_status_response = get_upload_status(app_id, upload_token)
         if upload_status_response.success?
-          UI.message("This APK/IPA has been uploaded before. Skipping upload step.")
+          UI.success("This APK/IPA has been uploaded before. Skipping upload step.")
         else
           UI.message("This APK has not been uploaded before.")
           MAX_POLLING_RETRIES.times do
             if upload_status_response.success?
-              UI.message("Uploaded APK/IPA Successfully!")
+              UI.success("Uploaded APK/IPA Successfully!")
               break
             elsif upload_status_response.in_progress?
               sleep(POLLING_INTERVAL_SECONDS)
@@ -280,7 +284,8 @@ module Fastlane
             upload_status_response = get_upload_status(app_id, upload_token)
           end
           unless upload_status_response.success?
-            UI.crash!("It took longer than expected to process your APK/IPA, please try again.")
+            UI.error("It took longer than expected to process your APK/IPA, please try again.")
+            return nil
           end
         end
         upload_status_response.release_id
@@ -288,7 +293,7 @@ module Fastlane
 
       # Gets the upload status for the app release
       #
-      # Returns the status of the release. On success the release id exists and is nil in all other cases.
+      # Returns the status of the release.
       def self.get_upload_status(app_id, app_token)
         begin
           response = connection.get("#{v1_apps_path(app_id)}/upload_status/#{app_token}") do |request|
