@@ -1,6 +1,7 @@
 describe Fastlane::Actions::FirebaseAppDistributionAction do
   let(:fake_file) { StringIO.new }
   let(:fake_binary) { double("Binary") }
+  let(:fake_auth_client) { double("auth_client") }
   let(:stubs) { Faraday::Adapter::Test::Stubs.new }
   let(:conn) do
     Faraday.new(url: "https://firebaseappdistribution.googleapis.com") do |b|
@@ -11,9 +12,14 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
   end
 
   before(:each) do
-    allow(Fastlane::Actions::FirebaseAppDistributionAction).to receive(:connection).and_return(conn)
+    allow(Signet::OAuth2::Client).to receive(:new).and_return(fake_auth_client)
+    allow(fake_auth_client).to receive(:fetch_access_token!)
+    allow(fake_auth_client).to receive(:access_token).and_return("fake_auth_token")
+
     allow(fake_binary).to receive(:read).and_return("Hello World")
     allow(File).to receive(:open).and_return(fake_binary)
+
+    allow(Fastlane::Actions::FirebaseAppDistributionAction).to receive(:connection).and_return(conn)
   end
 
   after(:each) do
