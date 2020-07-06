@@ -150,10 +150,6 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
     end
   end
 
-  describe '#upload' do
-    # Empty for now
-  end
-
   describe '#upload_status' do
     it 'should return the proper status' do
       stubs.get("/v1alpha/apps/app_id/upload_status/app_token") do |env|
