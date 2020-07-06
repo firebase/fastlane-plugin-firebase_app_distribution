@@ -223,8 +223,12 @@ module Fastlane
           UI.success("No release notes passed in. Skipping this step.")
           return
         end
-        connection.post("#{v1_apps_path(app_id)}/releases/#{release_id}/notes", payload.to_json) do |request|
-          request.headers["Authorization"] = "Bearer " + auth_token
+        begin
+          connection.post("#{v1_apps_path(app_id)}/releases/#{release_id}/notes", payload.to_json) do |request|
+            request.headers["Authorization"] = "Bearer " + auth_token
+          end
+        rescue Faraday::ResourceNotFound
+          UI.crash!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
         end
         UI.success("Release notes have been posted.")
       end

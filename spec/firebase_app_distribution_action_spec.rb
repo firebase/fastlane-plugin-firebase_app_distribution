@@ -148,6 +148,19 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
       expect(stubs).not_to(receive(:post))
       Fastlane::Actions::FirebaseAppDistributionAction.post_notes("app_id", "release_id", nil)
     end
+
+    it 'should crash if given an invalid app_id' do
+      stubs.post("/v1alpha/apps/invalid_app_id/releases/release_id/notes", "{\"releaseNotes\":{\"releaseNotes\":\"release_notes\"}}") do |env|
+        expect(env.url.path).to eq("/v1alpha/apps/invalid_app_id/releases/release_id/notes")
+        [
+          404,
+          {},
+          {}
+        ]
+      end
+      expect { Fastlane::Actions::FirebaseAppDistributionAction.post_notes("invalid_app_id", "release_id", "release_notes") }
+        .to raise_error("#{ErrorMessage::INVALID_APP_ID}: invalid_app_id")
+    end
   end
 
   describe '#upload_status' do
