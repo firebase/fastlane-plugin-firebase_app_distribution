@@ -220,7 +220,7 @@ module Fastlane
       def self.post_notes(app_id, release_id, release_notes)
         payload = { releaseNotes: { releaseNotes: release_notes } }
         if release_notes.nil? || release_notes.empty?
-          UI.success("No release notes passed in. Skipping this step.")
+          UI.message("No release notes passed in. Skipping this step.")
           return
         end
         begin
@@ -266,7 +266,8 @@ module Fastlane
 
       # Uploads the binary
       #
-      # Returns the id of the release. Only happens on a successful release, on a fail it crashes.
+      # Returns the release_id on a successful release.
+      # Returns nil if unable to upload.
       def self.upload(app_id, binary_path)
         upload_token = get_upload_token(app_id, binary_path)
         upload_status_response = get_upload_status(app_id, upload_token)
@@ -294,9 +295,7 @@ module Fastlane
         upload_status_response.release_id
       end
 
-      # Gets the upload status for the app release
-      #
-      # Returns the status of the release.
+      # Gets the upload status for the app release.
       def self.get_upload_status(app_id, app_token)
         begin
           response = connection.get("#{v1_apps_path(app_id)}/upload_status/#{app_token}") do |request|

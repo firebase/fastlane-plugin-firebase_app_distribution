@@ -140,12 +140,12 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
     end
 
     it 'should not post if release notes are empty' do
-      expect(stubs).not_to(receive(:post))
+      expect(conn).not_to(receive(:post))
       Fastlane::Actions::FirebaseAppDistributionAction.post_notes("app_id", "release_id", "")
     end
 
     it 'should not post if release notes are nil' do
-      expect(stubs).not_to(receive(:post))
+      expect(conn).not_to(receive(:post))
       Fastlane::Actions::FirebaseAppDistributionAction.post_notes("app_id", "release_id", nil)
     end
 
