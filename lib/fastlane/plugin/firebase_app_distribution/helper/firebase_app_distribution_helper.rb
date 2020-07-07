@@ -6,10 +6,8 @@ module Fastlane
 
   module Helper
     module FirebaseAppDistributionHelper
-      # Should we throw an exception if path is empty or not passed in? Check gradle plugin.
       def get_value_from_value_or_file(value, path)
         if value.nil? || value.empty? && !path.nil? || !path.empty?
-          UI.message(!path.empty?)
           if File.exist?(path)
             return File.open(path).read
           end
