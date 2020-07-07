@@ -215,6 +215,7 @@ module Fastlane
 
         true
       end
+
       def self.post_notes(app_id, release_id, release_notes)
         payload = { releaseNotes: { releaseNotes: release_notes } }
         if release_notes.nil? || release_notes.empty?
