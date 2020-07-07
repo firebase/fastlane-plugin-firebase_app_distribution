@@ -44,6 +44,7 @@ module Fastlane
           return
         end
         post_notes(app_id, release_id, params[:release_notes])
+        enable_access(app_id, release_id, params[:testers])
       ensure
         cleanup_tempfiles
       end
@@ -215,6 +216,16 @@ module Fastlane
         end
 
         true
+      end
+       def self.enable_access(app_id, release_id, emails)
+        #iterate through the string here and put it in the payload.
+        #payload = {emails: email}
+        #emails = email.gsub!(/\s+/, '').split(",")
+       payload = {emails: emails.gsub!(/\s+/, '').split(",")}
+        connection.post("#{PATH}#{app_id}/releases/#{release_id}/enable_access", payload.to_json) do |request|
+          request.headers["Authorization"] = "Bearer " + auth_token
+        end
+        UI.message("Successfully sent testers apk/ipa.")
       end
 
       def self.post_notes(app_id, release_id, release_notes)
