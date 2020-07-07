@@ -4,6 +4,7 @@ require 'open3'
 require 'shellwords'
 require 'googleauth'
 require_relative './firebase_app_distribution_login'
+require_relative '../helper/upload_status_response'
 require_relative '../helper/firebase_app_distribution_helper'
 require_relative '../helper/firebase_app_distribution_error_message'
 
@@ -15,8 +16,7 @@ module Fastlane
       DEFAULT_FIREBASE_CLI_PATH = `which firebase`
       FIREBASECMD_ACTION = "appdistribution:distribute".freeze
       BASE_URL = "https://firebaseappdistribution.googleapis.com"
-      PATH = "/v1alpha/apps/"
-      TOKEN_PATH = "https://oauth2.googleapis.com/token"
+      TOKEN_CREDENTIAL_URI = "https://oauth2.googleapis.com/token"
       MAX_POLLING_RETRIES = 60
       POLLING_INTERVAL_SECONDS = 2
 
@@ -39,7 +39,11 @@ module Fastlane
         if app_id.nil?
           UI.crash!(ErrorMessage::MISSING_APP_ID)
         end
-        upload(app_id, binary_path)
+        release_id = upload(app_id, binary_path)
+        if release_id.nil?
+          return
+        end
+        post_notes(app_id, release_id, params[:release_notes])
       ensure
         cleanup_tempfiles
       end
@@ -52,10 +56,14 @@ module Fastlane
         end
       end
 
+      def self.v1_apps_path(app_id)
+        "/v1alpha/apps/#{app_id}"
+      end
+
       def self.auth_token
         @auth_token ||= begin
           client = Signet::OAuth2::Client.new(
-            token_credential_uri: TOKEN_PATH,
+            token_credential_uri: TOKEN_CREDENTIAL_URI,
             client_id: FirebaseAppDistributionLoginAction::CLIENT_ID,
             client_secret: FirebaseAppDistributionLoginAction::CLIENT_SECRET,
             refresh_token: ENV["FIREBASE_TOKEN"]
@@ -209,21 +217,36 @@ module Fastlane
         true
       end
 
+      def self.post_notes(app_id, release_id, release_notes)
+        payload = { releaseNotes: { releaseNotes: release_notes } }
+        if release_notes.nil? || release_notes.empty?
+          UI.message("No release notes passed in. Skipping this step.")
+          return
+        end
+        begin
+          connection.post("#{v1_apps_path(app_id)}/releases/#{release_id}/notes", payload.to_json) do |request|
+            request.headers["Authorization"] = "Bearer " + auth_token
+          end
+        rescue Faraday::ResourceNotFound
+          UI.crash!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
+        end
+        UI.success("Release notes have been posted.")
+      end
+
       def self.get_upload_token(app_id, binary_path)
         begin
           binary_hash = Digest::SHA256.hexdigest(File.open(binary_path).read)
         rescue Errno::ENOENT
-          UI.crash!(ErrorMessage::APK_NOT_FOUND)
+          UI.crash!("#{ErrorMessage::APK_NOT_FOUND}: #{binary_path}")
         end
 
         begin
-          response = connection.get("#{PATH}#{app_id}") do |request|
+          response = connection.get(v1_apps_path(app_id)) do |request|
             request.headers["Authorization"] = "Bearer " + auth_token
           end
         rescue Faraday::ResourceNotFound
-          UI.crash!(ErrorMessage::INVALID_APP_ID)
+          UI.crash!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
         end
-
         contact_email = response.body[:contactEmail]
         if contact_email.nil? || contact_email.strip.empty?
           UI.crash!(ErrorMessage::GET_APP_NO_CONTACT_EMAIL_ERROR)
@@ -236,45 +259,52 @@ module Fastlane
           request.headers["Authorization"] = "Bearer " + auth_token
         end
       rescue Faraday::ResourceNotFound
-        UI.crash!(ErrorMessage::INVALID_APP_ID)
+        UI.crash!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
       rescue Errno::ENOENT
-        UI.crash!(ErrorMessage::APK_NOT_FOUND)
+        UI.crash!("#{ErrorMessage::APK_NOT_FOUND}: #{binary_path}")
       end
 
+      # Uploads the binary
+      #
+      # Returns the release_id on a successful release.
+      # Returns nil if unable to upload.
       def self.upload(app_id, binary_path)
         upload_token = get_upload_token(app_id, binary_path)
-        status = upload_status(app_id, upload_token)
-        if status == "SUCCESS"
-          UI.message("This APK/IPA has been uploaded before. Skipping upload step.")
+        upload_status_response = get_upload_status(app_id, upload_token)
+        if upload_status_response.success?
+          UI.success("This APK/IPA has been uploaded before. Skipping upload step.")
         else
           UI.message("This APK has not been uploaded before.")
           MAX_POLLING_RETRIES.times do
-            if status == "SUCCESS"
-              UI.message("Uploaded APK/IPA Successfully!")
+            if upload_status_response.success?
+              UI.success("Uploaded APK/IPA Successfully!")
               break
-            elsif status == "IN_PROGRESS"
+            elsif upload_status_response.in_progress?
               sleep(POLLING_INTERVAL_SECONDS)
             else
               UI.message("Uploading the APK/IPA.")
               upload_binary(app_id, binary_path)
             end
-            status = upload_status(app_id, upload_token)
+            upload_status_response = get_upload_status(app_id, upload_token)
           end
-          if status != "SUCCESS"
-            UI.message("It took longer than expected to process your APK/IPA, please try again")
+          unless upload_status_response.success?
+            UI.error("It took longer than expected to process your APK/IPA, please try again.")
+            return nil
           end
         end
+        upload_status_response.release_id
       end
 
-      def self.upload_status(app_id, app_token)
+      # Gets the upload status for the app release.
+      def self.get_upload_status(app_id, app_token)
         begin
-          response = connection.get("#{PATH}#{app_id}/upload_status/#{app_token}") do |request|
+          response = connection.get("#{v1_apps_path(app_id)}/upload_status/#{app_token}") do |request|
             request.headers["Authorization"] = "Bearer " + auth_token
           end
         rescue Faraday::ResourceNotFound
-          UI.crash!(ErrorMessage::INVALID_APP_ID)
+          UI.crash!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
         end
-        response.body[:status]
+        return UploadStatusResponse.new(response.body)
       end
     end
   end
