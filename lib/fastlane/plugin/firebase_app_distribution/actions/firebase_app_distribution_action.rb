@@ -43,9 +43,8 @@ module Fastlane
         if release_id.nil?
           return
         end
-        post_notes(app_id, release_id, params[:release_notes])
-      ensure
-        cleanup_tempfiles
+        release_notes = get_value_from_value_or_file(params[:release_notes], params[:release_notes_file])
+        post_notes(app_id, release_id, release_notes)
       end
 
       def self.connection
