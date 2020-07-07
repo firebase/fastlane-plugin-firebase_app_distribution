@@ -7,11 +7,12 @@ module Fastlane
   module Helper
     module FirebaseAppDistributionHelper
       def get_value_from_value_or_file(value, path)
-        if value.nil? || value.empty? && !path.nil? || !path.empty?
-          if File.exist?(path)
+        if (value.nil? || value.empty?) && (!path.nil? || !path.empty?)
+          begin
             return File.open(path).read
+          rescue
+            UI.crash!("#{ErrorMessage::INVALID_PATH}: #{path}")
           end
-          UI.crash!("#{ErrorMessage::APK_NOT_FOUND}: #{path}")
         end
         value
       end
