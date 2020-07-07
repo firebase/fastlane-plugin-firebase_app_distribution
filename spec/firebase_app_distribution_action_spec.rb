@@ -30,7 +30,6 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
   describe '#get_upload_token' do
     it 'should make a GET call to the app endpoint and return the upload token' do
       stubs.get("/v1alpha/apps/app_id") do |env|
-        expect(env.url.path).to eq("/v1alpha/apps/app_id")
         [
           200,
           {},
@@ -48,7 +47,6 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
 
     it 'should crash if the app has no contact email' do
       stubs.get("/v1alpha/apps/app_id") do |env|
-        expect(env.url.path).to eq("/v1alpha/apps/app_id")
         [
           200,
           {},
@@ -65,7 +63,6 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
 
     it 'should crash if given an invalid app_id' do
       stubs.get("/v1alpha/apps/invalid_app_id") do |env|
-        expect(env.url.path).to eq("/v1alpha/apps/invalid_app_id")
         [
           404,
           {},
@@ -88,7 +85,6 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
   describe '#upload_binary' do
     it 'should upload the binary successfully' do
       stubs.post("/app-binary-uploads?app_id=app_id", "Hello World") do |env|
-        expect(env.url.path).to eq("/app-binary-uploads")
         [
           202,
           {},
@@ -102,7 +98,6 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
 
     it 'should crash if given an invalid app_id' do
       stubs.post("/app-binary-uploads?app_id=invalid_app_id", "Hello World") do |env|
-        expect(env.url.path).to eq("/app-binary-uploads")
         [
           404,
           {},
@@ -129,7 +124,6 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
   describe '#post_notes' do
     it 'should post the notes successfully' do
       stubs.post("/v1alpha/apps/app_id/releases/release_id/notes", "{\"releaseNotes\":{\"releaseNotes\":\"release_notes\"}}") do |env|
-        expect(env.url.path).to eq("/v1alpha/apps/app_id/releases/release_id/notes")
         [
           200,
           {},
@@ -151,7 +145,6 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
 
     it 'should crash if given an invalid app_id' do
       stubs.post("/v1alpha/apps/invalid_app_id/releases/release_id/notes", "{\"releaseNotes\":{\"releaseNotes\":\"release_notes\"}}") do |env|
-        expect(env.url.path).to eq("/v1alpha/apps/invalid_app_id/releases/release_id/notes")
         [
           404,
           {},
@@ -166,7 +159,6 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
   describe '#upload_status' do
     it 'should return the proper status' do
       stubs.get("/v1alpha/apps/app_id/upload_status/app_token") do |env|
-        expect(env.url.path).to eq("/v1alpha/apps/app_id/upload_status/app_token")
         [
           200,
           {},
@@ -179,7 +171,6 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
 
     it 'should crash if given an invalid app_id' do
       stubs.get("/v1alpha/apps/invalid_app_id/upload_status/app_token") do |env|
-        expect(env.url.path).to eq("/v1alpha/apps/invalid_app_id/upload_status/app_token")
         [
           404,
           {},
