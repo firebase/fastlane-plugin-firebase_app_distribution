@@ -26,6 +26,23 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
     stubs.verify_stubbed_calls
     Faraday.default_connection = nil
   end
+  describe '#get_value_from_value_or_file' do
+    it 'should return the release notes string' do
+      expect(Fastlane::Actions::FirebaseAppDistributionAction.get_value_from_value_or_file("Hello World", "")).to eq("Hello World")
+    end
+
+    it 'should return the release notes from file' do
+      expect(File).to receive(:exist?).and_return(true)
+      expect(File).to receive(:open)
+        .with("release_notes_path")
+        .and_return(fake_binary)
+      expect(Fastlane::Actions::FirebaseAppDistributionAction.get_value_from_value_or_file("", "release_notes_path")).to eq("Hello World")
+    end
+    it 'should raise an error due to invalid release notes path ' do
+      expect { Fastlane::Actions::FirebaseAppDistributionAction.get_value_from_value_or_file("", "invalid_release_notes_path") }
+        .to raise_error("#{ErrorMessage::APK_NOT_FOUND}: invalid_release_notes_path")
+    end
+  end
 
   describe '#get_upload_token' do
     it 'should make a GET call to the app endpoint and return the upload token' do
