@@ -15,4 +15,5 @@ module ErrorMessage
   APP_NOT_ONBOARDED_ERROR = "App Distribution not onboarded"
   GET_APP_NO_CONTACT_EMAIL_ERROR = "App Distribution could not find a contact email associated with this app. Contact Email"
   INVALID_APP_ID = "App Distribution could not find your app. Make sure to onboard your app by pressing the \"Get started\" button on the App Distribution page in the Firebase console: https://console.firebase.google.com/project/_/appdistribution. App ID"
+  INVALID_PATH = "Could not read content from"
 end
