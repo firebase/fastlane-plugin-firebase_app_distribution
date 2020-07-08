@@ -44,7 +44,14 @@ module Fastlane
           return
         end
         release_notes = get_value_from_value_or_file(params[:release_notes], params[:release_notes_file])
+        testers = get_value_from_value_or_file(params[:testers], params[:testers_file])
+        groups = get_value_from_value_or_file(params[:groups], params[:groups_file])
+
         post_notes(app_id, release_id, release_notes)
+        emails = string_to_array(testers)
+        group_ids = string_to_array(groups)
+
+        enable_access(app_id, release_id, emails, group_ids)
       end
 
       def self.connection
@@ -214,6 +221,18 @@ module Fastlane
         end
 
         true
+      end
+
+      def self.enable_access(app_id, release_id, emails, group_ids)
+        if emails.nil? && group_ids.nil?
+          UI.message("No testers passed in. Skipping this step")
+          return
+        end
+        payload = { emails: emails, groupIds: group_ids }
+        connection.post("#{v1_apps_path(app_id)}/releases/#{release_id}/enable_access", payload.to_json) do |request|
+          request.headers["Authorization"] = "Bearer " + auth_token
+        end
+        UI.success("Successfully sent testers apk/ipa.")
       end
 
       def self.post_notes(app_id, release_id, release_notes)

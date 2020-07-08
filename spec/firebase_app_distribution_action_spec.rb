@@ -48,6 +48,66 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
     end
   end
 
+  describe '#string_to_array' do
+    it 'Should return an array with 1 tester' do
+      array = Fastlane::Actions::FirebaseAppDistributionAction.string_to_array("Tester1")
+      expect(array).to eq(["Tester1"])
+    end
+
+    it 'Should return an array with 3 testers' do
+      array = Fastlane::Actions::FirebaseAppDistributionAction.string_to_array("Tester1, Tester2, Tester3")
+      expect(array).to eq(["Tester1", "Tester2", "Tester3"])
+    end
+
+    it 'Should return nil if nil' do
+      array = Fastlane::Actions::FirebaseAppDistributionAction.string_to_array(nil)
+      expect(array).to eq(nil)
+    end
+  end
+
+  describe '#enable_access' do
+    it 'should give access to testers successfully' do
+      payload = { emails: "testers", groupIds: "groups" }
+      stubs.post("/v1alpha/apps/app_id/releases/release_id/enable_access", payload.to_json) do |env|
+        [
+          202,
+          {},
+          {}
+        ]
+      end
+      Fastlane::Actions::FirebaseAppDistributionAction.enable_access("app_id", "release_id", "testers", "groups")
+    end
+
+    it 'should post if no testers are passed' do
+      payload = { emails: nil, groupIds: "groups" }
+      stubs.post("/v1alpha/apps/app_id/releases/release_id/enable_access", payload.to_json) do |env|
+        [
+          202,
+          {},
+          {}
+        ]
+      end
+      Fastlane::Actions::FirebaseAppDistributionAction.enable_access("app_id", "release_id", nil, "groups")
+    end
+
+    it 'should post if no groups are passed' do
+      payload = { emails: "testers", groupIds: nil }
+      stubs.post("/v1alpha/apps/app_id/releases/release_id/enable_access", payload.to_json) do |env|
+        [
+          202,
+          {},
+          {}
+        ]
+      end
+      Fastlane::Actions::FirebaseAppDistributionAction.enable_access("app_id", "release_id", "testers", nil)
+    end
+
+    it 'should not post if testers and groups are not passed' do
+      expect(conn).not_to(receive(:post))
+      Fastlane::Actions::FirebaseAppDistributionAction.enable_access("app_id", "release_id", nil, nil)
+    end
+  end
+
   describe '#get_upload_token' do
     it 'should make a GET call to the app endpoint and return the upload token' do
       stubs.get("/v1alpha/apps/app_id") do |env|

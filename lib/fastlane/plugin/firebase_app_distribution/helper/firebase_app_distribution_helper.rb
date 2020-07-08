@@ -7,7 +7,7 @@ module Fastlane
   module Helper
     module FirebaseAppDistributionHelper
       def get_value_from_value_or_file(value, path)
-        if (value.nil? || value.empty?) && (!path.nil? || !path.empty?)
+        if (value.nil? || value.empty?) && !path.nil?
           begin
             return File.open(path).read
           rescue
@@ -15,6 +15,14 @@ module Fastlane
           end
         end
         value
+      end
+
+      def string_to_array(string)
+        if string.nil?
+          return string
+        end
+        string_array = string.gsub(/\s+/, '').split(",")
+        return string_array
       end
 
       def get_ios_app_id_from_archive(path)
