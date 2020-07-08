@@ -1,11 +1,42 @@
 require 'fastlane_core/ui/ui'
 require 'cfpropertylist'
+require_relative '../actions/firebase_app_distribution_login'
 
 module Fastlane
   UI = FastlaneCore::UI unless Fastlane.const_defined?("UI")
 
   module Helper
     module FirebaseAppDistributionHelper
+      BASE_URL = "https://firebaseappdistribution.googleapis.com"
+      TOKEN_CREDENTIAL_URI = "https://oauth2.googleapis.com/token"
+
+      def connection
+        @connection ||= Faraday.new(url: FirebaseAppDistributionHelper::BASE_URL) do |conn|
+          conn.response(:json, parser_options: { symbolize_names: true })
+          conn.response(:raise_error) # raise_error middleware will run before the json middleware
+          conn.adapter(Faraday.default_adapter)
+        end
+      end
+
+      def auth_token
+        @auth_token ||= begin
+          client = Signet::OAuth2::Client.new(
+            token_credential_uri: TOKEN_CREDENTIAL_URI,
+            client_id: Fastlane::Actions::FirebaseAppDistributionLoginAction::CLIENT_ID,
+            client_secret: Fastlane::Actions::FirebaseAppDistributionLoginAction::CLIENT_SECRET,
+            refresh_token: ENV["FIREBASE_TOKEN"]
+          )
+          client.fetch_access_token!
+          return client.access_token
+        rescue Signet::AuthorizationError
+          UI.crash!(ErrorMessage::REFRESH_TOKEN_ERROR)
+        end
+      end
+
+      def v1_apps_path(app_id)
+        "/v1alpha/apps/#{app_id}"
+      end
+
       def get_value_from_value_or_file(value, path)
         if (value.nil? || value.empty?) && (!path.nil? || !path.empty?)
           begin

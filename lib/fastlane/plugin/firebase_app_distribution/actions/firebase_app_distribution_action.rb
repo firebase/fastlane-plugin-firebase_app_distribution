@@ -1,9 +1,7 @@
-require 'tempfile'
 require 'fastlane/action'
 require 'open3'
 require 'shellwords'
 require 'googleauth'
-require_relative './firebase_app_distribution_login'
 require_relative '../helper/upload_status_response'
 require_relative '../helper/firebase_app_distribution_helper'
 require_relative '../helper/firebase_app_distribution_error_message'
@@ -13,10 +11,9 @@ require_relative '../helper/firebase_app_distribution_error_message'
 module Fastlane
   module Actions
     class FirebaseAppDistributionAction < Action
+      # include FirebaseAppDistributionPaths
       DEFAULT_FIREBASE_CLI_PATH = `which firebase`
       FIREBASECMD_ACTION = "appdistribution:distribute".freeze
-      BASE_URL = "https://firebaseappdistribution.googleapis.com"
-      TOKEN_CREDENTIAL_URI = "https://oauth2.googleapis.com/token"
       MAX_POLLING_RETRIES = 60
       POLLING_INTERVAL_SECONDS = 2
 
@@ -45,33 +42,6 @@ module Fastlane
         end
         release_notes = get_value_from_value_or_file(params[:release_notes], params[:release_notes_file])
         post_notes(app_id, release_id, release_notes)
-      end
-
-      def self.connection
-        @connection ||= Faraday.new(url: BASE_URL) do |conn|
-          conn.response(:json, parser_options: { symbolize_names: true })
-          conn.response(:raise_error) # raise_error middleware will run before the json middleware
-          conn.adapter(Faraday.default_adapter)
-        end
-      end
-
-      def self.v1_apps_path(app_id)
-        "/v1alpha/apps/#{app_id}"
-      end
-
-      def self.auth_token
-        @auth_token ||= begin
-          client = Signet::OAuth2::Client.new(
-            token_credential_uri: TOKEN_CREDENTIAL_URI,
-            client_id: FirebaseAppDistributionLoginAction::CLIENT_ID,
-            client_secret: FirebaseAppDistributionLoginAction::CLIENT_SECRET,
-            refresh_token: ENV["FIREBASE_TOKEN"]
-          )
-          client.fetch_access_token!
-          return client.access_token
-        rescue Signet::AuthorizationError
-          UI.crash!(ErrorMessage::REFRESH_TOKEN_ERROR)
-        end
       end
 
       def self.description
