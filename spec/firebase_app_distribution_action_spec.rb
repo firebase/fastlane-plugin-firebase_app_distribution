@@ -20,7 +20,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
     allow(fake_binary).to receive(:read).and_return("Hello World")
     allow(File).to receive(:open).and_return(fake_binary)
 
-    allow(Fastlane::Actions::FirebaseAppDistributionAction).to receive(:connection).and_return(conn)
+    allow(action).to receive(:connection).and_return(conn)
   end
 
   after(:each) do
