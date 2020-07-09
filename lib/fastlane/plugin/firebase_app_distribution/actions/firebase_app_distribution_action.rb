@@ -43,11 +43,13 @@ module Fastlane
         if release_id.nil?
           return
         end
+
         release_notes = get_value_from_value_or_file(params[:release_notes], params[:release_notes_file])
         testers = get_value_from_value_or_file(params[:testers], params[:testers_file])
         groups = get_value_from_value_or_file(params[:groups], params[:groups_file])
 
         post_notes(app_id, release_id, release_notes)
+
         emails = string_to_array(testers)
         group_ids = string_to_array(groups)
 
@@ -232,7 +234,9 @@ module Fastlane
         connection.post("#{v1_apps_path(app_id)}/releases/#{release_id}/enable_access", payload.to_json) do |request|
           request.headers["Authorization"] = "Bearer " + auth_token
         end
-        UI.success("Successfully sent testers apk/ipa.")
+      rescue 
+        UI.user_error!("#{ErrorMessage::INVALID_TESTERS} \nEmails: #{emails} \nGroups: #{group_ids}") 
+        UI.success("App Distribution upload finished successfully")
       end
 
       def self.post_notes(app_id, release_id, release_notes)

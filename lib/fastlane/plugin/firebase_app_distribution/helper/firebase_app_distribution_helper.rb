@@ -17,10 +17,9 @@ module Fastlane
         value
       end
 
+      # Returns the array representation of a string with comma seperated values.
       def string_to_array(string)
-        if string.nil?
-          return string
-        end
+        return nil if string.nil? || string.empty?
         string_array = string.gsub(/\s+/, '').split(",")
         return string_array
       end
