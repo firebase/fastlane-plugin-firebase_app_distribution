@@ -230,12 +230,14 @@ module Fastlane
           UI.message("No testers passed in. Skipping this step")
           return
         end
+        begin
         payload = { emails: emails, groupIds: group_ids }
         connection.post("#{v1_apps_path(app_id)}/releases/#{release_id}/enable_access", payload.to_json) do |request|
           request.headers["Authorization"] = "Bearer " + auth_token
         end
-      rescue 
-        UI.user_error!("#{ErrorMessage::INVALID_TESTERS} \nEmails: #{emails} \nGroups: #{group_ids}") 
+      rescue
+        UI.user_error!("#{ErrorMessage::INVALID_TESTERS} \nEmails: #{emails} \nGroups: #{group_ids}")
+      end
         UI.success("App Distribution upload finished successfully")
       end
 
