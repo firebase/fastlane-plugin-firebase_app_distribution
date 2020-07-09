@@ -52,7 +52,6 @@ module Fastlane
         end
       end
 
-
       def get_value_from_value_or_file(value, path)
         if (value.nil? || value.empty?) && (!path.nil? || !path.empty?)
           begin
