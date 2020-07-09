@@ -11,7 +11,6 @@ require_relative '../helper/firebase_app_distribution_error_message'
 module Fastlane
   module Actions
     class FirebaseAppDistributionAction < Action
-      # include FirebaseAppDistributionPaths
       DEFAULT_FIREBASE_CLI_PATH = `which firebase`
       FIREBASECMD_ACTION = "appdistribution:distribute".freeze
       MAX_POLLING_RETRIES = 60
@@ -193,7 +192,7 @@ module Fastlane
           return
         end
         begin
-          connection.post("#{v1_apps_path(app_id)}/releases/#{release_id}/notes", payload.to_json) do |request|
+          connection.post(release_notes_create_path(app_id, release_id), payload.to_json) do |request|
             request.headers["Authorization"] = "Bearer " + auth_token
           end
         rescue Faraday::ResourceNotFound
@@ -220,11 +219,11 @@ module Fastlane
         if contact_email.nil? || contact_email.strip.empty?
           UI.crash!(ErrorMessage::GET_APP_NO_CONTACT_EMAIL_ERROR)
         end
-        return CGI.escape("projects/#{response.body[:projectNumber]}/apps/#{response.body[:appId]}/releases/-/binaries/#{binary_hash}")
+        return upload_token_format(response.body[:appId], response.body[:projectNumber], binary_hash)
       end
 
       def self.upload_binary(app_id, binary_path)
-        connection.post("/app-binary-uploads?app_id=#{app_id}", File.open(binary_path).read) do |request|
+        connection.post(binary_upload_path(app_id), File.open(binary_path).read) do |request|
           request.headers["Authorization"] = "Bearer " + auth_token
         end
       rescue Faraday::ResourceNotFound
@@ -267,7 +266,7 @@ module Fastlane
       # Gets the upload status for the app release.
       def self.get_upload_status(app_id, app_token)
         begin
-          response = connection.get("#{v1_apps_path(app_id)}/upload_status/#{app_token}") do |request|
+          response = connection.get(upload_status_path(app_id, app_token)) do |request|
             request.headers["Authorization"] = "Bearer " + auth_token
           end
         rescue Faraday::ResourceNotFound

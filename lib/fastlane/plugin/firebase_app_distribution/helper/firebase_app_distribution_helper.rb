@@ -1,5 +1,4 @@
 require 'fastlane_core/ui/ui'
-require 'cfpropertylist'
 require_relative '../actions/firebase_app_distribution_login'
 
 module Fastlane
@@ -9,6 +8,26 @@ module Fastlane
     module FirebaseAppDistributionHelper
       BASE_URL = "https://firebaseappdistribution.googleapis.com"
       TOKEN_CREDENTIAL_URI = "https://oauth2.googleapis.com/token"
+
+      def v1_apps_path(app_id)
+        "/v1alpha/apps/#{app_id}"
+      end
+
+      def release_notes_create_path(app_id, release_id)
+        "#{v1_apps_path(app_id)}/releases/#{release_id}/notes"
+      end
+
+      def binary_upload_path(app_id)
+        "/app-binary-uploads?app_id=#{app_id}"
+      end
+
+      def upload_status_path(app_id, app_token)
+        "#{v1_apps_path(app_id)}/upload_status/#{app_token}"
+      end
+
+      def upload_token_format(app_id, project_number, binary_hash)
+        CGI.escape("projects/#{project_number}/apps/#{app_id}/releases/-/binaries/#{binary_hash}")
+      end
 
       def connection
         @connection ||= Faraday.new(url: FirebaseAppDistributionHelper::BASE_URL) do |conn|
@@ -31,10 +50,6 @@ module Fastlane
         rescue Signet::AuthorizationError
           UI.crash!(ErrorMessage::REFRESH_TOKEN_ERROR)
         end
-      end
-
-      def v1_apps_path(app_id)
-        "/v1alpha/apps/#{app_id}"
       end
 
       def get_value_from_value_or_file(value, path)
