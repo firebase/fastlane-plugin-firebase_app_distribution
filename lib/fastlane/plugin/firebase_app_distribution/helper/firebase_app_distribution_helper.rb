@@ -18,6 +18,8 @@ module Fastlane
       end
 
       # Returns the array representation of a string with comma seperated values.
+      #
+      # Does not work with strings whose individual values have spaces. EX "Hello World" the space will be removed to "HelloWorld"
       def string_to_array(string)
         return nil if string.nil? || string.empty?
         string_array = string.gsub(/\s+/, '').split(",")
