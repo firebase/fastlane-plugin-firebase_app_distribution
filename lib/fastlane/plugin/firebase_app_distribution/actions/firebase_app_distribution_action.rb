@@ -43,7 +43,7 @@ module Fastlane
         if release_id.nil?
           return
         end
-        
+
         release_notes = get_value_from_value_or_file(params[:release_notes], params[:release_notes_file])
         testers = get_value_from_value_or_file(params[:testers], params[:testers_file])
         groups = get_value_from_value_or_file(params[:groups], params[:groups_file])
