@@ -1,5 +1,5 @@
-describe Fastlane::Actions::FirebaseAppDistributionAction do
-  let(:fake_file) { StringIO.new }
+describe Fastlane::Client::FirebaseAppDistributionApiClient do
+  let(:api_client) { Fastlane::Client::FirebaseAppDistributionApiClient }
   let(:fake_binary) { double("Binary") }
   let(:fake_auth_client) { double("auth_client") }
   let(:stubs) { Faraday::Adapter::Test::Stubs.new }
@@ -19,33 +19,12 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
     allow(fake_binary).to receive(:read).and_return("Hello World")
     allow(File).to receive(:open).and_return(fake_binary)
 
-    allow(Fastlane::Actions::FirebaseAppDistributionAction).to receive(:connection).and_return(conn)
+    allow(api_client).to receive(:connection).and_return(conn)
   end
 
   after(:each) do
     stubs.verify_stubbed_calls
     Faraday.default_connection = nil
-  end
-
-  describe '#get_value_from_value_or_file' do
-    it 'should return the release notes string' do
-      expect(Fastlane::Actions::FirebaseAppDistributionAction.get_value_from_value_or_file("Hello World", "")).to eq("Hello World")
-    end
-
-    it 'should return the release notes from file' do
-      expect(File).to receive(:open)
-        .with("release_notes_path")
-        .and_return(fake_binary)
-      expect(Fastlane::Actions::FirebaseAppDistributionAction.get_value_from_value_or_file("", "release_notes_path")).to eq("Hello World")
-    end
-
-    it 'should raise an error due to invalid release notes path ' do
-      expect(File).to receive(:open)
-        .with("invalid_release_notes_path")
-        .and_raise(Errno::ENOENT.new("file not found"))
-      expect { Fastlane::Actions::FirebaseAppDistributionAction.get_value_from_value_or_file("", "invalid_release_notes_path") }
-        .to raise_error("#{ErrorMessage::INVALID_PATH}: invalid_release_notes_path")
-    end
   end
 
   describe '#get_upload_token' do
@@ -61,7 +40,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
           }
         ]
       end
-      upload_token = Fastlane::Actions::FirebaseAppDistributionAction.get_upload_token("app_id", "binary_path")
+      upload_token = api_client.get_upload_token("app_id", "binary_path")
       binary_hash = Digest::SHA256.hexdigest("Hello World")
       expect(upload_token).to eq(CGI.escape("projects/project_number/apps/app_id/releases/-/binaries/#{binary_hash}"))
     end
@@ -78,7 +57,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
           }
         ]
       end
-      expect { Fastlane::Actions::FirebaseAppDistributionAction.get_upload_token("app_id", "binary_path") }
+      expect { api_client.get_upload_token("app_id", "binary_path") }
         .to raise_error(ErrorMessage::GET_APP_NO_CONTACT_EMAIL_ERROR)
     end
 
@@ -90,7 +69,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
           {}
         ]
       end
-      expect { Fastlane::Actions::FirebaseAppDistributionAction.get_upload_token("invalid_app_id", "binary_path") }
+      expect { api_client.get_upload_token("invalid_app_id", "binary_path") }
         .to raise_error("#{ErrorMessage::INVALID_APP_ID}: invalid_app_id")
     end
 
@@ -98,7 +77,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
       expect(File).to receive(:open)
         .with("invalid_binary_path")
         .and_raise(Errno::ENOENT.new("file not found"))
-      expect { Fastlane::Actions::FirebaseAppDistributionAction.get_upload_token("app_id", "invalid_binary_path") }
+      expect { api_client.get_upload_token("app_id", "invalid_binary_path") }
         .to raise_error("#{ErrorMessage::APK_NOT_FOUND}: invalid_binary_path")
     end
   end
@@ -114,7 +93,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
           }
         ]
       end
-      Fastlane::Actions::FirebaseAppDistributionAction.upload_binary("app_id", "binary_path")
+      api_client.upload_binary("app_id", "binary_path")
     end
 
     it 'should crash if given an invalid app_id' do
@@ -125,7 +104,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
           {}
         ]
       end
-      expect { Fastlane::Actions::FirebaseAppDistributionAction.upload_binary("invalid_app_id", "binary_path") }
+      expect { api_client.upload_binary("invalid_app_id", "binary_path") }
         .to raise_error("#{ErrorMessage::INVALID_APP_ID}: invalid_app_id")
     end
 
@@ -133,7 +112,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
       expect(File).to receive(:open)
         .with("invalid_binary_path")
         .and_raise(Errno::ENOENT.new("file not found"))
-      expect { Fastlane::Actions::FirebaseAppDistributionAction.upload_binary("app_id", "invalid_binary_path") }
+      expect { api_client.upload_binary("app_id", "invalid_binary_path") }
         .to raise_error("#{ErrorMessage::APK_NOT_FOUND}: invalid_binary_path")
     end
   end
@@ -151,17 +130,17 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
           {}
         ]
       end
-      Fastlane::Actions::FirebaseAppDistributionAction.post_notes("app_id", "release_id", "release_notes")
+      api_client.post_notes("app_id", "release_id", "release_notes")
     end
 
     it 'should not post if release notes are empty' do
       expect(conn).not_to(receive(:post))
-      Fastlane::Actions::FirebaseAppDistributionAction.post_notes("app_id", "release_id", "")
+      api_client.post_notes("app_id", "release_id", "")
     end
 
     it 'should not post if release notes are nil' do
       expect(conn).not_to(receive(:post))
-      Fastlane::Actions::FirebaseAppDistributionAction.post_notes("app_id", "release_id", nil)
+      api_client.post_notes("app_id", "release_id", nil)
     end
 
     it 'should crash if given an invalid app_id' do
@@ -172,7 +151,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
           {}
         ]
       end
-      expect { Fastlane::Actions::FirebaseAppDistributionAction.post_notes("invalid_app_id", "release_id", "release_notes") }
+      expect { api_client.post_notes("invalid_app_id", "release_id", "release_notes") }
         .to raise_error("#{ErrorMessage::INVALID_APP_ID}: invalid_app_id")
     end
   end
@@ -186,7 +165,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
           { status: "SUCCESS" }
         ]
       end
-      status = Fastlane::Actions::FirebaseAppDistributionAction.get_upload_status("app_id", "app_token")
+      status = api_client.get_upload_status("app_id", "app_token")
       expect(status.success?).to eq(true)
     end
 
@@ -198,7 +177,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
           {}
         ]
       end
-      expect { Fastlane::Actions::FirebaseAppDistributionAction.get_upload_status("invalid_app_id", "app_token") }
+      expect { api_client.get_upload_status("invalid_app_id", "app_token") }
         .to raise_error("#{ErrorMessage::INVALID_APP_ID}: invalid_app_id")
     end
   end
