@@ -1,5 +1,5 @@
 describe Fastlane::Client::FirebaseAppDistributionApiClient do
-  let(:api_client) { Fastlane::Client::FirebaseAppDistributionApiClient }
+  let(:api_client) { Fastlane::Client::FirebaseAppDistributionApiClient.new }
   let(:fake_binary) { double("Binary") }
   let(:fake_auth_client) { double("auth_client") }
   let(:stubs) { Faraday::Adapter::Test::Stubs.new }

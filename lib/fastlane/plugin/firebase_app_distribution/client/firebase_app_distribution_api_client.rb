@@ -9,50 +9,7 @@ module Fastlane
       MAX_POLLING_RETRIES = 60
       POLLING_INTERVAL_SECONDS = 2
 
-      def self.v1_apps_url(app_id)
-        "/v1alpha/apps/#{app_id}"
-      end
-
-      def self.release_notes_create_url(app_id, release_id)
-        "#{v1_apps_url(app_id)}/releases/#{release_id}/notes"
-      end
-
-      def self.binary_upload_url(app_id)
-        "/app-binary-uploads?app_id=#{app_id}"
-      end
-
-      def self.upload_status_url(app_id, app_token)
-        "#{v1_apps_url(app_id)}/upload_status/#{app_token}"
-      end
-
-      def self.upload_token_format(app_id, project_number, binary_hash)
-        CGI.escape("projects/#{project_number}/apps/#{app_id}/releases/-/binaries/#{binary_hash}")
-      end
-
-      def self.connection
-        @connection ||= Faraday.new(url: Helper::FirebaseAppDistributionHelper::BASE_URL) do |conn|
-          conn.response(:json, parser_options: { symbolize_names: true })
-          conn.response(:raise_error) # raise_error middleware will run before the json middleware
-          conn.adapter(Faraday.default_adapter)
-        end
-      end
-
-      def self.auth_token
-        @auth_token ||= begin
-          client = Signet::OAuth2::Client.new(
-            token_credential_uri: TOKEN_CREDENTIAL_URI,
-            client_id: Fastlane::Actions::FirebaseAppDistributionLoginAction::CLIENT_ID,
-            client_secret: Fastlane::Actions::FirebaseAppDistributionLoginAction::CLIENT_SECRET,
-            refresh_token: ENV["FIREBASE_TOKEN"]
-          )
-          client.fetch_access_token!
-          return client.access_token
-        rescue Signet::AuthorizationError
-          UI.crash!(ErrorMessage::REFRESH_TOKEN_ERROR)
-        end
-      end
-
-      def self.post_notes(app_id, release_id, release_notes)
+      def post_notes(app_id, release_id, release_notes)
         payload = { releaseNotes: { releaseNotes: release_notes } }
         if release_notes.nil? || release_notes.empty?
           UI.message("No release notes passed in. Skipping this step.")
@@ -68,7 +25,7 @@ module Fastlane
         UI.success("Release notes have been posted.")
       end
 
-      def self.get_upload_token(app_id, binary_path)
+      def get_upload_token(app_id, binary_path)
         begin
           binary_hash = Digest::SHA256.hexdigest(File.open(binary_path).read)
         rescue Errno::ENOENT
@@ -89,7 +46,7 @@ module Fastlane
         return upload_token_format(response.body[:appId], response.body[:projectNumber], binary_hash)
       end
 
-      def self.upload_binary(app_id, binary_path)
+      def upload_binary(app_id, binary_path)
         connection.post(binary_upload_url(app_id), File.open(binary_path).read) do |request|
           request.headers["Authorization"] = "Bearer " + auth_token
         end
@@ -103,7 +60,7 @@ module Fastlane
       #
       # Returns the release_id on a successful release.
       # Returns nil if unable to upload.
-      def self.upload(app_id, binary_path)
+      def upload(app_id, binary_path)
         upload_token = get_upload_token(app_id, binary_path)
         upload_status_response = get_upload_status(app_id, upload_token)
         if upload_status_response.success?
@@ -131,7 +88,7 @@ module Fastlane
       end
 
       # Gets the upload status for the app release.
-      def self.get_upload_status(app_id, app_token)
+      def get_upload_status(app_id, app_token)
         begin
           response = connection.get(upload_status_url(app_id, app_token)) do |request|
             request.headers["Authorization"] = "Bearer " + auth_token
@@ -140,6 +97,51 @@ module Fastlane
           UI.crash!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
         end
         return UploadStatusResponse.new(response.body)
+      end
+
+      private
+
+      def v1_apps_url(app_id)
+        "/v1alpha/apps/#{app_id}"
+      end
+
+      def release_notes_create_url(app_id, release_id)
+        "#{v1_apps_url(app_id)}/releases/#{release_id}/notes"
+      end
+
+      def binary_upload_url(app_id)
+        "/app-binary-uploads?app_id=#{app_id}"
+      end
+
+      def upload_status_url(app_id, app_token)
+        "#{v1_apps_url(app_id)}/upload_status/#{app_token}"
+      end
+
+      def upload_token_format(app_id, project_number, binary_hash)
+        CGI.escape("projects/#{project_number}/apps/#{app_id}/releases/-/binaries/#{binary_hash}")
+      end
+
+      def connection
+        @connection ||= Faraday.new(url: Helper::FirebaseAppDistributionHelper::BASE_URL) do |conn|
+          conn.response(:json, parser_options: { symbolize_names: true })
+          conn.response(:raise_error) # raise_error middleware will run before the json middleware
+          conn.adapter(Faraday.default_adapter)
+        end
+      end
+
+      def auth_token
+        @auth_token ||= begin
+          client = Signet::OAuth2::Client.new(
+            token_credential_uri: TOKEN_CREDENTIAL_URI,
+            client_id: Fastlane::Actions::FirebaseAppDistributionLoginAction::CLIENT_ID,
+            client_secret: Fastlane::Actions::FirebaseAppDistributionLoginAction::CLIENT_SECRET,
+            refresh_token: ENV["FIREBASE_TOKEN"]
+          )
+          client.fetch_access_token!
+          return client.access_token
+        rescue Signet::AuthorizationError
+          UI.crash!(ErrorMessage::REFRESH_TOKEN_ERROR)
+        end
       end
     end
   end

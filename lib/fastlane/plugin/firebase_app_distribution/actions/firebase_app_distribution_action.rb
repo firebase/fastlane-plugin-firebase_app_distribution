@@ -19,7 +19,7 @@ module Fastlane
 
       def self.run(params)
         params.values # to validate all inputs before looking for the ipa/apk
-        fad_api_client = Client::FirebaseAppDistributionApiClient
+        fad_api_client = Client::FirebaseAppDistributionApiClient.new
         platform = Actions.lane_context[Actions::SharedValues::PLATFORM_NAME]
         binary_path = params[:ipa_path] || params[:apk_path]
 
