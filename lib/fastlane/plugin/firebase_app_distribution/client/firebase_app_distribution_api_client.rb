@@ -122,7 +122,7 @@ module Fastlane
       end
 
       def connection
-        @connection ||= Faraday.new(url: Helper::FirebaseAppDistributionHelper::BASE_URL) do |conn|
+        @connection ||= Faraday.new(url: BASE_URL) do |conn|
           conn.response(:json, parser_options: { symbolize_names: true })
           conn.response(:raise_error) # raise_error middleware will run before the json middleware
           conn.adapter(Faraday.default_adapter)
