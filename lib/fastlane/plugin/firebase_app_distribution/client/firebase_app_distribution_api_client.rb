@@ -3,7 +3,7 @@ require_relative '../actions/firebase_app_distribution_login'
 
 module Fastlane
   module Client
-    module FirebaseAppDistributionApiClient # Class or module? I figured module sinze there is no state to track
+    class FirebaseAppDistributionApiClient
       BASE_URL = "https://firebaseappdistribution.googleapis.com"
       TOKEN_CREDENTIAL_URI = "https://oauth2.googleapis.com/token"
       MAX_POLLING_RETRIES = 60

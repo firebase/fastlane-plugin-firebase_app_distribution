@@ -16,7 +16,6 @@ module Fastlane
       FIREBASECMD_ACTION = "appdistribution:distribute".freeze
 
       extend Helper::FirebaseAppDistributionHelper
-      # include Client::FirebaseAppDistributionApiClient # Is this needed? Should I use extend or include if so?
 
       def self.run(params)
         params.values # to validate all inputs before looking for the ipa/apk
