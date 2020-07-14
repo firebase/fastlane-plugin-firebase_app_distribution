@@ -4,7 +4,7 @@ module Fastlane
   module Helper
     module FirebaseAppDistributionHelper
       def self.get_value_from_value_or_file(value, path)
-        if (value.nil? || value.empty?) && (!path.nil? || !path.empty?)
+        if (value.nil? || value.empty?) && !path.nil?
           begin
             return File.open(path).read
           rescue Errno::ENOENT
@@ -12,6 +12,15 @@ module Fastlane
           end
         end
         value
+      end
+
+      # Returns the array representation of a string with comma seperated values.
+      #
+      # Does not work with strings whose individual values have spaces. EX "Hello World" the space will be removed to "HelloWorld"
+      def self.string_to_array(string)
+        return nil if string.nil? || string.empty?
+        string_array = string.gsub(/\s+/, '').split(",")
+        return string_array
       end
 
       def self.get_ios_app_id_from_archive(path)

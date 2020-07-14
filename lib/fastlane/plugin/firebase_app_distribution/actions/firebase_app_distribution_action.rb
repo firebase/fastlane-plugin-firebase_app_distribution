@@ -39,8 +39,15 @@ module Fastlane
         if release_id.nil?
           return
         end
+
         release_notes = get_value_from_value_or_file(params[:release_notes], params[:release_notes_file])
         fad_api_client.post_notes(app_id, release_id, release_notes)
+
+        testers = get_value_from_value_or_file(params[:testers], params[:testers_file])
+        groups = get_value_from_value_or_file(params[:groups], params[:groups_file])
+        emails = string_to_array(testers)
+        group_ids = string_to_array(groups)
+        fad_api_client.enable_access(app_id, release_id, emails, group_ids)
       end
 
       def self.description

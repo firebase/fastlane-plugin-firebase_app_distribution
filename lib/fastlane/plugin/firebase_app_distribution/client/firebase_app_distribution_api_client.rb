@@ -9,6 +9,22 @@ module Fastlane
       MAX_POLLING_RETRIES = 60
       POLLING_INTERVAL_SECONDS = 2
 
+      def enable_access(app_id, release_id, emails, group_ids)
+        if emails.nil? && group_ids.nil?
+          UI.message("No testers passed in. Skipping this step")
+          return
+        end
+        begin
+        payload = { emails: emails, groupIds: group_ids }
+        connection.post(enable_access_url(app_id, release_id), payload.to_json) do |request|
+          request.headers["Authorization"] = "Bearer " + auth_token
+        end
+      rescue
+        UI.user_error!("#{ErrorMessage::INVALID_TESTERS} \nEmails: #{emails} \nGroups: #{group_ids}")
+      end
+        UI.success("App Distribution upload finished successfully")
+      end
+
       def post_notes(app_id, release_id, release_notes)
         payload = { releaseNotes: { releaseNotes: release_notes } }
         if release_notes.nil? || release_notes.empty?
@@ -107,6 +123,10 @@ module Fastlane
 
       def release_notes_create_url(app_id, release_id)
         "#{v1_apps_url(app_id)}/releases/#{release_id}/notes"
+      end
+
+      def enable_access_url(app_id, release_id)
+        "#{v1_apps_url(app_id)}/releases/#{release_id}/enable_access"
       end
 
       def binary_upload_url(app_id)

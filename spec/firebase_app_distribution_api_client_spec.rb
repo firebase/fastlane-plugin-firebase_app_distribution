@@ -6,6 +6,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
 
   let(:api_client) { Fastlane::Client::FirebaseAppDistributionApiClient.new }
   let(:stubs) { Faraday::Adapter::Test::Stubs.new }
+  let(:action) { Fastlane::Actions::FirebaseAppDistributionAction }
   let(:conn) do
     Faraday.new(url: "https://firebaseappdistribution.googleapis.com") do |b|
       b.response(:json, parser_options: { symbolize_names: true })
@@ -37,7 +38,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
   end
 
   describe '#get_upload_token' do
-    it 'should make a GET call to the app endpoint and return the upload token' do
+    it 'returns the upload token after a successfull GET call' do
       stubs.get("/v1alpha/apps/app_id") do |env|
         [
           200,
@@ -54,7 +55,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       expect(upload_token).to eq(CGI.escape("projects/project_number/apps/app_id/releases/-/binaries/#{binary_hash}"))
     end
 
-    it 'should crash if the app has no contact email' do
+    it 'crash if the app has no contact email' do
       stubs.get("/v1alpha/apps/app_id") do |env|
         [
           200,
@@ -70,7 +71,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         .to raise_error(ErrorMessage::GET_APP_NO_CONTACT_EMAIL_ERROR)
     end
 
-    it 'should crash if given an invalid app_id' do
+    it 'crashes when given an invalid app_id' do
       stubs.get("/v1alpha/apps/invalid_app_id") do |env|
         [
           404,
@@ -82,7 +83,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         .to raise_error("#{ErrorMessage::INVALID_APP_ID}: invalid_app_id")
     end
 
-    it 'should crash if given an invalid binary_path' do
+    it 'crashes when given an invalid binary_path' do
       expect(File).to receive(:open)
         .with("invalid_binary_path")
         .and_raise(Errno::ENOENT.new("file not found"))
@@ -92,7 +93,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
   end
 
   describe '#upload_binary' do
-    it 'should upload the binary successfully' do
+    it 'uploads the binary successfully when the input is valid' do
       stubs.post("/app-binary-uploads?app_id=app_id", fake_binary_contents) do |env|
         [
           202,
@@ -117,7 +118,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         .to raise_error("#{ErrorMessage::INVALID_APP_ID}: invalid_app_id")
     end
 
-    it 'should crash if given an invalid binary_path' do
+    it 'crashes when given an invalid binary_path' do
       expect(File).to receive(:open)
         .with("invalid_binary_path")
         .and_raise(Errno::ENOENT.new("file not found"))
@@ -131,7 +132,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
   end
 
   describe '#post_notes' do
-    it 'should post the notes successfully' do
+    it 'post call is successfull when input is valid' do
       stubs.post("/v1alpha/apps/app_id/releases/release_id/notes", "{\"releaseNotes\":{\"releaseNotes\":\"release_notes\"}}") do |env|
         [
           200,
@@ -142,17 +143,17 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       api_client.post_notes("app_id", "release_id", "release_notes")
     end
 
-    it 'should not post if release notes are empty' do
+    it 'does not post when the release notes are empty' do
       expect(conn).not_to(receive(:post))
       api_client.post_notes("app_id", "release_id", "")
     end
 
-    it 'should not post if release notes are nil' do
+    it 'does not post when the release notes are nil' do
       expect(conn).not_to(receive(:post))
       api_client.post_notes("app_id", "release_id", nil)
     end
 
-    it 'should crash if given an invalid app_id' do
+    it 'crashes when given an invalid app_id' do
       stubs.post("/v1alpha/apps/invalid_app_id/releases/release_id/notes", "{\"releaseNotes\":{\"releaseNotes\":\"release_notes\"}}") do |env|
         [
           404,
@@ -166,7 +167,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
   end
 
   describe '#upload_status' do
-    it 'should return the proper status' do
+    it 'returns the proper status when the get call is successfull' do
       stubs.get("/v1alpha/apps/app_id/upload_status/app_token") do |env|
         [
           200,
@@ -178,7 +179,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       expect(status.success?).to eq(true)
     end
 
-    it 'should crash if given an invalid app_id' do
+    it 'crashes when given an invalid app_id' do
       stubs.get("/v1alpha/apps/invalid_app_id/upload_status/app_token") do |env|
         [
           404,
@@ -188,6 +189,49 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       end
       expect { api_client.get_upload_status("invalid_app_id", "app_token") }
         .to raise_error("#{ErrorMessage::INVALID_APP_ID}: invalid_app_id")
+    end
+  end
+
+  describe '#enable_access' do
+    it 'posts successfully when tester emails and groupIds are defined' do
+      payload = { emails: ["testers"], groupIds: ["groups"] }
+      stubs.post("/v1alpha/apps/app_id/releases/release_id/enable_access", payload.to_json) do |env|
+        [
+          202,
+          {},
+          {}
+        ]
+      end
+      api_client.enable_access("app_id", "release_id", ["testers"], ["groups"])
+    end
+
+    it 'posts when groupIds are defined and tester emails is nil' do
+      payload = { emails: nil, groupIds: ["groups"] }
+      stubs.post("/v1alpha/apps/app_id/releases/release_id/enable_access", payload.to_json) do |env|
+        [
+          202,
+          {},
+          {}
+        ]
+      end
+      api_client.enable_access("app_id", "release_id", nil, ["groups"])
+    end
+
+    it 'posts when tester emails are defined and groupIds is nil' do
+      payload = { emails: ["testers"], groupIds: nil }
+      stubs.post("/v1alpha/apps/app_id/releases/release_id/enable_access", payload.to_json) do |env|
+        [
+          202,
+          {},
+          {}
+        ]
+      end
+      api_client.enable_access("app_id", "release_id", ["testers"], nil)
+    end
+
+    it 'does not post if testers and groups are nil' do
+      expect(conn).not_to(receive(:post))
+      api_client.enable_access("app_id", "release_id", nil, nil)
     end
   end
 end
