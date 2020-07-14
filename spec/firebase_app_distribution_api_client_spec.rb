@@ -1,7 +1,10 @@
 describe Fastlane::Client::FirebaseAppDistributionApiClient do
-  let(:api_client) { Fastlane::Client::FirebaseAppDistributionApiClient.new }
+  let(:fake_binary_path) { "binary_path" }
+  let(:fake_binary_contents) { "Hello World" }
   let(:fake_binary) { double("Binary") }
   let(:fake_auth_client) { double("auth_client") }
+
+  let(:api_client) { Fastlane::Client::FirebaseAppDistributionApiClient.new }
   let(:stubs) { Faraday::Adapter::Test::Stubs.new }
   let(:conn) do
     Faraday.new(url: "https://firebaseappdistribution.googleapis.com") do |b|
@@ -12,14 +15,20 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
   end
 
   before(:each) do
-    allow(Signet::OAuth2::Client).to receive(:new).and_return(fake_auth_client)
+    allow(Signet::OAuth2::Client).to receive(:new)
+      .and_return(fake_auth_client)
     allow(fake_auth_client).to receive(:fetch_access_token!)
-    allow(fake_auth_client).to receive(:access_token).and_return("fake_auth_token")
+    allow(fake_auth_client).to receive(:access_token)
+      .and_return("fake_auth_token")
 
-    allow(fake_binary).to receive(:read).and_return("Hello World")
-    allow(File).to receive(:open).and_return(fake_binary)
+    allow(File).to receive(:open)
+      .with(fake_binary_path)
+      .and_return(fake_binary)
+    allow(fake_binary).to receive(:read)
+      .and_return(fake_binary_contents)
 
-    allow(api_client).to receive(:connection).and_return(conn)
+    allow(api_client).to receive(:connection)
+      .and_return(conn)
   end
 
   after(:each) do
@@ -40,8 +49,8 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
           }
         ]
       end
-      upload_token = api_client.get_upload_token("app_id", "binary_path")
-      binary_hash = Digest::SHA256.hexdigest("Hello World")
+      upload_token = api_client.get_upload_token("app_id", fake_binary_path)
+      binary_hash = Digest::SHA256.hexdigest(fake_binary_contents)
       expect(upload_token).to eq(CGI.escape("projects/project_number/apps/app_id/releases/-/binaries/#{binary_hash}"))
     end
 
@@ -57,7 +66,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
           }
         ]
       end
-      expect { api_client.get_upload_token("app_id", "binary_path") }
+      expect { api_client.get_upload_token("app_id", fake_binary_path) }
         .to raise_error(ErrorMessage::GET_APP_NO_CONTACT_EMAIL_ERROR)
     end
 
@@ -69,7 +78,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
           {}
         ]
       end
-      expect { api_client.get_upload_token("invalid_app_id", "binary_path") }
+      expect { api_client.get_upload_token("invalid_app_id", fake_binary_path) }
         .to raise_error("#{ErrorMessage::INVALID_APP_ID}: invalid_app_id")
     end
 
@@ -84,7 +93,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
 
   describe '#upload_binary' do
     it 'should upload the binary successfully' do
-      stubs.post("/app-binary-uploads?app_id=app_id", "Hello World") do |env|
+      stubs.post("/app-binary-uploads?app_id=app_id", fake_binary_contents) do |env|
         [
           202,
           {},
@@ -93,18 +102,18 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
           }
         ]
       end
-      api_client.upload_binary("app_id", "binary_path")
+      api_client.upload_binary("app_id", fake_binary_path)
     end
 
     it 'should crash if given an invalid app_id' do
-      stubs.post("/app-binary-uploads?app_id=invalid_app_id", "Hello World") do |env|
+      stubs.post("/app-binary-uploads?app_id=invalid_app_id", fake_binary_contents) do |env|
         [
           404,
           {},
           {}
         ]
       end
-      expect { api_client.upload_binary("invalid_app_id", "binary_path") }
+      expect { api_client.upload_binary("invalid_app_id", fake_binary_path) }
         .to raise_error("#{ErrorMessage::INVALID_APP_ID}: invalid_app_id")
     end
 
