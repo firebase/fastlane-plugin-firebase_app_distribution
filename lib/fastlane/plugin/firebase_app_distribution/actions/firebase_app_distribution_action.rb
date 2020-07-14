@@ -1,12 +1,11 @@
-require 'tempfile'
 require 'fastlane/action'
 require 'open3'
 require 'shellwords'
 require 'googleauth'
-require_relative './firebase_app_distribution_login'
 require_relative '../helper/upload_status_response'
 require_relative '../helper/firebase_app_distribution_helper'
 require_relative '../helper/firebase_app_distribution_error_message'
+require_relative '../client/firebase_app_distribution_api_client'
 
 ## TODO: should always use a file underneath? I think so.
 ## How should we document the usage of release notes?
@@ -15,15 +14,12 @@ module Fastlane
     class FirebaseAppDistributionAction < Action
       DEFAULT_FIREBASE_CLI_PATH = `which firebase`
       FIREBASECMD_ACTION = "appdistribution:distribute".freeze
-      BASE_URL = "https://firebaseappdistribution.googleapis.com"
-      TOKEN_CREDENTIAL_URI = "https://oauth2.googleapis.com/token"
-      MAX_POLLING_RETRIES = 60
-      POLLING_INTERVAL_SECONDS = 2
 
       extend Helper::FirebaseAppDistributionHelper
 
       def self.run(params)
         params.values # to validate all inputs before looking for the ipa/apk
+        fad_api_client = Client::FirebaseAppDistributionApiClient.new
         platform = Actions.lane_context[Actions::SharedValues::PLATFORM_NAME]
         binary_path = params[:ipa_path] || params[:apk_path]
 
@@ -39,48 +35,19 @@ module Fastlane
         if app_id.nil?
           UI.crash!(ErrorMessage::MISSING_APP_ID)
         end
-        release_id = upload(app_id, binary_path)
+        release_id = fad_api_client.upload(app_id, binary_path)
         if release_id.nil?
           return
         end
 
         release_notes = get_value_from_value_or_file(params[:release_notes], params[:release_notes_file])
+        fad_api_client.post_notes(app_id, release_id, release_notes)
+
         testers = get_value_from_value_or_file(params[:testers], params[:testers_file])
         groups = get_value_from_value_or_file(params[:groups], params[:groups_file])
-
-        post_notes(app_id, release_id, release_notes)
-
         emails = string_to_array(testers)
         group_ids = string_to_array(groups)
-
-        enable_access(app_id, release_id, emails, group_ids)
-      end
-
-      def self.connection
-        @connection ||= Faraday.new(url: BASE_URL) do |conn|
-          conn.response(:json, parser_options: { symbolize_names: true })
-          conn.response(:raise_error) # raise_error middleware will run before the json middleware
-          conn.adapter(Faraday.default_adapter)
-        end
-      end
-
-      def self.v1_apps_path(app_id)
-        "/v1alpha/apps/#{app_id}"
-      end
-
-      def self.auth_token
-        @auth_token ||= begin
-          client = Signet::OAuth2::Client.new(
-            token_credential_uri: TOKEN_CREDENTIAL_URI,
-            client_id: FirebaseAppDistributionLoginAction::CLIENT_ID,
-            client_secret: FirebaseAppDistributionLoginAction::CLIENT_SECRET,
-            refresh_token: ENV["FIREBASE_TOKEN"]
-          )
-          client.fetch_access_token!
-          return client.access_token
-        rescue Signet::AuthorizationError
-          UI.crash!(ErrorMessage::REFRESH_TOKEN_ERROR)
-        end
+        fad_api_client.enable_access(app_id, release_id, emails, group_ids)
       end
 
       def self.description
@@ -223,112 +190,6 @@ module Fastlane
         end
 
         true
-      end
-
-      def self.enable_access(app_id, release_id, emails, group_ids)
-        if emails.nil? && group_ids.nil?
-          UI.message("No testers passed in. Skipping this step")
-          return
-        end
-        begin
-        payload = { emails: emails, groupIds: group_ids }
-        connection.post("#{v1_apps_path(app_id)}/releases/#{release_id}/enable_access", payload.to_json) do |request|
-          request.headers["Authorization"] = "Bearer " + auth_token
-        end
-      rescue
-        UI.user_error!("#{ErrorMessage::INVALID_TESTERS} \nEmails: #{emails} \nGroups: #{group_ids}")
-      end
-        UI.success("App Distribution upload finished successfully")
-      end
-
-      def self.post_notes(app_id, release_id, release_notes)
-        payload = { releaseNotes: { releaseNotes: release_notes } }
-        if release_notes.nil? || release_notes.empty?
-          UI.message("No release notes passed in. Skipping this step.")
-          return
-        end
-        begin
-          connection.post("#{v1_apps_path(app_id)}/releases/#{release_id}/notes", payload.to_json) do |request|
-            request.headers["Authorization"] = "Bearer " + auth_token
-          end
-        rescue Faraday::ResourceNotFound
-          UI.crash!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
-        end
-        UI.success("Release notes have been posted.")
-      end
-
-      def self.get_upload_token(app_id, binary_path)
-        begin
-          binary_hash = Digest::SHA256.hexdigest(File.open(binary_path).read)
-        rescue Errno::ENOENT
-          UI.crash!("#{ErrorMessage::APK_NOT_FOUND}: #{binary_path}")
-        end
-
-        begin
-          response = connection.get(v1_apps_path(app_id)) do |request|
-            request.headers["Authorization"] = "Bearer " + auth_token
-          end
-        rescue Faraday::ResourceNotFound
-          UI.crash!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
-        end
-        contact_email = response.body[:contactEmail]
-        if contact_email.nil? || contact_email.strip.empty?
-          UI.crash!(ErrorMessage::GET_APP_NO_CONTACT_EMAIL_ERROR)
-        end
-        return CGI.escape("projects/#{response.body[:projectNumber]}/apps/#{response.body[:appId]}/releases/-/binaries/#{binary_hash}")
-      end
-
-      def self.upload_binary(app_id, binary_path)
-        connection.post("/app-binary-uploads?app_id=#{app_id}", File.open(binary_path).read) do |request|
-          request.headers["Authorization"] = "Bearer " + auth_token
-        end
-      rescue Faraday::ResourceNotFound
-        UI.crash!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
-      rescue Errno::ENOENT
-        UI.crash!("#{ErrorMessage::APK_NOT_FOUND}: #{binary_path}")
-      end
-
-      # Uploads the binary
-      #
-      # Returns the release_id on a successful release.
-      # Returns nil if unable to upload.
-      def self.upload(app_id, binary_path)
-        upload_token = get_upload_token(app_id, binary_path)
-        upload_status_response = get_upload_status(app_id, upload_token)
-        if upload_status_response.success?
-          UI.success("This APK/IPA has been uploaded before. Skipping upload step.")
-        else
-          UI.message("This APK has not been uploaded before.")
-          MAX_POLLING_RETRIES.times do
-            if upload_status_response.success?
-              UI.success("Uploaded APK/IPA Successfully!")
-              break
-            elsif upload_status_response.in_progress?
-              sleep(POLLING_INTERVAL_SECONDS)
-            else
-              UI.message("Uploading the APK/IPA.")
-              upload_binary(app_id, binary_path)
-            end
-            upload_status_response = get_upload_status(app_id, upload_token)
-          end
-          unless upload_status_response.success?
-            UI.error("It took longer than expected to process your APK/IPA, please try again.")
-            return nil
-          end
-        end
-        upload_status_response.release_id
-      end
-
-      # Gets the upload status for the app release.
-      def self.get_upload_status(app_id, app_token)
-        begin
-          response = connection.get("#{v1_apps_path(app_id)}/upload_status/#{app_token}") do |request|
-            request.headers["Authorization"] = "Bearer " + auth_token
-          end
-        rescue Faraday::ResourceNotFound
-          UI.crash!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
-        end
-        return UploadStatusResponse.new(response.body)
       end
     end
   end
