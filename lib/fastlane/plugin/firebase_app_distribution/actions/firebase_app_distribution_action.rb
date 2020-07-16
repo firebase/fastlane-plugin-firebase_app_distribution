@@ -15,11 +15,10 @@ module Fastlane
       DEFAULT_FIREBASE_CLI_PATH = `which firebase`
       FIREBASECMD_ACTION = "appdistribution:distribute".freeze
 
-      extend Helper::FirebaseAppDistributionHelper
-
       def self.run(params)
         params.values # to validate all inputs before looking for the ipa/apk
         fad_api_client = Client::FirebaseAppDistributionApiClient.new
+        helper = Fastlane::Helper::FirebaseAppDistributionHelper
         platform = Actions.lane_context[Actions::SharedValues::PLATFORM_NAME]
         binary_path = params[:ipa_path] || params[:apk_path]
 
@@ -28,7 +27,7 @@ module Fastlane
         elsif platform == :ios
           archive_path = Actions.lane_context[SharedValues::XCODEBUILD_ARCHIVE]
           if archive_path
-            app_id = get_ios_app_id_from_archive(archive_path)
+            app_id = helper.get_ios_app_id_from_archive(archive_path)
           end
         end
 
@@ -40,13 +39,13 @@ module Fastlane
           return
         end
 
-        release_notes = get_value_from_value_or_file(params[:release_notes], params[:release_notes_file])
+        release_notes = helper.get_value_from_value_or_file(params[:release_notes], params[:release_notes_file])
         fad_api_client.post_notes(app_id, release_id, release_notes)
 
-        testers = get_value_from_value_or_file(params[:testers], params[:testers_file])
-        groups = get_value_from_value_or_file(params[:groups], params[:groups_file])
-        emails = string_to_array(testers)
-        group_ids = string_to_array(groups)
+        testers = helper.get_value_from_value_or_file(params[:testers], params[:testers_file])
+        groups = helper.get_value_from_value_or_file(params[:groups], params[:groups_file])
+        emails = helper.string_to_array(testers)
+        group_ids = helper.string_to_array(groups)
         fad_api_client.enable_access(app_id, release_id, emails, group_ids)
       end
 
