@@ -12,14 +12,16 @@ require_relative '../client/firebase_app_distribution_api_client'
 module Fastlane
   module Actions
     class FirebaseAppDistributionAction < Action
+      TOKEN_CREDENTIAL_URI = "https://oauth2.googleapis.com/token"
       DEFAULT_FIREBASE_CLI_PATH = `which firebase`
       FIREBASECMD_ACTION = "appdistribution:distribute".freeze
+      SCOPE = "https://www.googleapis.com/auth/cloud-platform"
 
       extend Helper::FirebaseAppDistributionHelper
 
       def self.run(params)
         params.values # to validate all inputs before looking for the ipa/apk
-        fad_api_client = Client::FirebaseAppDistributionApiClient.new
+        fad_api_client = Client::FirebaseAppDistributionApiClient.new(params[:google_service_account])
         platform = Actions.lane_context[Actions::SharedValues::PLATFORM_NAME]
         binary_path = params[:ipa_path] || params[:apk_path]
 
@@ -157,8 +159,14 @@ module Fastlane
                                        description: "Print verbose debug output",
                                        optional: true,
                                        default_value: false,
-                                       is_string: false)
+                                       is_string: false),
+          FastlaneCore::ConfigItem.new(key: :google_service_account,
+                                       description: "Path to Google service account json",
+                                       optional: true,
+                                       type: String)
         ]
+
+        # https://github.com/fastlane/fastlane-plugin-firebase_app_distribution/issues/18#issuecomment-617774810
       end
 
       def self.is_supported?(platform)
