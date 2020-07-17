@@ -1,5 +1,5 @@
 describe Fastlane::Helper::FirebaseAppDistributionHelper do
-  let(:helper) { Fastlane::Helper::FirebaseAppDistributionHelper }
+  let(:helper) { Class.new { extend(Fastlane::Helper::FirebaseAppDistributionHelper) } }
   let(:fake_binary) { double("Binary") }
 
   before(:each) do
@@ -22,7 +22,7 @@ describe Fastlane::Helper::FirebaseAppDistributionHelper do
       expect(helper.get_value_from_value_or_file("", "file_path")).to eq("Hello World")
     end
 
-    it 'returns the release notes when the file ath is valid and value is nil ' do
+    it 'returns the release notes when the file path is valid and value is nil ' do
       expect(File).to receive(:open)
         .with("file_path")
         .and_return(fake_binary)
