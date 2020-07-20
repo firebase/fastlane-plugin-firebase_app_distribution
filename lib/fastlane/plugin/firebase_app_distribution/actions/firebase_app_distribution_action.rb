@@ -21,9 +21,10 @@ module Fastlane
 
       def self.run(params)
         params.values # to validate all inputs before looking for the ipa/apk
-        fad_api_client = Client::FirebaseAppDistributionApiClient.new(params[:google_service_account])
+        fad_api_client = Client::FirebaseAppDistributionApiClient.new
         platform = Actions.lane_context[Actions::SharedValues::PLATFORM_NAME]
         binary_path = params[:ipa_path] || params[:apk_path]
+        fad_api_client.set_auth_token(params[:google_service_account])
 
         if params[:app] # Set app_id if it is specified as a parameter
           app_id = params[:app]

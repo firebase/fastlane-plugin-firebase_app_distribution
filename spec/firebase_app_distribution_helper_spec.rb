@@ -1,5 +1,5 @@
 describe Fastlane::Helper::FirebaseAppDistributionHelper do
-  let(:helper) { Fastlane::Helper::FirebaseAppDistributionHelper }
+  let(:helper) { Class.new { extend(Fastlane::Helper::FirebaseAppDistributionHelper) } }
   let(:fake_binary) { double("Binary") }
 
   before(:each) do

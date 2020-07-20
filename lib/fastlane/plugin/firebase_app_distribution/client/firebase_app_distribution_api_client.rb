@@ -1,5 +1,6 @@
 require 'fastlane_core/ui/ui'
 require_relative '../actions/firebase_app_distribution_login'
+require_relative '../helper/firebase_app_distribution_auth_client'
 
 module Fastlane
   module Client
@@ -9,9 +10,7 @@ module Fastlane
       MAX_POLLING_RETRIES = 60
       POLLING_INTERVAL_SECONDS = 2
 
-      def initialize(google_service_path)
-        @google_service_path = google_service_path
-      end
+      include Auth::FirebaseAppDistributionAuthClient
 
       def enable_access(app_id, release_id, emails, group_ids)
         if emails.nil? && group_ids.nil?
@@ -119,6 +118,12 @@ module Fastlane
         return UploadStatusResponse.new(response.body)
       end
 
+      def set_auth_token(param)
+        @auth_token ||= fetch_auth_token(param)
+      end
+
+      # TODO: Add in firebase tools case 3
+
       private
 
       def v1_apps_url(app_id)
@@ -153,50 +158,8 @@ module Fastlane
         end
       end
 
-      #TODO add in in firebase tools case 3
-      def fetch_auth_method
-        if !@google_service_path.nil? && !@google_service_path.empty?
-          "service_account"
-        elsif ENV["GOOGLE_APPLICATION_CREDENTIALS"]
-          @google_service_path = ENV["GOOGLE_APPLICATION_CREDENTIALS"]
-          "service_account"
-        elsif ENV["FIREBASE_TOKEN"]
-          "firebase_token"
-        else 
-          "none"
-        end 
-      end 
-
-      #TODO Add in firebase tools case 3
-      def fetch_auth_token
-        auth_method = fetch_auth_method
-        case auth_method
-        when "none"
-          UI.crash!(ErrorMessage::MISSING_CREDENTIALS)
-        when "service_account"
-          service_account_credentials = Google::Auth::ServiceAccountCredentials.make_creds(
-            json_key_io: File.open(@google_service_path),
-            scope: Fastlane::Actions::FirebaseAppDistributionLoginAction::SCOPE
-          )
-          service_account_credentials.fetch_access_token!["access_token"]
-        when "firebase_token"
-          client = Signet::OAuth2::Client.new(
-            token_credential_uri: TOKEN_CREDENTIAL_URI,
-            client_id: Fastlane::Actions::FirebaseAppDistributionLoginAction::CLIENT_ID,
-            client_secret: Fastlane::Actions::FirebaseAppDistributionLoginAction::CLIENT_SECRET,
-            refresh_token: ENV["FIREBASE_TOKEN"]
-          )
-          client.fetch_access_token!
-          client.access_token
-        end
-      rescue Signet::AuthorizationError
-        UI.crash!(ErrorMessage::REFRESH_TOKEN_ERROR)
-      rescue Errno::ENOENT
-        UI.crash!("#{ErrorMessage::SERVICE_CREDENTIALS_NOT_FOUND}: #{@google_service_path}")
-      end
-
       def auth_token
-        @auth_token ||= fetch_auth_token
+        @auth_token ||= fetch_auth_token("")
       end
     end
   end

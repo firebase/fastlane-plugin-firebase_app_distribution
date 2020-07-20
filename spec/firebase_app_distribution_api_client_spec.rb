@@ -2,7 +2,6 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
   let(:fake_binary_path) { "binary_path" }
   let(:fake_binary_contents) { "Hello World" }
   let(:fake_binary) { double("Binary") }
-  let(:fake_auth_client) { double("auth_client") }
 
   let(:api_client) { Fastlane::Client::FirebaseAppDistributionApiClient.new }
   let(:stubs) { Faraday::Adapter::Test::Stubs.new }
@@ -16,15 +15,13 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
   end
 
   before(:each) do
-    allow(Signet::OAuth2::Client).to receive(:new)
-      .and_return(fake_auth_client)
-    allow(fake_auth_client).to receive(:fetch_access_token!)
-    allow(fake_auth_client).to receive(:access_token)
+    allow(api_client).to receive(:auth_token)
       .and_return("fake_auth_token")
 
     allow(File).to receive(:open)
       .with(fake_binary_path)
       .and_return(fake_binary)
+
     allow(fake_binary).to receive(:read)
       .and_return(fake_binary_contents)
 
