@@ -72,10 +72,16 @@ module Fastlane
         UI.crash!("#{ErrorMessage::APK_NOT_FOUND}: #{binary_path}")
       end
 
-      # Uploads the binary
+      # Uploads the binary file if it has not already been uploaded
+      # Takes at least POLLING_INTERVAL_SECONDS between retrying uploads
       #
-      # Returns the release_id on a successful release.
-      # Returns nil if unable to upload.
+      # args
+      #   app_id - Firebase App ID
+      #   binary_path - Absolute path to you app's apk/ipa file
+      #
+      # Returns the release_id on a successful release, otherwise returns nil.
+      #
+      # Throws an error if the number of polling attempts exceeds MAX_POLLING_RETRIES
       def upload(app_id, binary_path)
         upload_token = get_upload_token(app_id, binary_path)
         upload_status_response = get_upload_status(app_id, upload_token)

@@ -6,7 +6,6 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
 
   let(:api_client) { Fastlane::Client::FirebaseAppDistributionApiClient.new }
   let(:stubs) { Faraday::Adapter::Test::Stubs.new }
-  let(:action) { Fastlane::Actions::FirebaseAppDistributionAction }
   let(:conn) do
     Faraday.new(url: "https://firebaseappdistribution.googleapis.com") do |b|
       b.response(:json, parser_options: { symbolize_names: true })
@@ -128,7 +127,99 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
   end
 
   describe '#upload' do
-    # Empty for now
+    let(:max_polling_retries) { Fastlane::Client::FirebaseAppDistributionApiClient::MAX_POLLING_RETRIES }
+    let(:polling_interval_seconds) { Fastlane::Client::FirebaseAppDistributionApiClient::POLLING_INTERVAL_SECONDS }
+    let(:upload_status_response_success) do
+      UploadStatusResponse.new(
+        { status: "SUCCESS",
+          release: { id: "release_id" } }
+      )
+    end
+    let(:upload_status_response_in_progress) do
+      UploadStatusResponse.new(
+        { status: "IN_PROGRESS",
+          release: {} }
+      )
+    end
+    let(:upload_status_response_error) do
+      UploadStatusResponse.new(
+        { status: "ERROR",
+          release: {} }
+      )
+    end
+
+    it 'skips the upload step if the binary has already been uploaded' do
+      expect(api_client).to receive(:get_upload_token)
+        .with("app_id", fake_binary_path)
+        .and_return("upload_token")
+      expect(api_client).to receive(:get_upload_status)
+        .with("app_id", "upload_token")
+        .and_return(upload_status_response_success)
+      expect(api_client).not_to(receive(:get_upload_status))
+
+      release_id = api_client.upload("app_id", fake_binary_path)
+      expect(release_id).to eq("release_id")
+    end
+
+    it 'uploads the app binary then returns the release_id' do
+      expect(api_client).to receive(:get_upload_token)
+        .with("app_id", fake_binary_path)
+        .and_return("upload_token")
+      expect(api_client).to receive(:get_upload_status)
+        .with("app_id", "upload_token")
+        .and_return(upload_status_response_error)
+      expect(api_client).to receive(:upload_binary)
+        .with("app_id", fake_binary_path)
+      expect(api_client).to receive(:get_upload_status)
+        .with("app_id", "upload_token")
+        .and_return(upload_status_response_success)
+
+      release_id = api_client.upload("app_id", fake_binary_path)
+      expect(release_id).to eq("release_id")
+    end
+
+    it 'attempts to upload MAX_POLLING_RETRIES times' do
+      stub_const("Fastlane::Client::FirebaseAppDistributionApiClient::POLLING_INTERVAL_SECONDS", 0)
+      expect(api_client).to receive(:get_upload_token)
+        .with("app_id", fake_binary_path)
+        .and_return("upload_token")
+      expect(api_client).to receive(:get_upload_status)
+        .with("app_id", "upload_token")
+        .and_return(upload_status_response_error)
+      max_polling_retries.times do
+        expect(api_client).to receive(:upload_binary)
+          .with("app_id", fake_binary_path)
+        expect(api_client).to receive(:get_upload_status)
+          .with("app_id", "upload_token")
+          .and_return(upload_status_response_error)
+      end
+
+      release_id = api_client.upload("app_id", fake_binary_path)
+      expect(release_id).to be_nil
+    end
+
+    it 'uploads the app binary once then polls until success' do
+      stub_const("Fastlane::Client::FirebaseAppDistributionApiClient::POLLING_INTERVAL_SECONDS", 0)
+      expect(api_client).to receive(:get_upload_token)
+        .with("app_id", fake_binary_path)
+        .and_return("upload_token")
+      expect(api_client).to receive(:get_upload_status)
+        .with("app_id", "upload_token")
+        .and_return(upload_status_response_error)
+      expect(api_client).to receive(:upload_binary)
+        .with("app_id", fake_binary_path)
+      (max_polling_retries / 2).times do
+        expect(api_client).to receive(:get_upload_status)
+          .with("app_id", "upload_token")
+          .and_return(upload_status_response_in_progress)
+      end
+      expect(api_client).to receive(:get_upload_status)
+        .with("app_id", "upload_token")
+        .and_return(upload_status_response_success)
+
+      release_id = api_client.upload("app_id", fake_binary_path)
+      expect(release_id).to eq("release_id")
+    end
   end
 
   describe '#post_notes' do
