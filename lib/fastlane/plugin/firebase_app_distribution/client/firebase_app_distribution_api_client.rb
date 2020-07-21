@@ -11,7 +11,7 @@ module Fastlane
 
       def enable_access(app_id, release_id, emails, group_ids)
         if emails.nil? && group_ids.nil?
-          UI.message("No testers passed in. Skipping this step")
+          UI.message("No testers passed in. Skipping this step.")
           return
         end
         begin
