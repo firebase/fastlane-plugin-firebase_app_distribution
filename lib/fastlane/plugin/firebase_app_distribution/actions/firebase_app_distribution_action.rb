@@ -6,25 +6,25 @@ require_relative '../helper/upload_status_response'
 require_relative '../helper/firebase_app_distribution_helper'
 require_relative '../helper/firebase_app_distribution_error_message'
 require_relative '../client/firebase_app_distribution_api_client'
+require_relative '../helper/firebase_app_distribution_auth_client'
 
 ## TODO: should always use a file underneath? I think so.
 ## How should we document the usage of release notes?
 module Fastlane
   module Actions
     class FirebaseAppDistributionAction < Action
-      TOKEN_CREDENTIAL_URI = "https://oauth2.googleapis.com/token"
       DEFAULT_FIREBASE_CLI_PATH = `which firebase`
       FIREBASECMD_ACTION = "appdistribution:distribute".freeze
-      SCOPE = "https://www.googleapis.com/auth/cloud-platform"
 
+      extend Auth::FirebaseAppDistributionAuthClient
       extend Helper::FirebaseAppDistributionHelper
 
       def self.run(params)
         params.values # to validate all inputs before looking for the ipa/apk
-        fad_api_client = Client::FirebaseAppDistributionApiClient.new
+        auth_token = fetch_auth_token(params[:service_credentials_file])
+        fad_api_client = Client::FirebaseAppDistributionApiClient.new(auth_token)
         platform = Actions.lane_context[Actions::SharedValues::PLATFORM_NAME]
         binary_path = params[:ipa_path] || params[:apk_path]
-        fad_api_client.set_auth_token(params[:google_service_account])
 
         if params[:app] # Set app_id if it is specified as a parameter
           app_id = params[:app]
@@ -161,13 +161,11 @@ module Fastlane
                                        optional: true,
                                        default_value: false,
                                        is_string: false),
-          FastlaneCore::ConfigItem.new(key: :google_service_account,
+          FastlaneCore::ConfigItem.new(key: :service_credentials_file,
                                        description: "Path to Google service account json",
                                        optional: true,
                                        type: String)
         ]
-
-        # https://github.com/fastlane/fastlane-plugin-firebase_app_distribution/issues/18#issuecomment-617774810
       end
 
       def self.is_supported?(platform)

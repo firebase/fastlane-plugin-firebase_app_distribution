@@ -5,33 +5,19 @@ module Fastlane
     module FirebaseAppDistributionAuthClient
       TOKEN_CREDENTIAL_URI = "https://oauth2.googleapis.com/token"
 
-      def fetch_auth_token(param)
-        @google_service_path = param
-        auth_method = fetch_auth_method
-        case auth_method
-        when "none"
-          UI.crash!(ErrorMessage::MISSING_CREDENTIALS)
-        when "service_account"
-          service_account
-        when "firebase_token"
+      def fetch_auth_token(google_service_path)
+        if !google_service_path.nil? && !google_service_path.empty?
+          service_account(google_service_path)
+        elsif ENV["GOOGLE_APPLICATION_CREDENTIALS"]
+          service_account(ENV["GOOGLE_APPLICATION_CREDENTIALS"])
+        elsif ENV["FIREBASE_TOKEN"]
           firebase_token
+        else
+          UI.crash!(ErrorMessage::MISSING_CREDENTIALS)
         end
       end
 
       private
-
-      def fetch_auth_method
-        if !@google_service_path.nil? && !@google_service_path.empty?
-          "service_account"
-        elsif ENV["GOOGLE_APPLICATION_CREDENTIALS"]
-          @google_service_path = ENV["GOOGLE_APPLICATION_CREDENTIALS"]
-          "service_account"
-        elsif ENV["FIREBASE_TOKEN"]
-          "firebase_token"
-        else
-          "none"
-        end
-      end
 
       def firebase_token
         begin
@@ -48,14 +34,14 @@ module Fastlane
         client.access_token
       end
 
-      def service_account
+      def service_account(google_service_path)
         service_account_credentials = Google::Auth::ServiceAccountCredentials.make_creds(
-          json_key_io: File.open(@google_service_path),
+          json_key_io: File.open(google_service_path),
           scope: Fastlane::Actions::FirebaseAppDistributionLoginAction::SCOPE
         )
         service_account_credentials.fetch_access_token!["access_token"]
       rescue Errno::ENOENT
-        UI.crash!("#{ErrorMessage::SERVICE_CREDENTIALS_NOT_FOUND}: #{@google_service_path}")
+        UI.crash!("#{ErrorMessage::SERVICE_CREDENTIALS_NOT_FOUND}: #{google_service_path}")
       end
     end
   end

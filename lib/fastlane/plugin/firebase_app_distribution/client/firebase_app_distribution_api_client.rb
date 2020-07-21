@@ -1,6 +1,5 @@
 require 'fastlane_core/ui/ui'
 require_relative '../actions/firebase_app_distribution_login'
-require_relative '../helper/firebase_app_distribution_auth_client'
 
 module Fastlane
   module Client
@@ -10,7 +9,9 @@ module Fastlane
       MAX_POLLING_RETRIES = 60
       POLLING_INTERVAL_SECONDS = 2
 
-      include Auth::FirebaseAppDistributionAuthClient
+      def initialize(auth_token)
+        @auth_token = auth_token
+      end
 
       def enable_access(app_id, release_id, emails, group_ids)
         if emails.nil? && group_ids.nil?
@@ -20,7 +21,7 @@ module Fastlane
         begin
         payload = { emails: emails, groupIds: group_ids }
         connection.post(enable_access_url(app_id, release_id), payload.to_json) do |request|
-          request.headers["Authorization"] = "Bearer " + auth_token
+          request.headers["Authorization"] = "Bearer " + @auth_token
         end
       rescue
         UI.user_error!("#{ErrorMessage::INVALID_TESTERS} \nEmails: #{emails} \nGroups: #{group_ids}")
@@ -36,7 +37,7 @@ module Fastlane
         end
         begin
           connection.post(release_notes_create_url(app_id, release_id), payload.to_json) do |request|
-            request.headers["Authorization"] = "Bearer " + auth_token
+            request.headers["Authorization"] = "Bearer " + @auth_token
           end
         rescue Faraday::ResourceNotFound
           UI.crash!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
@@ -53,7 +54,7 @@ module Fastlane
 
         begin
           response = connection.get(v1_apps_url(app_id)) do |request|
-            request.headers["Authorization"] = "Bearer " + auth_token
+            request.headers["Authorization"] = "Bearer " + @auth_token
           end
         rescue Faraday::ResourceNotFound
           UI.crash!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
@@ -67,7 +68,7 @@ module Fastlane
 
       def upload_binary(app_id, binary_path)
         connection.post(binary_upload_url(app_id), File.open(binary_path).read) do |request|
-          request.headers["Authorization"] = "Bearer " + auth_token
+          request.headers["Authorization"] = "Bearer " + @auth_token
         end
       rescue Faraday::ResourceNotFound
         UI.crash!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
@@ -110,19 +111,13 @@ module Fastlane
       def get_upload_status(app_id, app_token)
         begin
           response = connection.get(upload_status_url(app_id, app_token)) do |request|
-            request.headers["Authorization"] = "Bearer " + auth_token
+            request.headers["Authorization"] = "Bearer " + @auth_token
           end
         rescue Faraday::ResourceNotFound
           UI.crash!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
         end
         return UploadStatusResponse.new(response.body)
       end
-
-      def set_auth_token(param)
-        @auth_token ||= fetch_auth_token(param)
-      end
-
-      # TODO: Add in firebase tools case 3
 
       private
 
@@ -156,10 +151,6 @@ module Fastlane
           conn.response(:raise_error) # raise_error middleware will run before the json middleware
           conn.adapter(Faraday.default_adapter)
         end
-      end
-
-      def auth_token
-        @auth_token ||= fetch_auth_token("")
       end
     end
   end

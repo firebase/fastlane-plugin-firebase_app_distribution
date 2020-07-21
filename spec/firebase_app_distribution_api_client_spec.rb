@@ -3,7 +3,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
   let(:fake_binary_contents) { "Hello World" }
   let(:fake_binary) { double("Binary") }
 
-  let(:api_client) { Fastlane::Client::FirebaseAppDistributionApiClient.new }
+  let(:api_client) { Fastlane::Client::FirebaseAppDistributionApiClient.new("") }
   let(:stubs) { Faraday::Adapter::Test::Stubs.new }
   let(:action) { Fastlane::Actions::FirebaseAppDistributionAction }
   let(:conn) do
