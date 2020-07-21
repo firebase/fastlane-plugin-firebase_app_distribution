@@ -77,7 +77,7 @@ module Fastlane
       #
       # args
       #   app_id - Firebase App ID
-      #   binary_path - Absolute path to you app's apk/ipa file
+      #   binary_path - Absolute path to your app's apk/ipa file
       #
       # Returns the release_id on a successful release, otherwise returns nil.
       #
