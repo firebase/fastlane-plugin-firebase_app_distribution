@@ -37,32 +37,32 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
       expect(auth_helper.fetch_auth_token("google_service_path")).to eq("service_fake_auth_token")
     end
 
-    it 'uses service credentials for authorization when the enviormental variable is set' do
-      allow(ENV).to receive(:[])
+    it 'uses service credentials for authorization when the environmental variable is set' do
+      expect(ENV).to receive(:[])
         .with("GOOGLE_APPLICATION_CREDENTIALS")
         .and_return("google_service_path")
       expect(auth_helper.fetch_auth_token("")).to eq("service_fake_auth_token")
     end
 
-    it 'uses service credentials for authorization when the enviormental variable is set and path is nil' do
-      allow(ENV).to receive(:[])
+    it 'uses service credentials for authorization when the environmental variable is set and path is nil' do
+      expect(ENV).to receive(:[])
         .with("GOOGLE_APPLICATION_CREDENTIALS")
         .and_return("google_service_path")
       expect(auth_helper.fetch_auth_token(nil)).to eq("service_fake_auth_token")
     end
 
-    it 'uses firebase token enviormental variable if an empty google service path is passed in' do
-      allow(ENV).to receive(:[]).with("FIREBASE_TOKEN").and_return("refresh_token")
+    it 'uses firebase token environmental variable if an empty google service path is passed in' do
+      expect(ENV).to receive(:[]).with("FIREBASE_TOKEN").and_return("refresh_token").twice
       expect(auth_helper.fetch_auth_token("")).to eq("fake_auth_token")
     end
 
-    it 'uses firebase token enviormental variable if no google service path is passed in' do
-      allow(ENV).to receive(:[]).with("FIREBASE_TOKEN").and_return("refresh_token")
+    it 'uses firebase token environmental variable if no google service path is passed in' do
+      expect(ENV).to receive(:[]).with("FIREBASE_TOKEN").and_return("refresh_token").twice
       expect(auth_helper.fetch_auth_token(nil)).to eq("fake_auth_token")
     end
 
     it 'fails if no credentials are passed and the google service path is empty' do
-      allow(ENV).to receive(:[]).with("FIREBASE_TOKEN").and_return(nil)
+      expect(ENV).to receive(:[]).with("FIREBASE_TOKEN").and_return(nil)
       expect { auth_helper.fetch_auth_token("") }
         .to raise_error(ErrorMessage::MISSING_CREDENTIALS)
     end
