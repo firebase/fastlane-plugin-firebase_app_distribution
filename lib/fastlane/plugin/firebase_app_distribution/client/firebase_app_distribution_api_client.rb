@@ -73,7 +73,7 @@ module Fastlane
       end
 
       # Uploads the binary file if it has not already been uploaded
-      # Takes at least POLLING_INTERVAL_SECONDS between retrying uploads
+      # Takes at least POLLING_INTERVAL_SECONDS between polling get_upload_status
       #
       # args
       #   app_id - Firebase App ID
@@ -81,7 +81,7 @@ module Fastlane
       #
       # Returns the release_id on a successful release, otherwise returns nil.
       #
-      # Throws an error if the number of polling attempts exceeds MAX_POLLING_RETRIES
+      # Throws an error if the number of polling retries exceeds MAX_POLLING_RETRIES
       def upload(app_id, binary_path)
         upload_token = get_upload_token(app_id, binary_path)
         upload_status_response = get_upload_status(app_id, upload_token)

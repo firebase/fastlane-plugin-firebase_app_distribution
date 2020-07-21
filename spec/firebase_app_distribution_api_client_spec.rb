@@ -133,6 +133,12 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
           release: { id: "release_id" } }
       )
     end
+    let(:upload_status_response_in_progress) do
+      UploadStatusResponse.new(
+        { status: "IN_PROGRESS",
+          release: {} }
+      )
+    end
     let(:upload_status_response_error) do
       UploadStatusResponse.new(
         { status: "ERROR",
@@ -147,12 +153,12 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       # Expect a call to get_upload_token every time
       expect(api_client).to receive(:get_upload_token)
         .with("app_id", fake_binary_path)
-        .and_return("upload_token").ordered
+        .and_return("upload_token")
     end
 
     it 'skips the upload step if the binary has already been uploaded' do
       # upload should not attempt to upload the binary at all
-      expect(api_client).not_to(receive(:upload_binary))
+      expect(api_client).to_not(receive(:upload_binary))
       expect(api_client).to receive(:get_upload_status)
         .with("app_id", "upload_token")
         .and_return(upload_status_response_success)
@@ -165,50 +171,54 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       # return an error then a success after being uploaded
       expect(api_client).to receive(:get_upload_status)
         .with("app_id", "upload_token")
-        .and_return(upload_status_response_error, upload_status_response_success).ordered
+        .and_return(upload_status_response_error, upload_status_response_success)
 
       # upload_binary should only be called once
       expect(api_client).to receive(:upload_binary)
-        .with("app_id", fake_binary_path).ordered
+        .with("app_id", fake_binary_path)
+        .at_most(:once)
 
       release_id = api_client.upload("app_id", fake_binary_path)
       expect(release_id).to eq("release_id")
     end
 
-    it 'attempts to upload MAX_POLLING_RETRIES times' do
-      max_polling_retries = 60
+    it 'polls MAX_POLLING_RETRIES times' do
+      max_polling_retries = 2
       stub_const("Fastlane::Client::FirebaseAppDistributionApiClient::MAX_POLLING_RETRIES", max_polling_retries)
 
       expect(api_client).to receive(:get_upload_status)
         .with("app_id", "upload_token")
         .and_return(upload_status_response_error)
-        .at_least(:once).ordered
       expect(api_client).to receive(:upload_binary)
         .with("app_id", fake_binary_path)
-        .exactly(max_polling_retries).times.ordered
+      expect(api_client).to receive(:get_upload_status)
+        .with("app_id", "upload_token")
+        .and_return(upload_status_response_in_progress)
+        .exactly(max_polling_retries).times
 
       release_id = api_client.upload("app_id", fake_binary_path)
       expect(release_id).to be_nil
     end
 
     it 'uploads the app binary once then polls until success' do
-      max_polling_retries = 60
+      max_polling_retries = 3
       stub_const("Fastlane::Client::FirebaseAppDistributionApiClient::MAX_POLLING_RETRIES", max_polling_retries)
 
       # return error the first time
       expect(api_client).to receive(:get_upload_status)
         .with("app_id", "upload_token")
-        .and_return(upload_status_response_error).ordered
+        .and_return(upload_status_response_error)
       expect(api_client).to receive(:upload_binary)
-        .with("app_id", fake_binary_path).ordered
+        .with("app_id", fake_binary_path)
+        .at_most(:once)
       # return in_progress for a couple polls
       expect(api_client).to receive(:get_upload_status)
         .with("app_id", "upload_token")
-        .and_return(UploadStatusResponse.new({ status: "IN_PROGRESS", release: {} }))
-        .exactly(max_polling_retries / 2).ordered
+        .and_return(upload_status_response_in_progress)
+        .exactly(2).times
       expect(api_client).to receive(:get_upload_status)
         .with("app_id", "upload_token")
-        .and_return(upload_status_response_success).ordered
+        .and_return(upload_status_response_success)
 
       release_id = api_client.upload("app_id", fake_binary_path)
       expect(release_id).to eq("release_id")
@@ -228,12 +238,12 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
     end
 
     it 'does not post when the release notes are empty' do
-      expect(conn).not_to(receive(:post))
+      expect(conn).to_not(receive(:post))
       api_client.post_notes("app_id", "release_id", "")
     end
 
     it 'does not post when the release notes are nil' do
-      expect(conn).not_to(receive(:post))
+      expect(conn).to_not(receive(:post))
       api_client.post_notes("app_id", "release_id", nil)
     end
 
@@ -314,7 +324,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
     end
 
     it 'does not post if testers and groups are nil' do
-      expect(conn).not_to(receive(:post))
+      expect(conn).to_not(receive(:post))
       api_client.enable_access("app_id", "release_id", nil, nil)
     end
   end
