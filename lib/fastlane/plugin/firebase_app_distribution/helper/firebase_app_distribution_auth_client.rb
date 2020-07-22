@@ -8,10 +8,10 @@ module Fastlane
       def fetch_auth_token(google_service_path)
         if !google_service_path.nil? && !google_service_path.empty?
           service_account(google_service_path)
-        elsif ENV["GOOGLE_APPLICATION_CREDENTIALS"]
-          service_account(ENV["GOOGLE_APPLICATION_CREDENTIALS"])
         elsif ENV["FIREBASE_TOKEN"]
           firebase_token
+        elsif ENV["GOOGLE_APPLICATION_CREDENTIALS"]
+          service_account(ENV["GOOGLE_APPLICATION_CREDENTIALS"])
         else
           UI.crash!(ErrorMessage::MISSING_CREDENTIALS)
         end

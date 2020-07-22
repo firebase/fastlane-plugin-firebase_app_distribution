@@ -47,7 +47,6 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       end
       upload_token = api_client.get_upload_token("app_id", fake_binary_path)
       binary_hash = Digest::SHA256.hexdigest(fake_binary_contents)
-      expect(api_client.instance_variable_get(:@auth_token))
       expect(upload_token).to eq(CGI.escape("projects/project_number/apps/app_id/releases/-/binaries/#{binary_hash}"))
     end
 
