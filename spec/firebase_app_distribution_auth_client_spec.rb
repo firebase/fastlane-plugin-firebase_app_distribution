@@ -30,6 +30,9 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
     allow(ENV).to receive(:[])
       .with("GOOGLE_APPLICATION_CREDENTIALS")
       .and_return(nil)
+    allow(ENV).to receive(:[])
+      .with("FIREBASE_TOKEN")
+      .and_return(nil)
   end
 
   describe '#fetch_auth_token' do
@@ -41,6 +44,7 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
       expect(ENV).to receive(:[])
         .with("GOOGLE_APPLICATION_CREDENTIALS")
         .and_return("google_service_path")
+
       expect(auth_helper.fetch_auth_token("")).to eq("service_fake_auth_token")
     end
 
@@ -62,13 +66,11 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
     end
 
     it 'fails if no credentials are passed and the google service path is empty' do
-      expect(ENV).to receive(:[]).with("FIREBASE_TOKEN").and_return(nil)
       expect { auth_helper.fetch_auth_token("") }
         .to raise_error(ErrorMessage::MISSING_CREDENTIALS)
     end
 
     it 'fails if no credentials are passed and the google service path is nil' do
-      allow(ENV).to receive(:[]).with("FIREBASE_TOKEN").and_return(nil)
       expect { auth_helper.fetch_auth_token(nil) }
         .to raise_error(ErrorMessage::MISSING_CREDENTIALS)
     end
