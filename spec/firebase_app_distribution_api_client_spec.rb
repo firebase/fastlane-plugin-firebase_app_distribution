@@ -2,9 +2,9 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
   let(:fake_binary_path) { "binary_path" }
   let(:fake_binary_contents) { "Hello World" }
   let(:fake_binary) { double("Binary") }
-  let(:fake_auth_client) { double("auth_client") }
+  let(:headers) { { 'Authorization' => 'Bearer auth_token' } }
 
-  let(:api_client) { Fastlane::Client::FirebaseAppDistributionApiClient.new }
+  let(:api_client) { Fastlane::Client::FirebaseAppDistributionApiClient.new("auth_token") }
   let(:stubs) { Faraday::Adapter::Test::Stubs.new }
   let(:action) { Fastlane::Actions::FirebaseAppDistributionAction }
   let(:conn) do
@@ -16,15 +16,10 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
   end
 
   before(:each) do
-    allow(Signet::OAuth2::Client).to receive(:new)
-      .and_return(fake_auth_client)
-    allow(fake_auth_client).to receive(:fetch_access_token!)
-    allow(fake_auth_client).to receive(:access_token)
-      .and_return("fake_auth_token")
-
     allow(File).to receive(:open)
       .with(fake_binary_path)
       .and_return(fake_binary)
+
     allow(fake_binary).to receive(:read)
       .and_return(fake_binary_contents)
 
@@ -39,7 +34,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
 
   describe '#get_upload_token' do
     it 'returns the upload token after a successfull GET call' do
-      stubs.get("/v1alpha/apps/app_id") do |env|
+      stubs.get("/v1alpha/apps/app_id", headers) do |env|
         [
           200,
           {},
@@ -56,7 +51,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
     end
 
     it 'crash if the app has no contact email' do
-      stubs.get("/v1alpha/apps/app_id") do |env|
+      stubs.get("/v1alpha/apps/app_id", headers) do |env|
         [
           200,
           {},
@@ -72,7 +67,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
     end
 
     it 'crashes when given an invalid app_id' do
-      stubs.get("/v1alpha/apps/invalid_app_id") do |env|
+      stubs.get("/v1alpha/apps/invalid_app_id", headers) do |env|
         [
           404,
           {},
@@ -94,7 +89,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
 
   describe '#upload_binary' do
     it 'uploads the binary successfully when the input is valid' do
-      stubs.post("/app-binary-uploads?app_id=app_id", fake_binary_contents) do |env|
+      stubs.post("/app-binary-uploads?app_id=app_id", fake_binary_contents, headers) do |env|
         [
           202,
           {},
@@ -107,7 +102,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
     end
 
     it 'should crash if given an invalid app_id' do
-      stubs.post("/app-binary-uploads?app_id=invalid_app_id", fake_binary_contents) do |env|
+      stubs.post("/app-binary-uploads?app_id=invalid_app_id", fake_binary_contents, headers) do |env|
         [
           404,
           {},
@@ -132,8 +127,10 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
   end
 
   describe '#post_notes' do
+    let(:release_notes)  { "{\"releaseNotes\":{\"releaseNotes\":\"release_notes\"}}" }
+
     it 'post call is successfull when input is valid' do
-      stubs.post("/v1alpha/apps/app_id/releases/release_id/notes", "{\"releaseNotes\":{\"releaseNotes\":\"release_notes\"}}") do |env|
+      stubs.post("/v1alpha/apps/app_id/releases/release_id/notes", release_notes, headers) do |env|
         [
           200,
           {},
@@ -154,7 +151,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
     end
 
     it 'crashes when given an invalid app_id' do
-      stubs.post("/v1alpha/apps/invalid_app_id/releases/release_id/notes", "{\"releaseNotes\":{\"releaseNotes\":\"release_notes\"}}") do |env|
+      stubs.post("/v1alpha/apps/invalid_app_id/releases/release_id/notes", release_notes, headers) do |env|
         [
           404,
           {},
@@ -168,7 +165,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
 
   describe '#upload_status' do
     it 'returns the proper status when the get call is successfull' do
-      stubs.get("/v1alpha/apps/app_id/upload_status/app_token") do |env|
+      stubs.get("/v1alpha/apps/app_id/upload_status/app_token", headers) do |env|
         [
           200,
           {},
@@ -180,7 +177,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
     end
 
     it 'crashes when given an invalid app_id' do
-      stubs.get("/v1alpha/apps/invalid_app_id/upload_status/app_token") do |env|
+      stubs.get("/v1alpha/apps/invalid_app_id/upload_status/app_token", headers) do |env|
         [
           404,
           {},
@@ -195,7 +192,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
   describe '#enable_access' do
     it 'posts successfully when tester emails and groupIds are defined' do
       payload = { emails: ["testers"], groupIds: ["groups"] }
-      stubs.post("/v1alpha/apps/app_id/releases/release_id/enable_access", payload.to_json) do |env|
+      stubs.post("/v1alpha/apps/app_id/releases/release_id/enable_access", payload.to_json, headers) do |env|
         [
           202,
           {},
@@ -207,7 +204,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
 
     it 'posts when groupIds are defined and tester emails is nil' do
       payload = { emails: nil, groupIds: ["groups"] }
-      stubs.post("/v1alpha/apps/app_id/releases/release_id/enable_access", payload.to_json) do |env|
+      stubs.post("/v1alpha/apps/app_id/releases/release_id/enable_access", payload.to_json, headers) do |env|
         [
           202,
           {},
@@ -219,7 +216,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
 
     it 'posts when tester emails are defined and groupIds is nil' do
       payload = { emails: ["testers"], groupIds: nil }
-      stubs.post("/v1alpha/apps/app_id/releases/release_id/enable_access", payload.to_json) do |env|
+      stubs.post("/v1alpha/apps/app_id/releases/release_id/enable_access", payload.to_json, headers) do |env|
         [
           202,
           {},
