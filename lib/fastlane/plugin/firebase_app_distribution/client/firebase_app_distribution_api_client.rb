@@ -15,7 +15,7 @@ module Fastlane
 
       def enable_access(app_id, release_id, emails, group_ids)
         if emails.nil? && group_ids.nil?
-          UI.message("No testers passed in. Skipping this step")
+          UI.message("No testers passed in. Skipping this step.")
           return
         end
         begin
@@ -76,10 +76,16 @@ module Fastlane
         UI.crash!("#{ErrorMessage::APK_NOT_FOUND}: #{binary_path}")
       end
 
-      # Uploads the binary
+      # Uploads the binary file if it has not already been uploaded
+      # Takes at least POLLING_INTERVAL_SECONDS between polling get_upload_status
       #
-      # Returns the release_id on a successful release.
-      # Returns nil if unable to upload.
+      # args
+      #   app_id - Firebase App ID
+      #   binary_path - Absolute path to your app's apk/ipa file
+      #
+      # Returns the release_id on a successful release, otherwise returns nil.
+      #
+      # Throws an error if the number of polling retries exceeds MAX_POLLING_RETRIES
       def upload(app_id, binary_path)
         upload_token = get_upload_token(app_id, binary_path)
         upload_status_response = get_upload_status(app_id, upload_token)
