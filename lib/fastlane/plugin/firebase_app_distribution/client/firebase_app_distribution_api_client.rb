@@ -9,19 +9,31 @@ module Fastlane
       MAX_POLLING_RETRIES = 60
       POLLING_INTERVAL_SECONDS = 2
 
+      # Enables tester access to the specified app release. Skips this
+      # step if no testers are passed in (emails and group_ids are nil).
+      #
+      # args
+      #   app_id - Firebase App ID
+      #   release_id - App release ID, returned by upload_status endpoint
+      #   emails - String array of app testers' email addresses
+      #   group_ids - String array of Firebase tester group IDs
+      #
+      # Throws a user_error if app_id, emails, or group_ids are invalid
       def enable_access(app_id, release_id, emails, group_ids)
         if emails.nil? && group_ids.nil?
           UI.message("No testers passed in. Skipping this step")
           return
         end
-        begin
         payload = { emails: emails, groupIds: group_ids }
-        connection.post(enable_access_url(app_id, release_id), payload.to_json) do |request|
-          request.headers["Authorization"] = "Bearer " + auth_token
+        begin
+          connection.post(enable_access_url(app_id, release_id), payload.to_json) do |request|
+            request.headers["Authorization"] = "Bearer " + auth_token
+          end
+        rescue Faraday::ResourceNotFound
+          UI.user_error!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
+        rescue Faraday::ClientError
+          UI.user_error!("#{ErrorMessage::INVALID_TESTERS} \nEmails: #{emails} \nGroups: #{group_ids}")
         end
-      rescue
-        UI.user_error!("#{ErrorMessage::INVALID_TESTERS} \nEmails: #{emails} \nGroups: #{group_ids}")
-      end
         UI.success("App Distribution upload finished successfully")
       end
 
