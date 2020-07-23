@@ -234,12 +234,12 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       api_client.post_notes("app_id", "release_id", "release_notes")
     end
 
-    it 'does not post when the release notes are empty' do
+    it 'skips posting when release_notes is empty' do
       expect(conn).to_not(receive(:post))
       api_client.post_notes("app_id", "release_id", "")
     end
 
-    it 'does not post when the release notes are nil' do
+    it 'skips posting when release_notes is nil' do
       expect(conn).to_not(receive(:post))
       api_client.post_notes("app_id", "release_id", nil)
     end
@@ -254,6 +254,18 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       end
       expect { api_client.post_notes("invalid_app_id", "release_id", "release_notes") }
         .to raise_error("#{ErrorMessage::INVALID_APP_ID}: invalid_app_id")
+    end
+
+    it 'crashes when given an invalid release_id' do
+      stubs.post("/v1alpha/apps/invalid_app_id/releases/invalid_release_id/notes", release_notes, headers) do |env|
+        [
+          500,
+          {},
+          {}
+        ]
+      end
+      expect { api_client.post_notes("invalid_app_id", "invalid_release_id", "release_notes") }
+        .to raise_error("#{ErrorMessage::INVALID_RELEASE_ID}: invalid_release_id")
     end
   end
 
