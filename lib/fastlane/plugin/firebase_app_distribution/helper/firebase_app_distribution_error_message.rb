@@ -17,4 +17,5 @@ module ErrorMessage
   INVALID_APP_ID = "App Distribution could not find your app. Make sure to onboard your app by pressing the \"Get started\" button on the App Distribution page in the Firebase console: https://console.firebase.google.com/project/_/appdistribution. App ID"
   INVALID_PATH = "Could not read content from"
   INVALID_TESTERS = "Could not enable access for testers. Ensure that the groups exist and the tester emails are formatted correctly"
+  INVALID_RELEASE_ID = "App distribution failed to fetch release with id"
 end

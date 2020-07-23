@@ -37,7 +37,7 @@ module Fastlane
       #   release_id - App release ID, returned by upload_status endpoint
       #   release_notes - String of notes for this release
       #
-      # Throws a user_error if app_id is invalid
+      # Throws a user_error if app_id or release_id are invalid
       def post_notes(app_id, release_id, release_notes)
         payload = { releaseNotes: { releaseNotes: release_notes } }
         if release_notes.nil? || release_notes.empty?
@@ -50,6 +50,8 @@ module Fastlane
           end
         rescue Faraday::ResourceNotFound
           UI.user_error!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
+        rescue Faraday::ClientError
+          UI.user_error!("#{ErrorMessage::INVALID_RELEASE_ID}: #{release_id}")
         end
         UI.success("Release notes have been posted.")
       end
