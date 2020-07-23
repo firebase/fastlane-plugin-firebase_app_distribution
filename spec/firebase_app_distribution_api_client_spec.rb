@@ -234,12 +234,12 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       api_client.post_notes("app_id", "release_id", "release_notes")
     end
 
-    it 'does not post when the release notes are empty' do
+    it 'skips posting when release_notes is empty' do
       expect(conn).to_not(receive(:post))
       api_client.post_notes("app_id", "release_id", "")
     end
 
-    it 'does not post when the release notes are nil' do
+    it 'skips posting when release_notes is nil' do
       expect(conn).to_not(receive(:post))
       api_client.post_notes("app_id", "release_id", nil)
     end
