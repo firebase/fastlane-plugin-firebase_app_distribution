@@ -256,7 +256,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         .to raise_error("#{ErrorMessage::INVALID_APP_ID}: invalid_app_id")
     end
 
-    # BUG: 500 errors causes a Faraday::ClientError locally but Faraday::ServerError on CircleCI specs
+    # BUG: 500 errors causes a ClientError locally but ServerError on CircleCI specs, causing this test to be flaky.
     # it 'crashes when given an invalid release_id' do
     #   stubs.post("/v1alpha/apps/invalid_app_id/releases/invalid_release_id/notes", release_notes, headers) do |env|
     #     [
