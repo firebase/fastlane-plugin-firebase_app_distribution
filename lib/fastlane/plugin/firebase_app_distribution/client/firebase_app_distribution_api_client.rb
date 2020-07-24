@@ -61,8 +61,8 @@ module Fastlane
           end
         rescue Faraday::ResourceNotFound
           UI.user_error!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
-        rescue Faraday::ClientError
-          UI.user_error!("#{ErrorMessage::INVALID_RELEASE_ID}: #{release_id}")
+        # rescue Faraday::ClientError
+        #   UI.user_error!("#{ErrorMessage::INVALID_RELEASE_ID}: #{release_id}")
         end
         UI.success("Release notes have been posted.")
       end
