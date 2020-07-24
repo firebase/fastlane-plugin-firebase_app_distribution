@@ -14,7 +14,7 @@ module Fastlane
       end
 
       # Enables tester access to the specified app release. Skips this
-      # step if no testers are passed in (emails and group_ids are nil).
+      # step if no testers are passed in (emails and group_ids are nil/empty).
       #
       # args
       #   app_id - Firebase App ID
@@ -24,7 +24,7 @@ module Fastlane
       #
       # Throws a user_error if app_id, emails, or group_ids are invalid
       def enable_access(app_id, release_id, emails, group_ids)
-        if emails.nil? && group_ids.nil?
+        if (emails.nil? || emails.empty?) && (group_ids.nil? || group_ids.empty?)
           UI.message("No testers passed in. Skipping this step.")
           return
         end
@@ -38,7 +38,6 @@ module Fastlane
         rescue Faraday::ClientError
           UI.user_error!("#{ErrorMessage::INVALID_TESTERS} \nEmails: #{emails} \nGroups: #{group_ids}")
         end
-        UI.success("App Distribution upload finished successfully")
       end
 
       # Posts notes for the specified app release. Skips this
