@@ -205,7 +205,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       api_client.enable_access("app_id", "release_id", ["testers"], ["groups"])
     end
 
-    it 'posts when group_ids are defined and tester emails is nil' do
+    it 'posts when groupIds are defined and tester emails is nil' do
       payload = { emails: nil, groupIds: ["groups"] }
       stubs.post("/v1alpha/apps/app_id/releases/release_id/enable_access", payload.to_json) do |env|
         [
@@ -217,7 +217,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       api_client.enable_access("app_id", "release_id", nil, ["groups"])
     end
 
-    it 'posts when tester emails are defined and group_ids is nil' do
+    it 'posts when tester emails are defined and groupIds is nil' do
       payload = { emails: ["testers"], groupIds: nil }
       stubs.post("/v1alpha/apps/app_id/releases/release_id/enable_access", payload.to_json) do |env|
         [
@@ -230,11 +230,16 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
     end
 
     it 'skips posting if testers and groups are nil' do
-      expect(conn).not_to(receive(:post))
+      expect(conn).to_not(receive(:post))
       api_client.enable_access("app_id", "release_id", nil, nil)
     end
 
-    it 'crashes when given an invalid app_id' do
+    it 'skips posting if testers and groups are empty' do
+      expect(conn).to_not(receive(:post))
+      api_client.enable_access("app_id", "release_id", [], [])
+    end
+
+    it 'crashes when given an invalid appId' do
       payload = { emails: ["testers"], groupIds: ["groups"] }
       stubs.post("/v1alpha/apps/invalid_app_id/releases/release_id/enable_access", payload.to_json) do |env|
         [
@@ -247,7 +252,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         .to raise_error("#{ErrorMessage::INVALID_APP_ID}: invalid_app_id")
     end
 
-    it 'crashes when given an invalid group_id' do
+    it 'crashes when given an invalid groupIds' do
       emails = ["testers"]
       group_ids = ["invalid_group_id"]
       payload = { emails: emails, groupIds: group_ids }
