@@ -7,8 +7,8 @@ require 'fastlane/plugin/firebase_app_distribution/version'
 Gem::Specification.new do |spec|
   spec.name          = 'fastlane-plugin-firebase_app_distribution'
   spec.version       = Fastlane::FirebaseAppDistribution::VERSION
-  spec.authors       = ['Stefan Natchev']
-  spec.email         = ['snatchev@google.com']
+  spec.authors       = ['Stefan Natchev', 'Manny Jimenez', 'Alonso Salas Infante']
+  spec.email         = ['snatchev@google.com', 'mannyjimenez@google.com', 'alonsosi@google.com']
 
   spec.summary       = 'Release your beta builds to Firebase App Distribution. https://firebase.google.com/docs/app-distribution'
   spec.homepage      = "https://github.com/fastlane/fastlane-plugin-firebase_app_distribution"
