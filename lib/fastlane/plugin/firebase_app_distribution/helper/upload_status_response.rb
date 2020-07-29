@@ -22,4 +22,8 @@ class UploadStatusResponse
   def release_id
     release_hash ? release_hash[:id] : nil
   end
+
+  def message
+    @response_json_hash[:message]
+  end
 end
