@@ -177,7 +177,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       expect(release_id).to eq("release_id")
     end
 
-    it 'polls MAX_POLLING_RETRIES times' do
+    it 'returns nil after polling MAX_POLLING_RETRIES times' do
       max_polling_retries = 2
       stub_const("Fastlane::Client::FirebaseAppDistributionApiClient::MAX_POLLING_RETRIES", max_polling_retries)
 
@@ -217,6 +217,17 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
 
       release_id = api_client.upload("app_id", fake_binary_path)
       expect(release_id).to eq("release_id")
+    end
+
+    it 'returns nil after failing to upload' do
+      expect(api_client).to receive(:get_upload_status)
+        .with("app_id", "upload_token")
+        .and_return(upload_status_response_error).twice
+      expect(api_client).to receive(:upload_binary)
+        .with("app_id", fake_binary_path)
+
+      release_id = api_client.upload("app_id", fake_binary_path)
+      expect(release_id).to be_nil
     end
   end
 

@@ -107,25 +107,27 @@ module Fastlane
       #
       # Returns the release_id on a successful release, otherwise returns nil.
       #
-      # Throws an error if the number of polling retries exceeds MAX_POLLING_RETRIES
+      # Throws a UI error if the number of polling retries exceeds MAX_POLLING_RETRIES
+      # or if it was not able to upload the binary
       def upload(app_id, binary_path)
         upload_token = get_upload_token(app_id, binary_path)
         upload_status_response = get_upload_status(app_id, upload_token)
         if upload_status_response.success?
           UI.success("This APK/IPA has been uploaded before. Skipping upload step.")
         else
-          UI.message("This APK has not been uploaded before.")
+          UI.message("Uploading the APK/IPA.")
+          upload_binary(app_id, binary_path)
           MAX_POLLING_RETRIES.times do
+            upload_status_response = get_upload_status(app_id, upload_token)
             if upload_status_response.success?
               UI.success("Uploaded APK/IPA Successfully!")
               break
             elsif upload_status_response.in_progress?
               sleep(POLLING_INTERVAL_SECONDS)
             else
-              UI.message("Uploading the APK/IPA.")
-              upload_binary(app_id, binary_path)
+              UI.error("#{ErrorMessage::UPLOAD_APK_ERROR}: #{upload_status_response.message}")
+              return nil
             end
-            upload_status_response = get_upload_status(app_id, upload_token)
           end
           unless upload_status_response.success?
             UI.error("It took longer than expected to process your APK/IPA, please try again.")
