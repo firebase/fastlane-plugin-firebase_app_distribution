@@ -1,4 +1,5 @@
 require 'fastlane_core/ui/ui'
+require 'cfpropertylist'
 module Fastlane
   UI = FastlaneCore::UI unless Fastlane.const_defined?("UI")
   module Helper
@@ -21,6 +22,10 @@ module Fastlane
         return nil if string.nil? || string.empty?
         string_array = string.gsub(/\s+/, '').split(",")
         return string_array
+      end
+      
+      def parse_plist(path)
+        CFPropertyList.native_types(CFPropertyList::List.new(:file => path).value)
       end
 
       def get_ios_app_id_from_archive(path)
