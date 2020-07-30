@@ -6,12 +6,28 @@ module Fastlane
       TOKEN_CREDENTIAL_URI = "https://oauth2.googleapis.com/token"
 
       def fetch_auth_token(google_service_path)
+        if ENV["XDG_CONFIG_HOME"]
+          config_path = File.expand_path("configstore/firebase-tools.json", ENV["XDG_CONFIG_HOME"])
+        else
+          config_path = File.expand_path(".config/configstore/firebase-tools.json", "~")
+        end
         if !google_service_path.nil? && !google_service_path.empty?
           service_account(google_service_path)
         elsif ENV["FIREBASE_TOKEN"]
-          firebase_token
+          firebase_token(ENV["FIREBASE_TOKEN"])
         elsif ENV["GOOGLE_APPLICATION_CREDENTIALS"]
           service_account(ENV["GOOGLE_APPLICATION_CREDENTIALS"])
+        elsif File.exist?(config_path)
+          begin
+            refresh_token = JSON.parse(File.read(config_path))['tokens']['refresh_token']
+            if refresh_token.nil? || refresh_token.empty?
+              UI.crash!(ErrorMessage::MISSING_REFRESH_TOKEN)
+            else
+              firebase_token(refresh_token)
+            end
+          rescue NoMethodError
+            UI.crash!(ErrorMessage::MISSING_REFRESH_TOKEN)
+          end
         else
           UI.crash!(ErrorMessage::MISSING_CREDENTIALS)
         end
@@ -19,13 +35,21 @@ module Fastlane
 
       private
 
-      def firebase_token
+      def find_refresh_from_json(firebase_tools)
+        if firebase_tools['tokens']
+          if firebase_tools['tokens']['refresh_token']
+            firebase_tools['tokens']['refresh_token']
+          end
+        end
+      end
+
+      def firebase_token(refresh_token)
         begin
           client = Signet::OAuth2::Client.new(
             token_credential_uri: TOKEN_CREDENTIAL_URI,
             client_id: Fastlane::Actions::FirebaseAppDistributionLoginAction::CLIENT_ID,
             client_secret: Fastlane::Actions::FirebaseAppDistributionLoginAction::CLIENT_SECRET,
-            refresh_token: ENV["FIREBASE_TOKEN"]
+            refresh_token: refresh_token
           )
         rescue Signet::AuthorizationError
           UI.crash!(ErrorMessage::REFRESH_TOKEN_ERROR)

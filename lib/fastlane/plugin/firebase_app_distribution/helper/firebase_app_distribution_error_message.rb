@@ -18,4 +18,5 @@ module ErrorMessage
   INVALID_PATH = "Could not read content from"
   INVALID_TESTERS = "Could not enable access for testers. Ensure that the groups exist and the tester emails are formatted correctly"
   INVALID_RELEASE_ID = "App distribution failed to fetch release with id"
+  MISSING_REFRESH_TOKEN = "Could not find the refresh token from your firebase-tools.json file"
 end
