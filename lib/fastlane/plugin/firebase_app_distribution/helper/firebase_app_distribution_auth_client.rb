@@ -35,14 +35,6 @@ module Fastlane
 
       private
 
-      def find_refresh_from_json(firebase_tools)
-        if firebase_tools['tokens']
-          if firebase_tools['tokens']['refresh_token']
-            firebase_tools['tokens']['refresh_token']
-          end
-        end
-      end
-
       def firebase_token(refresh_token)
         begin
           client = Signet::OAuth2::Client.new(
