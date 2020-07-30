@@ -112,21 +112,27 @@ module Fastlane
       def upload(app_id, binary_path)
         upload_token = get_upload_token(app_id, binary_path)
         upload_status_response = get_upload_status(app_id, upload_token)
-        if upload_status_response.success?
+        if upload_status_response.success? || upload_status_response.already_uploaded?
           UI.success("This APK/IPA has been uploaded before. Skipping upload step.")
         else
+          UI.message("This APK/IPA has not been uploaded before")
           UI.message("Uploading the APK/IPA.")
-          upload_binary(app_id, binary_path)
+          unless upload_status_response.in_progress?
+            upload_binary(app_id, binary_path)
+          end
           MAX_POLLING_RETRIES.times do
             upload_status_response = get_upload_status(app_id, upload_token)
-            if upload_status_response.success?
+            if upload_status_response.success? || upload_status_response.already_uploaded?
               UI.success("Uploaded APK/IPA Successfully!")
               break
             elsif upload_status_response.in_progress?
               sleep(POLLING_INTERVAL_SECONDS)
             else
-              UI.error("#{ErrorMessage::UPLOAD_APK_ERROR}: #{upload_status_response.message}")
-              return nil
+              if !upload_status_response.message.nil?
+                UI.crash!("#{ErrorMessage::UPLOAD_APK_ERROR}: #{upload_status_response.message}")
+              else
+                UI.crash!(ErrorMessage::UPLOAD_APK_ERROR)
+              end
             end
           end
           unless upload_status_response.success?

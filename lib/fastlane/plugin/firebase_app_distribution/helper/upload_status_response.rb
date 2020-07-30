@@ -12,7 +12,15 @@ class UploadStatusResponse
   end
 
   def in_progress?
-    status == "IN_PROGRESS"
+    status == 'IN_PROGRESS'
+  end
+
+  def error?
+    status == 'ERROR'
+  end
+
+  def already_uploaded?
+    status == 'ALREADY_UPLOADED'
   end
 
   def release_hash

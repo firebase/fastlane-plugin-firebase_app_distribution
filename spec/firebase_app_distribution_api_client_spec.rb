@@ -137,6 +137,13 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
     let(:upload_status_response_error) do
       UploadStatusResponse.new(
         { status: "ERROR",
+          release: {},
+          message: "There was an error." }
+      )
+    end
+    let(:upload_status_response_status_unspecified) do
+      UploadStatusResponse.new(
+        { status: "STATUS_UNSPECIFIED",
           release: {} }
       )
     end
@@ -219,15 +226,26 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       expect(release_id).to eq("release_id")
     end
 
-    it 'returns nil after failing to upload' do
+    it 'crashes after failing to upload with status error' do
       expect(api_client).to receive(:get_upload_status)
         .with("app_id", "upload_token")
         .and_return(upload_status_response_error).twice
       expect(api_client).to receive(:upload_binary)
         .with("app_id", fake_binary_path)
 
-      release_id = api_client.upload("app_id", fake_binary_path)
-      expect(release_id).to be_nil
+      expect { api_client.upload("app_id", fake_binary_path) }
+        .to raise_error("#{ErrorMessage::UPLOAD_APK_ERROR}: #{upload_status_response_error.message}")
+    end
+
+    it 'crashes after failing to upload with status unspecified' do
+      expect(api_client).to receive(:get_upload_status)
+        .with("app_id", "upload_token")
+        .and_return(upload_status_response_status_unspecified).twice
+      expect(api_client).to receive(:upload_binary)
+        .with("app_id", fake_binary_path)
+
+      expect { api_client.upload("app_id", fake_binary_path) }
+        .to raise_error(ErrorMessage::UPLOAD_APK_ERROR)
     end
   end
 
