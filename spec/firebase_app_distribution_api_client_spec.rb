@@ -247,6 +247,19 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       expect { api_client.upload("app_id", fake_binary_path) }
         .to raise_error(ErrorMessage::UPLOAD_APK_ERROR)
     end
+
+    it 'does not call upload when the intial check returns in progress' do
+      expect(api_client).to receive(:get_upload_status)
+        .with("app_id", "upload_token")
+        .and_return(upload_status_response_in_progress)
+      expect(api_client).to_not(receive(:upload_binary))
+      expect(api_client).to receive(:get_upload_status)
+        .with("app_id", "upload_token")
+        .and_return(upload_status_response_success)
+
+      release_id = api_client.upload("app_id", fake_binary_path)
+      expect(release_id).to eq("release_id")
+    end
   end
 
   describe '#post_notes' do

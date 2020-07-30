@@ -108,7 +108,7 @@ module Fastlane
       # Returns the release_id on a successful release, otherwise returns nil.
       #
       # Throws a UI error if the number of polling retries exceeds MAX_POLLING_RETRIES
-      # or if it was not able to upload the binary
+      # Crashes if not able to upload the binary
       def upload(app_id, binary_path)
         upload_token = get_upload_token(app_id, binary_path)
         upload_status_response = get_upload_status(app_id, upload_token)
@@ -129,9 +129,9 @@ module Fastlane
               sleep(POLLING_INTERVAL_SECONDS)
             else
               if !upload_status_response.message.nil?
-                UI.crash!("#{ErrorMessage::UPLOAD_APK_ERROR}: #{upload_status_response.message}")
+                UI.user_error!("#{ErrorMessage::UPLOAD_APK_ERROR}: #{upload_status_response.message}")
               else
-                UI.crash!(ErrorMessage::UPLOAD_APK_ERROR)
+                UI.user_error!(ErrorMessage::UPLOAD_APK_ERROR)
               end
             end
           end
