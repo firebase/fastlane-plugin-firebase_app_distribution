@@ -107,25 +107,33 @@ module Fastlane
       #
       # Returns the release_id on a successful release, otherwise returns nil.
       #
-      # Throws an error if the number of polling retries exceeds MAX_POLLING_RETRIES
+      # Throws a UI error if the number of polling retries exceeds MAX_POLLING_RETRIES
+      # Crashes if not able to upload the binary
       def upload(app_id, binary_path)
         upload_token = get_upload_token(app_id, binary_path)
         upload_status_response = get_upload_status(app_id, upload_token)
-        if upload_status_response.success?
+        if upload_status_response.success? || upload_status_response.already_uploaded?
           UI.success("This APK/IPA has been uploaded before. Skipping upload step.")
         else
-          UI.message("This APK has not been uploaded before.")
+          UI.message("This APK/IPA has not been uploaded before")
+          UI.message("Uploading the APK/IPA.")
+          unless upload_status_response.in_progress?
+            upload_binary(app_id, binary_path)
+          end
           MAX_POLLING_RETRIES.times do
-            if upload_status_response.success?
+            upload_status_response = get_upload_status(app_id, upload_token)
+            if upload_status_response.success? || upload_status_response.already_uploaded?
               UI.success("Uploaded APK/IPA Successfully!")
               break
             elsif upload_status_response.in_progress?
               sleep(POLLING_INTERVAL_SECONDS)
             else
-              UI.message("Uploading the APK/IPA.")
-              upload_binary(app_id, binary_path)
+              if !upload_status_response.message.nil?
+                UI.user_error!("#{ErrorMessage::UPLOAD_APK_ERROR}: #{upload_status_response.message}")
+              else
+                UI.user_error!(ErrorMessage::UPLOAD_APK_ERROR)
+              end
             end
-            upload_status_response = get_upload_status(app_id, upload_token)
           end
           unless upload_status_response.success?
             UI.error("It took longer than expected to process your APK/IPA, please try again.")

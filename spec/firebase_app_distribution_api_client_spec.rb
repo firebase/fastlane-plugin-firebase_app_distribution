@@ -137,6 +137,13 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
     let(:upload_status_response_error) do
       UploadStatusResponse.new(
         { status: "ERROR",
+          release: {},
+          message: "There was an error." }
+      )
+    end
+    let(:upload_status_response_status_unspecified) do
+      UploadStatusResponse.new(
+        { status: "STATUS_UNSPECIFIED",
           release: {} }
       )
     end
@@ -177,7 +184,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       expect(release_id).to eq("release_id")
     end
 
-    it 'polls MAX_POLLING_RETRIES times' do
+    it 'returns nil after polling MAX_POLLING_RETRIES times' do
       max_polling_retries = 2
       stub_const("Fastlane::Client::FirebaseAppDistributionApiClient::MAX_POLLING_RETRIES", max_polling_retries)
 
@@ -211,6 +218,41 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         .with("app_id", "upload_token")
         .and_return(upload_status_response_in_progress)
         .exactly(2).times
+      expect(api_client).to receive(:get_upload_status)
+        .with("app_id", "upload_token")
+        .and_return(upload_status_response_success)
+
+      release_id = api_client.upload("app_id", fake_binary_path)
+      expect(release_id).to eq("release_id")
+    end
+
+    it 'crashes after failing to upload with status error' do
+      expect(api_client).to receive(:get_upload_status)
+        .with("app_id", "upload_token")
+        .and_return(upload_status_response_error).twice
+      expect(api_client).to receive(:upload_binary)
+        .with("app_id", fake_binary_path)
+
+      expect { api_client.upload("app_id", fake_binary_path) }
+        .to raise_error("#{ErrorMessage::UPLOAD_APK_ERROR}: #{upload_status_response_error.message}")
+    end
+
+    it 'crashes after failing to upload with status unspecified' do
+      expect(api_client).to receive(:get_upload_status)
+        .with("app_id", "upload_token")
+        .and_return(upload_status_response_status_unspecified).twice
+      expect(api_client).to receive(:upload_binary)
+        .with("app_id", fake_binary_path)
+
+      expect { api_client.upload("app_id", fake_binary_path) }
+        .to raise_error(ErrorMessage::UPLOAD_APK_ERROR)
+    end
+
+    it 'does not call upload when the intial check returns in progress' do
+      expect(api_client).to receive(:get_upload_status)
+        .with("app_id", "upload_token")
+        .and_return(upload_status_response_in_progress)
+      expect(api_client).to_not(receive(:upload_binary))
       expect(api_client).to receive(:get_upload_status)
         .with("app_id", "upload_token")
         .and_return(upload_status_response_success)

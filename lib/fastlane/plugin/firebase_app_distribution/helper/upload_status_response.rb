@@ -12,7 +12,15 @@ class UploadStatusResponse
   end
 
   def in_progress?
-    status == "IN_PROGRESS"
+    status == 'IN_PROGRESS'
+  end
+
+  def error?
+    status == 'ERROR'
+  end
+
+  def already_uploaded?
+    status == 'ALREADY_UPLOADED'
   end
 
   def release_hash
@@ -21,5 +29,9 @@ class UploadStatusResponse
 
   def release_id
     release_hash ? release_hash[:id] : nil
+  end
+
+  def message
+    @response_json_hash[:message]
   end
 end
