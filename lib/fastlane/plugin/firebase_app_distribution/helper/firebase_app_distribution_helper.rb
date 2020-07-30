@@ -23,9 +23,9 @@ module Fastlane
         string_array = string.gsub(/\s+/, '').split(",")
         return string_array
       end
-      
+
       def parse_plist(path)
-        CFPropertyList.native_types(CFPropertyList::List.new(:file => path).value)
+        CFPropertyList.native_types(CFPropertyList::List.new(file: path).value)
       end
 
       def get_ios_app_id_from_archive(path)
