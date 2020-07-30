@@ -1,5 +1,5 @@
 module ErrorMessage
-  MISSING_CREDENTIALS = "Missing credentials. Please check that a refresh token was set or service credentials were passed in and try again"
+  MISSING_CREDENTIALS = "Missing authentication credentials. Check that your Firebase refresh token is set or that your service account file path is correct and try again."
   APK_NOT_FOUND = "Could not find the APK/IPA. Make sure you set the apk_path parameter to point to your APK/IPA"
   MISSING_APP_ID = "Missing app id. Please check that it was passed in and try again"
   SERVICE_CREDENTIALS_NOT_FOUND = "Service credentials file does not exist. Please check the service credentials path and try again"
@@ -10,7 +10,7 @@ module ErrorMessage
   UPLOAD_APK_ERROR = "App Distribution halted because it had a problem uploading the APK/IPA"
   APK_PROCESSING_ERROR = "App Distribution failed to process the APK/IPA"
   GET_RELEASE_TIMEOUT = "App Distribution failed to fetch release information"
-  REFRESH_TOKEN_ERROR = "Could not generate credentials from the refresh token specified"
+  REFRESH_TOKEN_ERROR = "Could not generate credentials from the refresh token specified. Firebase Refresh Token"
   GET_APP_ERROR = "App Distribution failed to fetch app information"
   APP_NOT_ONBOARDED_ERROR = "App Distribution not onboarded"
   GET_APP_NO_CONTACT_EMAIL_ERROR = "App Distribution could not find a contact email associated with this app. Contact Email"
