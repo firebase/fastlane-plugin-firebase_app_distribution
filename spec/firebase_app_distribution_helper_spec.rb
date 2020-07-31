@@ -1,9 +1,16 @@
 describe Fastlane::Helper::FirebaseAppDistributionHelper do
   let(:helper) { Class.new { extend(Fastlane::Helper::FirebaseAppDistributionHelper) } }
   let(:fake_binary) { double("Binary") }
+  let(:app_path) { { "ApplicationProperties" => { "ApplicationPath" => "app_path" } } }
+  let(:identifier) { { "GOOGLE_APP_ID" => "identifier" } }
+  let(:plist) { double("plist") }
 
   before(:each) do
     allow(fake_binary).to receive(:read).and_return("Hello World")
+    allow(CFPropertyList::List).to receive(:new)
+      .and_return(plist)
+    allow(plist).to receive(:value)
+      .and_return(identifier)
   end
 
   describe '#get_value_from_value_or_file' do
@@ -65,6 +72,16 @@ describe Fastlane::Helper::FirebaseAppDistributionHelper do
     it 'returns nil when the string is empty' do
       array = helper.string_to_array("")
       expect(array).to eq(nil)
+    end
+  end
+
+  describe '#get_ios_app_id_from_archive' do
+    it 'returns identifier ' do
+      expect(CFPropertyList).to receive(:native_types)
+        .and_return(app_path)
+      expect(CFPropertyList).to receive(:native_types)
+        .and_return(identifier)
+      expect(helper.get_ios_app_id_from_archive("path")).to eq("identifier")
     end
   end
 end
