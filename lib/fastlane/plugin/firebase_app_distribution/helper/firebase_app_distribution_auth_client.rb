@@ -34,6 +34,8 @@ module Fastlane
            unless refresh_token.nil? && refresh_token.empty?
              refresh_token
            end
+         # Rescue is empty to return nil instead of an error
+         # when there is an empty "tokens" field in the firebase-tools json
          rescue NoMethodError
          end
         end
