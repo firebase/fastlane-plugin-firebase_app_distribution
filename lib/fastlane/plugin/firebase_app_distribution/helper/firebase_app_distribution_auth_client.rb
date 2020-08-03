@@ -6,14 +6,13 @@ module Fastlane
       TOKEN_CREDENTIAL_URI = "https://oauth2.googleapis.com/token"
 
       def fetch_auth_token(google_service_path)
-        config_path = find_firebase_tools
         if !google_service_path.nil? && !google_service_path.empty?
           service_account(google_service_path)
         elsif ENV["FIREBASE_TOKEN"]
           firebase_token(ENV["FIREBASE_TOKEN"])
         elsif ENV["GOOGLE_APPLICATION_CREDENTIALS"]
           service_account(ENV["GOOGLE_APPLICATION_CREDENTIALS"])
-        elsif (refresh_token = has_refresh_token(config_path))
+        elsif (refresh_token = refresh_token_from_firebase_tools)
           firebase_token(refresh_token)
         else
           UI.crash!(ErrorMessage::MISSING_CREDENTIALS)
@@ -22,7 +21,13 @@ module Fastlane
 
       private
 
-      def has_refresh_token(config_path)
+      def refresh_token_from_firebase_tools
+        if ENV["XDG_CONFIG_HOME"]
+          config_path = File.expand_path("configstore/firebase-tools.json", ENV["XDG_CONFIG_HOME"])
+        else
+          config_path = File.expand_path(".config/configstore/firebase-tools.json", "~")
+        end
+
         if File.exist?(config_path)
           begin
            refresh_token = JSON.parse(File.read(config_path))['tokens']['refresh_token']
@@ -31,14 +36,6 @@ module Fastlane
            end
          rescue NoMethodError
          end
-        end
-      end
-
-      def find_firebase_tools
-        if ENV["XDG_CONFIG_HOME"]
-          File.expand_path("configstore/firebase-tools.json", ENV["XDG_CONFIG_HOME"])
-        else
-          File.expand_path(".config/configstore/firebase-tools.json", "~")
         end
       end
 
