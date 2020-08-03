@@ -101,7 +101,7 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
         .and_return(fake_firebase_tools_contents_no_tokens_field)
       expect(File).to receive(:exist?).and_return(true)
       expect { auth_helper.fetch_auth_token(nil) }
-        .to raise_error(ErrorMessage::MISSING_REFRESH_TOKEN)
+        .to raise_error(ErrorMessage::MISSING_CREDENTIALS)
     end
 
     it 'fails if the firebase tools has no refresh_token field' do
@@ -109,7 +109,7 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
         .and_return(fake_firebase_tools_contents_no_refresh_field)
       expect(File).to receive(:exist?).and_return(true)
       expect { auth_helper.fetch_auth_token(nil) }
-        .to raise_error(ErrorMessage::MISSING_REFRESH_TOKEN)
+        .to raise_error(ErrorMessage::MISSING_CREDENTIALS)
     end
   end
 end
