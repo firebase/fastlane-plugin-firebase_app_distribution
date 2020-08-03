@@ -46,18 +46,16 @@ module Fastlane
       private
 
       def firebase_token(refresh_token)
-        begin
-          client = Signet::OAuth2::Client.new(
-            token_credential_uri: TOKEN_CREDENTIAL_URI,
-            client_id: Fastlane::Actions::FirebaseAppDistributionLoginAction::CLIENT_ID,
-            client_secret: Fastlane::Actions::FirebaseAppDistributionLoginAction::CLIENT_SECRET,
-            refresh_token: refresh_token
-          )
-        rescue Signet::AuthorizationError
-          UI.user_error!("#{ErrorMessage::REFRESH_TOKEN_ERROR}: #{refresh_token}")
-        end
+        client = Signet::OAuth2::Client.new(
+          token_credential_uri: TOKEN_CREDENTIAL_URI,
+          client_id: Fastlane::Actions::FirebaseAppDistributionLoginAction::CLIENT_ID,
+          client_secret: Fastlane::Actions::FirebaseAppDistributionLoginAction::CLIENT_SECRET,
+          refresh_token: refresh_token
+        )
         client.fetch_access_token!
         client.access_token
+      rescue Signet::AuthorizationError
+        UI.user_error!("#{ErrorMessage::REFRESH_TOKEN_ERROR}: #{refresh_token}")
       end
 
       def service_account(google_service_path)
@@ -68,6 +66,8 @@ module Fastlane
         service_account_credentials.fetch_access_token!["access_token"]
       rescue Errno::ENOENT
         UI.user_error!("#{ErrorMessage::SERVICE_CREDENTIALS_NOT_FOUND}: #{google_service_path}")
+      rescue Signet::AuthorizationError
+        UI.user_error!("#{ErrorMessage::SERVICE_CREDENTIALS_ERROR}: #{google_service_path}")
       end
     end
   end

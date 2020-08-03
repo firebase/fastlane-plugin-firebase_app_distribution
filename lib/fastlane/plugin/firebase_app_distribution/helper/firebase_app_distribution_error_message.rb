@@ -18,4 +18,5 @@ module ErrorMessage
   INVALID_PATH = "Could not read content from"
   INVALID_TESTERS = "Could not enable access for testers. Ensure that the groups exist and the tester emails are formatted correctly"
   INVALID_RELEASE_ID = "App distribution failed to fetch release with id"
+  SERVICE_CREDENTIALS_ERROR = "Could not generate credentials from the service credentials file specified. Service Account Path"
 end
