@@ -2,6 +2,9 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
   let(:auth_helper) { Class.new { extend(Fastlane::Auth::FirebaseAppDistributionAuthClient) } }
   let(:fake_binary) { double("Binary") }
   let(:fake_binary_contents) { double("Contents") }
+  let(:fake_firebase_tools_contents) { "{\"tokens\": {\"refresh_token\": \"refresh_token\"} }" }
+  let(:fake_firebase_tools_contents_no_tokens_field) { "{}" }
+  let(:fake_firebase_tools_contents_no_refresh_field) { "{\"tokens\": \"empty\"}" }
   let(:auth) { Google::Auth::ServiceAccountCredentials }
   let(:fake_service_creds) { double("service_account_creds") }
   let(:fake_auth_client) { double("auth_client") }
@@ -26,12 +29,16 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
       .and_return(fake_binary_contents)
     allow(fake_binary_contents).to receive(:key)
       .and_return("fake_service_key")
+    allow(File).to receive(:exist?).and_return(false)
 
     allow(ENV).to receive(:[])
       .with("GOOGLE_APPLICATION_CREDENTIALS")
       .and_return(nil)
     allow(ENV).to receive(:[])
       .with("FIREBASE_TOKEN")
+      .and_return(nil)
+    allow(ENV).to receive(:[])
+      .with("XDG_CONFIG_HOME")
       .and_return(nil)
   end
 
@@ -44,7 +51,6 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
       expect(ENV).to receive(:[])
         .with("GOOGLE_APPLICATION_CREDENTIALS")
         .and_return("google_service_path")
-
       expect(auth_helper.fetch_auth_token("")).to eq("service_fake_auth_token")
     end
 
@@ -81,6 +87,29 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
         .and_raise(Errno::ENOENT.new("file not found"))
       expect { auth_helper.fetch_auth_token("invalid_service_path") }
         .to raise_error("#{ErrorMessage::SERVICE_CREDENTIALS_NOT_FOUND}: invalid_service_path")
+    end
+
+    it 'uses firebase tools json if there is not another auth method' do
+      allow(File).to receive(:read)
+        .and_return(fake_firebase_tools_contents)
+      expect(File).to receive(:exist?).and_return(true)
+      expect(auth_helper.fetch_auth_token(nil)).to eq("fake_auth_token")
+    end
+
+    it 'fails if the firebase tools has no tokens field' do
+      allow(File).to receive(:read)
+        .and_return(fake_firebase_tools_contents_no_tokens_field)
+      expect(File).to receive(:exist?).and_return(true)
+      expect { auth_helper.fetch_auth_token(nil) }
+        .to raise_error(ErrorMessage::MISSING_CREDENTIALS)
+    end
+
+    it 'fails if the firebase tools has no refresh_token field' do
+      allow(File).to receive(:read)
+        .and_return(fake_firebase_tools_contents_no_refresh_field)
+      expect(File).to receive(:exist?).and_return(true)
+      expect { auth_helper.fetch_auth_token(nil) }
+        .to raise_error(ErrorMessage::MISSING_CREDENTIALS)
     end
   end
 end
