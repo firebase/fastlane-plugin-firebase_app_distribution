@@ -49,7 +49,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       expect(upload_token).to eq(CGI.escape("projects/project_number/apps/app_id/releases/-/binaries/#{binary_hash}"))
     end
 
-    it 'crash if the app has no contact email' do
+    it 'crashes if the app has no contact email' do
       stubs.get("/v1alpha/apps/app_id", headers) do |env|
         [
           200,
@@ -83,6 +83,31 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         .and_raise(Errno::ENOENT.new("file not found"))
       expect { api_client.get_upload_token("app_id", "invalid_binary_path") }
         .to raise_error("#{ErrorMessage::APK_NOT_FOUND}: invalid_binary_path")
+    end
+
+    it 'crashes when attempting to use invalid auth credentials' do
+      api_client_invalid_auth = Fastlane::Client::FirebaseAppDistributionApiClient.new("invalid_auth_token")
+
+      temp_stubs = Faraday::Adapter::Test::Stubs.new
+      temp_conn = Faraday.new(url: "https://firebaseappdistribution.googleapis.com") do |b|
+        b.response(:json, parser_options: { symbolize_names: true })
+        b.response(:raise_error)
+        b.adapter(:test, temp_stubs)
+      end
+
+      allow(api_client_invalid_auth).to receive(:connection)
+        .and_return(temp_conn)
+
+      temp_stubs.get("/v1alpha/apps/app_id", { 'Authorization' => 'Bearer invalid_auth_token' }) do |env|
+        [
+          403,
+          {},
+          { error: { code: 403 } }
+        ]
+      end
+      expect { api_client_invalid_auth.get_upload_token("app_id", "binary_path") }
+        .to raise_error("#{ErrorMessage::INVALID_CREDENTIALS}: app_id")
+      temp_stubs.verify_stubbed_calls
     end
   end
 

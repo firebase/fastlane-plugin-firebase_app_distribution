@@ -67,11 +67,20 @@ module Fastlane
         UI.success("Release notes have been posted.")
       end
 
+      # Returns the url encoded upload token used for get_upload_status calls:
+      # projects/<project-number>/apps/<app-id>/releases/-/binaries/<binary-hash>
+      #
+      # args
+      #   app_id - Firebase App ID
+      #   binary_path - Absolute path to your app's apk/ipa file
+      #
+      # Throws a user_error if an invalid app id is passed in, the binary file does
+      # not exist, or invalid auth credentials are used (e.g. wrong project permissions)
       def get_upload_token(app_id, binary_path)
         begin
           binary_hash = Digest::SHA256.hexdigest(File.open(binary_path).read)
         rescue Errno::ENOENT
-          UI.crash!("#{ErrorMessage::APK_NOT_FOUND}: #{binary_path}")
+          UI.user_error!("#{ErrorMessage::APK_NOT_FOUND}: #{binary_path}")
         end
 
         begin
@@ -79,11 +88,13 @@ module Fastlane
             request.headers["Authorization"] = "Bearer " + @auth_token
           end
         rescue Faraday::ResourceNotFound
-          UI.crash!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
+          UI.user_error!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
+        rescue Faraday::ForbiddenError
+          UI.user_error!("#{ErrorMessage::INVALID_CREDENTIALS}: #{app_id}")
         end
         contact_email = response.body[:contactEmail]
         if contact_email.nil? || contact_email.strip.empty?
-          UI.crash!(ErrorMessage::GET_APP_NO_CONTACT_EMAIL_ERROR)
+          UI.user_error!(ErrorMessage::GET_APP_NO_CONTACT_EMAIL_ERROR)
         end
         return upload_token_format(response.body[:appId], response.body[:projectNumber], binary_hash)
       end
