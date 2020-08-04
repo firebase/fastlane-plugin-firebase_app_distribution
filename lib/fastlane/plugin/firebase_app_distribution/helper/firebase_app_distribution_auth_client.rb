@@ -8,6 +8,7 @@ module Fastlane
       SERVICE_ACCOUNT_PARAM = "service_credentials_file path parameter"
       FIREBASE_TOKEN_ENV = "FIREBASE_TOKEN environment variable"
       FIREBASE_TOKEN_PARAM = "firebase_cli_token parameter"
+      FIREBASE_TOOLS = "Firebase CLI token"
 
       # Returns the auth token for any of the auth methods (Firebase CLI token,
       # Google service account (TODO: firebase-tools). To ensure that a specific
@@ -36,6 +37,9 @@ module Fastlane
         elsif !ENV["GOOGLE_APPLICATION_CREDENTIALS"].nil? && !ENV["GOOGLE_APPLICATION_CREDENTIALS"].empty?
           token = service_account(ENV["GOOGLE_APPLICATION_CREDENTIALS"])
           auth_method = SERVICE_ACCOUNT_ENV
+        elsif (refresh_token = refresh_token_from_firebase_tools)
+          token = firebase_token(refresh_token)
+          auth_method = FIREBASE_TOOLS
         else
           UI.user_error!(ErrorMessage::MISSING_CREDENTIALS)
         end
@@ -44,6 +48,26 @@ module Fastlane
       end
 
       private
+
+      def refresh_token_from_firebase_tools
+        if ENV["XDG_CONFIG_HOME"] && !ENV["XDG_CONFIG_HOME"].empty?
+          config_path = File.expand_path("configstore/firebase-tools.json", ENV["XDG_CONFIG_HOME"])
+        else
+          config_path = File.expand_path(".config/configstore/firebase-tools.json", "~")
+        end
+
+        if File.exist?(config_path)
+          begin
+            refresh_token = JSON.parse(File.read(config_path))['tokens']['refresh_token']
+            unless refresh_token.nil? || refresh_token.empty?
+              refresh_token
+            end
+          # Rescue is empty to return nil instead of an error
+          # when there is an empty "tokens" field in the firebase-tools json
+          rescue NoMethodError
+          end
+        end
+      end
 
       def firebase_token(refresh_token)
         client = Signet::OAuth2::Client.new(

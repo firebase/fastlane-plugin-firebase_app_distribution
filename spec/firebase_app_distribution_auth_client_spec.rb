@@ -4,6 +4,9 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
   let(:fake_binary_contents) { double("Contents") }
   let(:firebase_auth) { Signet::OAuth2::Client }
   let(:service_auth) { Google::Auth::ServiceAccountCredentials }
+  let(:fake_firebase_tools_contents) { "{\"tokens\": {\"refresh_token\": \"refresh_token\"} }" }
+  let(:fake_firebase_tools_contents_no_tokens_field) { "{}" }
+  let(:fake_firebase_tools_contents_no_refresh_field) { "{\"tokens\": \"empty\"}" }
   let(:fake_service_creds) { double("service_account_creds") }
   let(:fake_oauth_client) { double("oauth_client") }
   let(:payload) { { "access_token" => "service_fake_auth_token" } }
@@ -37,6 +40,9 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
         allow(ENV).to receive(:[])
           .with("FIREBASE_TOKEN")
           .and_return(nil)
+        allow(ENV).to receive(:[])
+          .with("XDG_CONFIG_HOME")
+          .and_return(nil)
       end
 
       it 'auths with service credentials path parameter' do
@@ -65,7 +71,16 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
           .to eq("fake_auth_token")
       end
 
-      it 'crashes if no credentials are given' do
+      it 'auths with firebase tools json' do
+        allow(File).to receive(:read)
+          .and_return(fake_firebase_tools_contents)
+        expect(File).to receive(:exist?).and_return(true)
+        expect(auth_client.fetch_auth_token(nil, nil)).to eq("fake_auth_token")
+      end
+
+      it 'crashes if no credentials are given and fire-tools json does not exist' do
+        expect(File).to receive(:exist?)
+          .and_return(false)
         expect { auth_client.fetch_auth_token(nil, nil) }
           .to raise_error(ErrorMessage::MISSING_CREDENTIALS)
       end
@@ -91,6 +106,22 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
         expect { auth_client.fetch_auth_token(nil, "invalid_refresh_token") }
           .to raise_error("#{ErrorMessage::REFRESH_TOKEN_ERROR}: invalid_refresh_token")
       end
+
+      it 'crashes if the firebase tools has no tokens field' do
+        allow(File).to receive(:read)
+          .and_return(fake_firebase_tools_contents_no_tokens_field)
+        expect(File).to receive(:exist?).and_return(true)
+        expect { auth_client.fetch_auth_token(nil, nil) }
+          .to raise_error(ErrorMessage::MISSING_CREDENTIALS)
+      end
+
+      it 'crashes if the firebase tools has no refresh_token field' do
+        allow(File).to receive(:read)
+          .and_return(fake_firebase_tools_contents_no_refresh_field)
+        expect(File).to receive(:exist?).and_return(true)
+        expect { auth_client.fetch_auth_token(nil, nil) }
+          .to raise_error(ErrorMessage::MISSING_CREDENTIALS)
+      end
     end
 
     describe 'with all other auth variables as empty' do
@@ -100,6 +131,9 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
           .and_return("")
         allow(ENV).to receive(:[])
           .with("FIREBASE_TOKEN")
+          .and_return("")
+        allow(ENV).to receive(:[])
+          .with("XDG_CONFIG_HOME")
           .and_return("")
       end
 
@@ -129,7 +163,16 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
           .to eq("fake_auth_token")
       end
 
-      it 'crashes if no credentials are given' do
+      it 'auths with firebase tools json' do
+        allow(File).to receive(:read)
+          .and_return(fake_firebase_tools_contents)
+        expect(File).to receive(:exist?).and_return(true)
+        expect(auth_client.fetch_auth_token("", "")).to eq("fake_auth_token")
+      end
+
+      it 'crashes if no credentials are given and fire-tools json does not exist' do
+        expect(File).to receive(:exist?)
+          .and_return(false)
         expect { auth_client.fetch_auth_token("", "") }
           .to raise_error(ErrorMessage::MISSING_CREDENTIALS)
       end
@@ -154,6 +197,22 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
           .and_raise(Signet::AuthorizationError.new("error"))
         expect { auth_client.fetch_auth_token("", "invalid_refresh_token") }
           .to raise_error("#{ErrorMessage::REFRESH_TOKEN_ERROR}: invalid_refresh_token")
+      end
+
+      it 'crashes if the firebase tools has no tokens field' do
+        allow(File).to receive(:read)
+          .and_return(fake_firebase_tools_contents_no_tokens_field)
+        expect(File).to receive(:exist?).and_return(true)
+        expect { auth_client.fetch_auth_token("", "") }
+          .to raise_error(ErrorMessage::MISSING_CREDENTIALS)
+      end
+
+      it 'crashes if the firebase tools has no refresh_token field' do
+        allow(File).to receive(:read)
+          .and_return(fake_firebase_tools_contents_no_refresh_field)
+        expect(File).to receive(:exist?).and_return(true)
+        expect { auth_client.fetch_auth_token("", "") }
+          .to raise_error(ErrorMessage::MISSING_CREDENTIALS)
       end
     end
   end
