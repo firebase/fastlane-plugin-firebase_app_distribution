@@ -32,8 +32,8 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
   end
 
   describe '#fetch_auth_token' do
-    [nil, ""].each do |testval|
-      describe 'with all other auth variables as nil or empty' do
+    describe 'with all other auth variables as nil or empty' do
+      [nil, ""].each do |testval|
         before(:each) do
           allow(ENV).to receive(:[])
             .with("GOOGLE_APPLICATION_CREDENTIALS")

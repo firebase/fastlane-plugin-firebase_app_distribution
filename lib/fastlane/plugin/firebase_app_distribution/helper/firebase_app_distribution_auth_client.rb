@@ -57,7 +57,7 @@ module Fastlane
       private
 
       def refresh_token_from_firebase_tools
-        if ENV["XDG_CONFIG_HOME"] && !ENV["XDG_CONFIG_HOME"].empty?
+        if !ENV["XDG_CONFIG_HOME"].nil? && !ENV["XDG_CONFIG_HOME"].empty?
           config_path = File.expand_path("configstore/firebase-tools.json", ENV["XDG_CONFIG_HOME"])
         else
           config_path = File.expand_path(".config/configstore/firebase-tools.json", "~")
