@@ -27,7 +27,7 @@ module Fastlane
 
         if params[:app] # Set app_id if it is specified as a parameter
           app_id = params[:app]
-        elsif @platform == :ios
+        elsif platform == :ios
           archive_path = Actions.lane_context[SharedValues::XCODEBUILD_ARCHIVE]
           if archive_path
             app_id = get_ios_app_id_from_archive(archive_path)
@@ -71,11 +71,11 @@ module Fastlane
       end
 
       def self.available_options
-        if @platform == :ios || @platform.nil?
+        if platform == :ios || @platform.nil?
           ipa_path_default = Dir["*.ipa"].sort_by { |x| File.mtime(x) }.last
         end
 
-        if @platform == :android
+        if platform == :android
           apk_path_default = Dir["*.apk"].last || Dir[File.join("app", "build", "outputs", "apk", "app-release.apk")].last
         end
 
