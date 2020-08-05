@@ -1,14 +1,3 @@
 lane :test do
   firebase_app_distribution
 end
-
-lane :testApp do
-  firebase_app_distribution(
-    app: "1:313248282411:android:9cc964812b1a80e73ff76e",
-    apk_path: "/usr/local/google/home/alonsosi/Desktop/QuizCard/app/build/outputs/apk/debug/app-debug.apk",
-    testers: "alonsosi@google.com",
-    # groups: "testerGroup",
-    release_notes: "Awesome release notes",
-    # firebase_cli_token: "token"
-  )
-end
