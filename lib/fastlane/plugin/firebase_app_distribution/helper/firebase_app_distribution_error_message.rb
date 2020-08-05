@@ -10,7 +10,7 @@ module ErrorMessage
   UPLOAD_APK_ERROR = "App Distribution halted because it had a problem uploading the APK/IPA"
   APK_PROCESSING_ERROR = "App Distribution failed to process the APK/IPA"
   GET_RELEASE_TIMEOUT = "App Distribution failed to fetch release information"
-  REFRESH_TOKEN_ERROR = "Could not generate credentials from the refresh token specified. Firebase Refresh Token"
+  REFRESH_TOKEN_ERROR = "Could not generate credentials from the refresh token specified."
   GET_APP_ERROR = "App Distribution failed to fetch app information"
   APP_NOT_ONBOARDED_ERROR = "App Distribution not onboarded"
   GET_APP_NO_CONTACT_EMAIL_ERROR = "App Distribution could not find a contact email associated with this app. Contact Email"
