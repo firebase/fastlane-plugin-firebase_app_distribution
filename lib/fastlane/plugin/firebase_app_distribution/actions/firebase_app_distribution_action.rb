@@ -66,9 +66,11 @@ module Fastlane
         "Release your beta builds with Firebase App Distribution"
       end
 
-      def self.available_options
-        @platform = Actions.lane_context[Actions::SharedValues::PLATFORM_NAME]
+      def self.platform
+        @platform ||= Actions.lane_context[Actions::SharedValues::PLATFORM_NAME]
+      end
 
+      def self.available_options
         if @platform == :ios || @platform.nil?
           ipa_path_default = Dir["*.ipa"].sort_by { |x| File.mtime(x) }.last
         end
