@@ -71,7 +71,7 @@ module Fastlane
       end
 
       def self.available_options
-        if platform == :ios || @platform.nil?
+        if platform == :ios || platform.nil?
           ipa_path_default = Dir["*.ipa"].sort_by { |x| File.mtime(x) }.last
         end
 
