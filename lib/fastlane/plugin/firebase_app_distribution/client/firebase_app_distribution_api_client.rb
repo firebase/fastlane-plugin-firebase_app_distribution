@@ -38,6 +38,7 @@ module Fastlane
         rescue Faraday::ClientError
           UI.user_error!("#{ErrorMessage::INVALID_TESTERS} \nEmails: #{emails} \nGroups: #{group_ids}")
         end
+        UI.success("Added testers/groups successfully.")
       end
 
       # Posts notes for the specified app release. Skips this
