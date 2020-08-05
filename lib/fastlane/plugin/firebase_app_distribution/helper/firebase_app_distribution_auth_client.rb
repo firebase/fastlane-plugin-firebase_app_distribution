@@ -4,11 +4,6 @@ module Fastlane
   module Auth
     module FirebaseAppDistributionAuthClient
       TOKEN_CREDENTIAL_URI = "https://oauth2.googleapis.com/token"
-      SERVICE_ACCOUNT_ENV_DESC = "GOOGLE_APPLICATION_CREDENTIALS environment variable"
-      SERVICE_ACCOUNT_PARAM_DESC = "--service_credentials_file path parameter"
-      FIREBASE_TOKEN_ENV_DESC = "FIREBASE_TOKEN environment variable"
-      FIREBASE_TOKEN_PARAM_DESC = "--firebase_cli_token parameter"
-      FIREBASE_TOOLS_DESC = "the firebase login:ci command"
 
       # Returns the auth token for any of the auth methods (Firebase CLI token,
       # Google service account, firebase-tools). To ensure that a specific
@@ -25,50 +20,42 @@ module Fastlane
       #
       # Crashes if given invalid or missing credentials
       def fetch_auth_token(google_service_path, firebase_cli_token)
-        begin
-          if !google_service_path.nil? && !google_service_path.empty?
-            auth_method = SERVICE_ACCOUNT_PARAM_DESC
-            token = service_account(google_service_path)
-          elsif !firebase_cli_token.nil? && !firebase_cli_token.empty?
-            auth_method = FIREBASE_TOKEN_PARAM_DESC
-            token = firebase_token(firebase_cli_token)
-          elsif !ENV["FIREBASE_TOKEN"].nil? && !ENV["FIREBASE_TOKEN"].empty?
-            auth_method = FIREBASE_TOKEN_ENV_DESC
-            token = firebase_token(ENV["FIREBASE_TOKEN"])
-          elsif !ENV["GOOGLE_APPLICATION_CREDENTIALS"].nil? && !ENV["GOOGLE_APPLICATION_CREDENTIALS"].empty?
-            auth_method = SERVICE_ACCOUNT_ENV_DESC
-            token = service_account(ENV["GOOGLE_APPLICATION_CREDENTIALS"])
-          elsif (refresh_token = refresh_token_from_firebase_tools)
-            auth_method = FIREBASE_TOOLS_DESC
-            token = firebase_token(refresh_token)
-          else
-            UI.user_error!(ErrorMessage::MISSING_CREDENTIALS)
-          end
-        rescue => error
-          unless auth_method.nil? # nil only when no credentials are passed in
-            UI.error("App Distribution encountered an error while authenticating with #{auth_method}")
-          end
-          UI.user_error!(error.message)
+        if !google_service_path.nil? && !google_service_path.empty?
+          UI.message("Authenticating with --service_credentials_file path parameter")
+          token = service_account(google_service_path)
+        elsif !firebase_cli_token.nil? && !firebase_cli_token.empty?
+          UI.message("Authenticating with --firebase_cli_token parameter")
+          token = firebase_token(firebase_cli_token)
+        elsif !ENV["FIREBASE_TOKEN"].nil? && !ENV["FIREBASE_TOKEN"].empty?
+          UI.message("Authenticating with FIREBASE_TOKEN environment variable")
+          token = firebase_token(ENV["FIREBASE_TOKEN"])
+        elsif !ENV["GOOGLE_APPLICATION_CREDENTIALS"].nil? && !ENV["GOOGLE_APPLICATION_CREDENTIALS"].empty?
+          UI.message("Authenticating with GOOGLE_APPLICATION_CREDENTIALS environment variable")
+          token = service_account(ENV["GOOGLE_APPLICATION_CREDENTIALS"])
+        elsif (refresh_token = refresh_token_from_firebase_tools)
+          UI.message("Authenticating with the firebase login:ci command")
+          token = firebase_token(refresh_token)
+        else
+          UI.user_error!(ErrorMessage::MISSING_CREDENTIALS)
         end
-        UI.success("Authenticated with #{auth_method}")
+        UI.success("Successfully authenticated!")
         token
       end
 
       private
 
       def refresh_token_from_firebase_tools
-        if !ENV["XDG_CONFIG_HOME"].nil? && !ENV["XDG_CONFIG_HOME"].empty?
-          config_path = File.expand_path("configstore/firebase-tools.json", ENV["XDG_CONFIG_HOME"])
-        else
+        if ENV["XDG_CONFIG_HOME"].nil? || ENV["XDG_CONFIG_HOME"].empty?
           config_path = File.expand_path(".config/configstore/firebase-tools.json", "~")
+        else
+          config_path = File.expand_path("configstore/firebase-tools.json", ENV["XDG_CONFIG_HOME"])
         end
 
         if File.exist?(config_path)
           begin
             refresh_token = JSON.parse(File.read(config_path))['tokens']['refresh_token']
             refresh_token unless refresh_token.nil? || refresh_token.empty?
-          # Rescue is empty to return nil instead of an error
-          # when there is an empty "tokens" field in the firebase-tools json
+          # Returns nil when there is an empty "tokens" field in the firebase-tools json
           rescue NoMethodError
           end
         end
