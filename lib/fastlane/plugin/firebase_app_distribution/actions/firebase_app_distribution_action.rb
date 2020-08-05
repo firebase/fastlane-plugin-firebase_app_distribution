@@ -23,12 +23,11 @@ module Fastlane
         params.values # to validate all inputs before looking for the ipa/apk
         auth_token = fetch_auth_token(params[:service_credentials_file])
         fad_api_client = Client::FirebaseAppDistributionApiClient.new(auth_token)
-        platform = Actions.lane_context[Actions::SharedValues::PLATFORM_NAME]
         binary_path = params[:ipa_path] || params[:apk_path]
 
         if params[:app] # Set app_id if it is specified as a parameter
           app_id = params[:app]
-        elsif platform == :ios
+        elsif @platform == :ios
           archive_path = Actions.lane_context[SharedValues::XCODEBUILD_ARCHIVE]
           if archive_path
             app_id = get_ios_app_id_from_archive(archive_path)
@@ -68,13 +67,13 @@ module Fastlane
       end
 
       def self.available_options
-        platform = Actions.lane_context[Actions::SharedValues::PLATFORM_NAME]
+        @platform = Actions.lane_context[Actions::SharedValues::PLATFORM_NAME]
 
-        if platform == :ios || platform.nil?
+        if @platform == :ios || @platform.nil?
           ipa_path_default = Dir["*.ipa"].sort_by { |x| File.mtime(x) }.last
         end
 
-        if platform == :android
+        if @platform == :android
           apk_path_default = Dir["*.apk"].last || Dir[File.join("app", "build", "outputs", "apk", "app-release.apk")].last
         end
 

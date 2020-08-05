@@ -91,6 +91,9 @@ module Fastlane
       def upload_binary(app_id, binary_path)
         connection.post(binary_upload_url(app_id), File.open(binary_path).read) do |request|
           request.headers["Authorization"] = "Bearer " + @auth_token
+          request.headers["X-APP-DISTRO-API-CLIENT-ID"] = "fastlane"
+          request.headers["X-APP-DISTRO-API-CLIENT-TYPE"] =  Actions.lane_context[Actions::SharedValues::PLATFORM_NAME].to_s
+          request.headers["X-APP-DISTRO-API-CLIENT-VERSION"] = Fastlane::FirebaseAppDistribution::VERSION
         end
       rescue Faraday::ResourceNotFound
         UI.crash!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
