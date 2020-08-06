@@ -1,16 +1,12 @@
 module ErrorMessage
   MISSING_CREDENTIALS = "Missing authentication credentials. Check that your Firebase refresh token is set or that your service account file path is correct and try again."
-  APK_NOT_FOUND = "Could not find the APK/IPA. Make sure you set the apk_path parameter to point to your APK/IPA"
   MISSING_APP_ID = "Missing app id. Please check that it was passed in and try again"
   SERVICE_CREDENTIALS_NOT_FOUND = "Service credentials file does not exist. Please check the service credentials path and try again"
   PARSE_SERVICE_CREDENTIALS_ERROR = "Failed to extract service account information from the service credentials file"
-  PARSE_APK_METADATA_ERROR = "Failed to extract APK/IPA metadata from the APK/IPA path"
   UPLOAD_RELEASE_NOTES_ERROR = "App Distribution halted because it had a problem uploading release notes"
   UPLOAD_TESTERS_ERROR = "App Distribution halted because it had a problem adding testers/groups"
-  UPLOAD_APK_ERROR = "App Distribution halted because it had a problem uploading the APK/IPA"
-  APK_PROCESSING_ERROR = "App Distribution failed to process the APK/IPA"
   GET_RELEASE_TIMEOUT = "App Distribution failed to fetch release information"
-  REFRESH_TOKEN_ERROR = "Could not generate credentials from the refresh token specified. Firebase Refresh Token"
+  REFRESH_TOKEN_ERROR = "Could not generate credentials from the refresh token specified."
   GET_APP_ERROR = "App Distribution failed to fetch app information"
   APP_NOT_ONBOARDED_ERROR = "App Distribution not onboarded"
   GET_APP_NO_CONTACT_EMAIL_ERROR = "App Distribution could not find a contact email associated with this app. Contact Email"
@@ -20,4 +16,20 @@ module ErrorMessage
   INVALID_RELEASE_ID = "App distribution failed to fetch release with id"
   SERVICE_CREDENTIALS_ERROR = "Could not generate credentials from the service credentials file specified. Service Account Path"
   INVALID_CREDENTIALS = "App Distribution could not access this app. Check that your authentication credentials has valid permissions. App ID"
+
+  def self.binary_not_found(binary_type)
+    "Could not find the #{binary_type}. Make sure you set the #{binary_type} path parameter to point to your #{binary_type}"
+  end
+
+  def self.parse_binary_metadata_error(binary_type)
+    "Failed to extract #{binary_type} metadata from the #{binary_type} path"
+  end
+
+  def self.upload_binary_error(binary_type)
+    "App Distribution halted because it had a problem uploading the #{binary_type}"
+  end
+
+  def self.binary_processing_error(binary_type)
+    "App Distribution failed to process the #{binary_type}"
+  end
 end
