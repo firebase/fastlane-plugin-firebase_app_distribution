@@ -3,12 +3,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
   let(:fake_binary_contents) { "Hello World" }
   let(:fake_binary) { double("Binary") }
   let(:headers) { { 'Authorization' => 'Bearer auth_token' } }
-  let(:upload_headers) do
-    { 'Authorization' => 'Bearer auth_token',
-    'X-APP-DISTRO-API-CLIENT-ID' => 'fastlane',
-    'X-APP-DISTRO-API-CLIENT-TYPE' =>  "android",
-    'X-APP-DISTRO-API-CLIENT-VERSION' => Fastlane::FirebaseAppDistribution::VERSION }
-  end
+
   let(:api_client) { Fastlane::Client::FirebaseAppDistributionApiClient.new("auth_token") }
   let(:stubs) { Faraday::Adapter::Test::Stubs.new }
   let(:conn) do
@@ -92,6 +87,12 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
   end
 
   describe '#upload_binary' do
+    let(:upload_headers) do
+      { 'Authorization' => 'Bearer auth_token',
+      'X-APP-DISTRO-API-CLIENT-ID' => 'fastlane',
+      'X-APP-DISTRO-API-CLIENT-TYPE' =>  "android",
+      'X-APP-DISTRO-API-CLIENT-VERSION' => Fastlane::FirebaseAppDistribution::VERSION }
+    end
     it 'uploads the binary successfully when the input is valid' do
       stubs.post("/app-binary-uploads?app_id=app_id", fake_binary_contents, upload_headers) do |env|
         [
