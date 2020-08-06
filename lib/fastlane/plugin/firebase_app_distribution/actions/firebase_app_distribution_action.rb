@@ -21,7 +21,7 @@ module Fastlane
 
       def self.run(params)
         params.values # to validate all inputs before looking for the ipa/apk
-        auth_token = fetch_auth_token(params[:service_credentials_file])
+        auth_token = fetch_auth_token(params[:service_credentials_file], params[:firebase_cli_token])
         fad_api_client = Client::FirebaseAppDistributionApiClient.new(auth_token, platform)
         binary_path = params[:ipa_path] || params[:apk_path]
 
