@@ -76,7 +76,7 @@ module Fastlane
       def get_upload_token(app_id, binary_path)
         begin
           binary_hash = Digest::SHA256.hexdigest(File.open(binary_path).read)
-        rescue Errno::ENOENT
+        rescue Errno::ENOENT, TypeError
           UI.crash!("#{ErrorMessage.binary_not_found(@binary_type)}: #{binary_path}")
         end
 
