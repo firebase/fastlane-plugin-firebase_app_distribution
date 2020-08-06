@@ -89,9 +89,12 @@ module Fastlane
         return upload_token_format(response.body[:appId], response.body[:projectNumber], binary_hash)
       end
 
-      def upload_binary(app_id, binary_path)
+      def upload_binary(app_id, binary_path, platform)
         connection.post(binary_upload_url(app_id), File.open(binary_path).read) do |request|
           request.headers["Authorization"] = "Bearer " + @auth_token
+          request.headers["X-APP-DISTRO-API-CLIENT-ID"] = "fastlane"
+          request.headers["X-APP-DISTRO-API-CLIENT-TYPE"] =  platform
+          request.headers["X-APP-DISTRO-API-CLIENT-VERSION"] = Fastlane::FirebaseAppDistribution::VERSION
         end
       rescue Faraday::ResourceNotFound
         UI.crash!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
@@ -110,7 +113,7 @@ module Fastlane
       #
       # Throws a UI error if the number of polling retries exceeds MAX_POLLING_RETRIES
       # Crashes if not able to upload the binary
-      def upload(app_id, binary_path)
+      def upload(app_id, binary_path, platform)
         upload_token = get_upload_token(app_id, binary_path)
         upload_status_response = get_upload_status(app_id, upload_token)
         if upload_status_response.success? || upload_status_response.already_uploaded?
@@ -119,7 +122,7 @@ module Fastlane
           UI.message("This APK/IPA has not been uploaded before")
           UI.message("Uploading the APK/IPA.")
           unless upload_status_response.in_progress?
-            upload_binary(app_id, binary_path)
+            upload_binary(app_id, binary_path, platform)
           end
           MAX_POLLING_RETRIES.times do
             upload_status_response = get_upload_status(app_id, upload_token)
