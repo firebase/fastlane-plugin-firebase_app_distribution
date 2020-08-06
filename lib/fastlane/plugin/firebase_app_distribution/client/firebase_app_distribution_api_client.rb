@@ -9,8 +9,13 @@ module Fastlane
       MAX_POLLING_RETRIES = 60
       POLLING_INTERVAL_SECONDS = 2
 
-      def initialize(auth_token)
+      def initialize(auth_token, platform)
         @auth_token = auth_token
+        if platform == :ios || platform.nil?
+          @binary_type = "IPA"
+        else
+          @binary_type = "APK"
+        end
       end
 
       # Enables tester access to the specified app release. Skips this
@@ -72,7 +77,7 @@ module Fastlane
         begin
           binary_hash = Digest::SHA256.hexdigest(File.open(binary_path).read)
         rescue Errno::ENOENT
-          UI.crash!("#{ErrorMessage::APK_NOT_FOUND}: #{binary_path}")
+          UI.crash!("#{ErrorMessage::BINARY_NOT_FOUND}: #{binary_path}")
         end
 
         begin
@@ -99,7 +104,7 @@ module Fastlane
       rescue Faraday::ResourceNotFound
         UI.crash!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
       rescue Errno::ENOENT
-        UI.crash!("#{ErrorMessage::APK_NOT_FOUND}: #{binary_path}")
+        UI.crash!("#{ErrorMessage::BINARY_NOT_FOUND}: #{binary_path}")
       end
 
       # Uploads the binary file if it has not already been uploaded
@@ -117,30 +122,30 @@ module Fastlane
         upload_token = get_upload_token(app_id, binary_path)
         upload_status_response = get_upload_status(app_id, upload_token)
         if upload_status_response.success? || upload_status_response.already_uploaded?
-          UI.success("This APK/IPA has been uploaded before. Skipping upload step.")
+          UI.success("This #{@binary_type} has been uploaded before. Skipping upload step.")
         else
-          UI.message("This APK/IPA has not been uploaded before")
-          UI.message("Uploading the APK/IPA.")
+          UI.message("This #{@binary_type} has not been uploaded before")
+          UI.message("Uploading the #{@binary_type}.")
           unless upload_status_response.in_progress?
             upload_binary(app_id, binary_path, platform)
           end
           MAX_POLLING_RETRIES.times do
             upload_status_response = get_upload_status(app_id, upload_token)
             if upload_status_response.success? || upload_status_response.already_uploaded?
-              UI.success("Uploaded APK/IPA Successfully!")
+              UI.success("Uploaded #{@binary_type} Successfully!")
               break
             elsif upload_status_response.in_progress?
               sleep(POLLING_INTERVAL_SECONDS)
             else
               if !upload_status_response.message.nil?
-                UI.user_error!("#{ErrorMessage::UPLOAD_APK_ERROR}: #{upload_status_response.message}")
+                UI.user_error!("#{ErrorMessage::UPLOAD_BINARY_ERROR}: #{upload_status_response.message}")
               else
-                UI.user_error!(ErrorMessage::UPLOAD_APK_ERROR)
+                UI.user_error!(ErrorMessage::UPLOAD_BINARY_ERROR)
               end
             end
           end
           unless upload_status_response.success?
-            UI.error("It took longer than expected to process your APK/IPA, please try again.")
+            UI.error("It took longer than expected to process your #{@binary_type}, please try again.")
             return nil
           end
         end

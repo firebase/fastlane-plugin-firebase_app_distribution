@@ -4,7 +4,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
   let(:fake_binary) { double("Binary") }
   let(:headers) { { 'Authorization' => 'Bearer auth_token' } }
 
-  let(:api_client) { Fastlane::Client::FirebaseAppDistributionApiClient.new("auth_token") }
+  let(:api_client) { Fastlane::Client::FirebaseAppDistributionApiClient.new("auth_token", "android") }
   let(:stubs) { Faraday::Adapter::Test::Stubs.new }
   let(:conn) do
     Faraday.new(url: "https://firebaseappdistribution.googleapis.com") do |b|
@@ -82,7 +82,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         .with("invalid_binary_path")
         .and_raise(Errno::ENOENT.new("file not found"))
       expect { api_client.get_upload_token("app_id", "invalid_binary_path") }
-        .to raise_error("#{ErrorMessage::APK_NOT_FOUND}: invalid_binary_path")
+        .to raise_error("#{ErrorMessage::BINARY_NOT_FOUND}: invalid_binary_path")
     end
   end
 
@@ -123,7 +123,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         .with("invalid_binary_path")
         .and_raise(Errno::ENOENT.new("file not found"))
       expect { api_client.upload_binary("app_id", "invalid_binary_path", "android") }
-        .to raise_error("#{ErrorMessage::APK_NOT_FOUND}: invalid_binary_path")
+        .to raise_error("#{ErrorMessage::BINARY_NOT_FOUND}: invalid_binary_path")
     end
   end
 
@@ -240,7 +240,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         .with("app_id", fake_binary_path, "android")
 
       expect { api_client.upload("app_id", fake_binary_path, "android") }
-        .to raise_error("#{ErrorMessage::UPLOAD_APK_ERROR}: #{upload_status_response_error.message}")
+        .to raise_error("#{ErrorMessage::UPLOAD_BINARY_ERROR}: #{upload_status_response_error.message}")
     end
 
     it 'crashes after failing to upload with status unspecified' do
@@ -251,7 +251,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         .with("app_id", fake_binary_path, "android")
 
       expect { api_client.upload("app_id", fake_binary_path, "android") }
-        .to raise_error(ErrorMessage::UPLOAD_APK_ERROR)
+        .to raise_error(ErrorMessage::UPLOAD_BINARY_ERROR)
     end
 
     it 'does not call upload when the intial check returns in progress' do
