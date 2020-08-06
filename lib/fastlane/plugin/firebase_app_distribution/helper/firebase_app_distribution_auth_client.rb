@@ -21,7 +21,7 @@ module Fastlane
       # Crashes if given invalid or missing credentials
       def fetch_auth_token(google_service_path, firebase_cli_token)
         if !google_service_path.nil? && !google_service_path.empty?
-          UI.message("Authenticating with --service_credentials_file path parameter")
+          UI.message("Authenticating with --service_credentials_file path parameter: #{google_service_path}")
           token = service_account(google_service_path)
         elsif !firebase_cli_token.nil? && !firebase_cli_token.empty?
           UI.message("Authenticating with --firebase_cli_token parameter")
@@ -30,10 +30,10 @@ module Fastlane
           UI.message("Authenticating with FIREBASE_TOKEN environment variable")
           token = firebase_token(ENV["FIREBASE_TOKEN"])
         elsif !ENV["GOOGLE_APPLICATION_CREDENTIALS"].nil? && !ENV["GOOGLE_APPLICATION_CREDENTIALS"].empty?
-          UI.message("Authenticating with GOOGLE_APPLICATION_CREDENTIALS environment variable")
+          UI.message("Authenticating with GOOGLE_APPLICATION_CREDENTIALS environment variable: #{ENV['GOOGLE_APPLICATION_CREDENTIALS']}")
           token = service_account(ENV["GOOGLE_APPLICATION_CREDENTIALS"])
         elsif (refresh_token = refresh_token_from_firebase_tools)
-          UI.message("Authenticating with the firebase login:ci command")
+          UI.message("No authentication method specified. Using cached Firebase CLI credentials.")
           token = firebase_token(refresh_token)
         else
           UI.user_error!(ErrorMessage::MISSING_CREDENTIALS)
@@ -55,6 +55,7 @@ module Fastlane
           begin
             refresh_token = JSON.parse(File.read(config_path))['tokens']['refresh_token']
             refresh_token unless refresh_token.nil? || refresh_token.empty?
+          # TODO: Catch parser errors, improve error handling here
           # Returns nil when there is an empty "tokens" field in the firebase-tools json
           rescue NoMethodError
           end
