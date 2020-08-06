@@ -4,11 +4,6 @@ module Fastlane
   module Auth
     module FirebaseAppDistributionAuthClient
       TOKEN_CREDENTIAL_URI = "https://oauth2.googleapis.com/token"
-      SERVICE_ACCOUNT_ENV = "GOOGLE_APPLICATION_CREDENTIALS environment variable"
-      SERVICE_ACCOUNT_PARAM = "service_credentials_file path parameter"
-      FIREBASE_TOKEN_ENV = "FIREBASE_TOKEN environment variable"
-      FIREBASE_TOKEN_PARAM = "firebase_cli_token parameter"
-      FIREBASE_TOOLS = "Firebase CLI token"
 
       # Returns the auth token for any of the auth methods (Firebase CLI token,
       # Google service account, firebase-tools). To ensure that a specific
