@@ -1,22 +1,10 @@
 module ErrorMessage
-  def self.binary
-    if Fastlane::Actions.lane_context[Fastlane::Actions::SharedValues::PLATFORM_NAME] == :ios
-      @binary ||= "IPA"
-    else
-      @binary ||= "APK"
-    end
-  end
-
   MISSING_CREDENTIALS = "Missing credentials. Please check that a refresh token was set or service credentials were passed in and try again"
-  BINARY_NOT_FOUND = "Could not find the #{binary}. Make sure you set the #{binary} path parameter to point to your #{binary}"
   MISSING_APP_ID = "Missing app id. Please check that it was passed in and try again"
   SERVICE_CREDENTIALS_NOT_FOUND = "Service credentials file does not exist. Please check the service credentials path and try again"
   PARSE_SERVICE_CREDENTIALS_ERROR = "Failed to extract service account information from the service credentials file"
-  PARSE_BINARY_METADATA_ERROR = "Failed to extract #{binary} metadata from the #{binary} path"
   UPLOAD_RELEASE_NOTES_ERROR = "App Distribution halted because it had a problem uploading release notes"
   UPLOAD_TESTERS_ERROR = "App Distribution halted because it had a problem adding testers/groups"
-  UPLOAD_BINARY_ERROR = "App Distribution halted because it had a problem uploading the #{binary}"
-  BINARY_PROCESSING_ERROR = "App Distribution failed to process the #{binary}"
   GET_RELEASE_TIMEOUT = "App Distribution failed to fetch release information"
   REFRESH_TOKEN_ERROR = "Could not generate credentials from the refresh token specified"
   GET_APP_ERROR = "App Distribution failed to fetch app information"
@@ -26,4 +14,20 @@ module ErrorMessage
   INVALID_PATH = "Could not read content from"
   INVALID_TESTERS = "Could not enable access for testers. Ensure that the groups exist and the tester emails are formatted correctly"
   INVALID_RELEASE_ID = "App distribution failed to fetch release with id"
+
+  def self.binary_not_found(binary_type)
+    "Could not find the #{binary_type}. Make sure you set the #{binary_type} path parameter to point to your #{binary_type}"
+  end
+
+  def self.parse_binary_metadata_error(binary_type)
+    "Failed to extract #{binary_type} metadata from the #{binary_type} path"
+  end
+
+  def self.upload_binary_error(binary_type)
+    "App Distribution halted because it had a problem uploading the #{binary_type}"
+  end
+
+  def self.binary_processing_error(binary_type)
+    "App Distribution failed to process the #{binary_type}"
+  end
 end

@@ -77,7 +77,7 @@ module Fastlane
         begin
           binary_hash = Digest::SHA256.hexdigest(File.open(binary_path).read)
         rescue Errno::ENOENT
-          UI.crash!("#{ErrorMessage::BINARY_NOT_FOUND}: #{binary_path}")
+          UI.crash!("#{ErrorMessage.binary_not_found(@binary_type)}: #{binary_path}")
         end
 
         begin
@@ -104,7 +104,7 @@ module Fastlane
       rescue Faraday::ResourceNotFound
         UI.crash!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
       rescue Errno::ENOENT
-        UI.crash!("#{ErrorMessage::BINARY_NOT_FOUND}: #{binary_path}")
+        UI.crash!("#{ErrorMessage.binary_not_found(@binary_type)}: #{binary_path}")
       end
 
       # Uploads the binary file if it has not already been uploaded
@@ -138,9 +138,9 @@ module Fastlane
               sleep(POLLING_INTERVAL_SECONDS)
             else
               if !upload_status_response.message.nil?
-                UI.user_error!("#{ErrorMessage::UPLOAD_BINARY_ERROR}: #{upload_status_response.message}")
+                UI.user_error!("#{ErrorMessage.upload_binary_error(@binary_type)}: #{upload_status_response.message}")
               else
-                UI.user_error!(ErrorMessage::UPLOAD_BINARY_ERROR)
+                UI.user_error!(ErrorMessage.upload_binary_error(@binary_type))
               end
             end
           end
