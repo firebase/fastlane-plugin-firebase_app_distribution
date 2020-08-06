@@ -37,7 +37,7 @@ module Fastlane
         if app_id.nil?
           UI.crash!(ErrorMessage::MISSING_APP_ID)
         end
-        release_id = fad_api_client.upload(app_id, binary_path)
+        release_id = fad_api_client.upload(app_id, binary_path, platform.to_s)
         if release_id.nil?
           return
         end
