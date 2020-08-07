@@ -18,6 +18,9 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
     allow(File).to receive(:open)
       .with(fake_binary_path)
       .and_return(fake_binary)
+    allow(File).to receive(:exist?)
+      .with(fake_binary_path)
+      .and_return(true)
 
     allow(fake_binary).to receive(:read)
       .and_return(fake_binary_contents)
@@ -78,9 +81,9 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
     end
 
     it 'crashes when given an invalid binary_path' do
-      expect(File).to receive(:open)
+      allow(File).to receive(:exist?)
         .with("invalid_binary_path")
-        .and_raise(Errno::ENOENT.new("file not found"))
+        .and_return(false)
       expect { api_client.get_upload_token("app_id", "invalid_binary_path") }
         .to raise_error("#{ErrorMessage.binary_not_found('APK')}: invalid_binary_path")
     end
