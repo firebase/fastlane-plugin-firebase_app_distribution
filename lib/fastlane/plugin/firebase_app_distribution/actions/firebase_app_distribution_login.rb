@@ -22,7 +22,7 @@ module Fastlane
         code = UI.input("Enter the resulting code here: ")
         credentials = authorizer.get_credentials_from_code(code: code, base_url: OOB_URI)
 
-        UI.success("Set the following refresh token as the FIREBASE_TOKEN environment variable by running the following command:")
+        UI.success("Set the refresh token as the FIREBASE_TOKEN environment variable by running the following command:")
         UI.success("\"export FIREBASE_TOKEN=#{credentials.refresh_token}\"")
       rescue Signet::AuthorizationError
         UI.error("The code you entered is invalid. Copy and paste the code and try again.")
