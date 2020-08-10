@@ -15,7 +15,6 @@ module ErrorMessage
   INVALID_TESTERS = "Could not enable access for testers. Ensure that the groups exist and the tester emails are formatted correctly"
   INVALID_RELEASE_ID = "App distribution failed to fetch release with id"
   SERVICE_CREDENTIALS_ERROR = "Could not generate credentials from the service credentials file specified. Service Account Path"
-  INVALID_CREDENTIALS = "App Distribution could not access this app. Check that your authentication credentials has valid permissions. App ID"
 
   def self.binary_not_found(binary_type)
     "Could not find the #{binary_type}. Make sure you set the #{binary_type} path parameter to point to your #{binary_type}"

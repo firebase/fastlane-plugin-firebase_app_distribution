@@ -84,31 +84,6 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       expect { api_client.get_upload_token("app_id", "invalid_binary_path") }
         .to raise_error("#{ErrorMessage.binary_not_found('APK')}: invalid_binary_path")
     end
-
-    it 'crashes when attempting to use invalid auth credentials' do
-      api_client_invalid_auth = Fastlane::Client::FirebaseAppDistributionApiClient.new("invalid_auth_token", "android")
-
-      temp_stubs = Faraday::Adapter::Test::Stubs.new
-      temp_conn = Faraday.new(url: "https://firebaseappdistribution.googleapis.com") do |b|
-        b.response(:json, parser_options: { symbolize_names: true })
-        b.response(:raise_error)
-        b.adapter(:test, temp_stubs)
-      end
-
-      allow(api_client_invalid_auth).to receive(:connection)
-        .and_return(temp_conn)
-
-      temp_stubs.get("/v1alpha/apps/app_id", { 'Authorization' => 'Bearer invalid_auth_token' }) do |env|
-        [
-          403,
-          {},
-          { error: { code: 403 } }
-        ]
-      end
-      expect { api_client_invalid_auth.get_upload_token("app_id", "binary_path") }
-        .to raise_error("#{ErrorMessage::INVALID_CREDENTIALS}: app_id")
-      temp_stubs.verify_stubbed_calls
-    end
   end
 
   describe '#upload_binary' do

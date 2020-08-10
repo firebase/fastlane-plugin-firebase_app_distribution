@@ -95,8 +95,6 @@ module Fastlane
           end
         rescue Faraday::ResourceNotFound
           UI.user_error!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
-        rescue Faraday::ForbiddenError
-          UI.user_error!("#{ErrorMessage::INVALID_CREDENTIALS}: #{app_id}")
         end
         contact_email = response.body[:contactEmail]
         if contact_email.nil? || contact_email.strip.empty?
