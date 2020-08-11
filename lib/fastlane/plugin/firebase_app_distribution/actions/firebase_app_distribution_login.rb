@@ -16,14 +16,15 @@ module Fastlane
         authorizer = Google::Auth::UserAuthorizer.new(client_id, SCOPE, nil)
         url = authorizer.get_authorization_url(base_url: OOB_URI)
 
-        UI.message("Open the following address in your browser and sign in with the Google account on your Firebase project:")
+        UI.message("Open the following address in your browser and sign in with your Google account:")
         UI.message(url)
         UI.message("")
         code = UI.input("Enter the resulting code here: ")
         credentials = authorizer.get_credentials_from_code(code: code, base_url: OOB_URI)
+        UI.message("")
 
-        UI.success("Set the refresh token as the FIREBASE_TOKEN environment variable by running the following command:")
-        UI.success("\"export FIREBASE_TOKEN=#{credentials.refresh_token}\"")
+        UI.success("Set the refresh token as the FIREBASE_TOKEN environment variable")
+        UI.success("Refresh Token: #{credentials.refresh_token}")
       rescue Signet::AuthorizationError
         UI.error("The code you entered is invalid. Copy and paste the code and try again.")
       rescue => error
