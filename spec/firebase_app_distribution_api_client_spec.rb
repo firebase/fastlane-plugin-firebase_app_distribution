@@ -52,7 +52,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       expect(upload_token).to eq(CGI.escape("projects/project_number/apps/app_id/releases/-/binaries/#{binary_hash}"))
     end
 
-    it 'crash if the app has no contact email' do
+    it 'crashes if the app has no contact email' do
       stubs.get("/v1alpha/apps/app_id", headers) do |env|
         [
           200,
