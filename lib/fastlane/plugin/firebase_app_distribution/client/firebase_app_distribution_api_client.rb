@@ -107,7 +107,7 @@ module Fastlane
       # args
       #   app_id - Firebase App ID
       #   binary_path - Absolute path to your app's apk/ipa file
-      #   platform - android vs ios
+      #   platform - 'android' or 'ios'
       #
       # Throws a user_error if an invalid app id is passed in, or if the binary file does not exist
       def upload_binary(app_id, binary_path, platform)
