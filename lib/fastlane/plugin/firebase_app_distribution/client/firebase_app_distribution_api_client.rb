@@ -70,7 +70,7 @@ module Fastlane
           # rescue Faraday::ClientError
           #   UI.user_error!("#{ErrorMessage::INVALID_RELEASE_ID}: #{release_id}")
         end
-        UI.success("Release notes have been posted.")
+        UI.success("Posted release notes.")
       end
 
       # Returns the url encoded upload token used for get_upload_status calls:
@@ -140,7 +140,7 @@ module Fastlane
           MAX_POLLING_RETRIES.times do
             upload_status_response = get_upload_status(app_id, upload_token)
             if upload_status_response.success? || upload_status_response.already_uploaded?
-              UI.success("Uploaded #{@binary_type} Successfully!")
+              UI.success("Uploaded #{@binary_type} successfully!")
               break
             elsif upload_status_response.in_progress?
               sleep(POLLING_INTERVAL_SECONDS)
