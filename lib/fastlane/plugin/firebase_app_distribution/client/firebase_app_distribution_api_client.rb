@@ -119,7 +119,7 @@ module Fastlane
         end
       rescue Faraday::ResourceNotFound
         UI.user_error!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
-      rescue Errno::ENOENT
+      rescue Errno::ENOENT # Raised when binary_path file does not exist
         UI.user_error!("#{ErrorMessage.binary_not_found(@binary_type)}: #{binary_path}")
       end
 
