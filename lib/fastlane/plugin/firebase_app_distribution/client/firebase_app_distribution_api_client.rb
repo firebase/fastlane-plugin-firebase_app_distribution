@@ -168,13 +168,13 @@ module Fastlane
         upload_status_response.release_id
       end
 
-      # Gets the upload_status for this
+      # Fetches the status of an uploaded binary
       #
       # args
       #   app_id - Firebase App ID
       #   upload_token - URL encoded upload token
       #
-      # Returns the release_id on a successful release, otherwise returns nil.
+      # Returns the release ID on a successful release, otherwise returns nil.
       #
       # Throws a user_error if an invalid app_id is passed in
       def get_upload_status(app_id, upload_token)
