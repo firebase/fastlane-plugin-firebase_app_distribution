@@ -105,6 +105,14 @@ module Fastlane
         return upload_token_format(response.body[:appId], response.body[:projectNumber], binary_hash)
       end
 
+      # Uploads the app binary to the Firebase API
+      #
+      # args
+      #   app_id - Firebase App ID
+      #   binary_path - Absolute path to your app's apk/ipa file
+      #   platform - 'android' or 'ios'
+      #
+      # Throws a user_error if an invalid app id is passed in, or if the binary file does not exist
       def upload_binary(app_id, binary_path, platform)
         connection.post(binary_upload_url(app_id), File.open(binary_path).read) do |request|
           request.headers["Authorization"] = "Bearer " + @auth_token
@@ -113,9 +121,9 @@ module Fastlane
           request.headers["X-APP-DISTRO-API-CLIENT-VERSION"] = Fastlane::FirebaseAppDistribution::VERSION
         end
       rescue Faraday::ResourceNotFound
-        UI.crash!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
-      rescue Errno::ENOENT
-        UI.crash!("#{ErrorMessage.binary_not_found(@binary_type)}: #{binary_path}")
+        UI.user_error!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
+      rescue Errno::ENOENT # Raised when binary_path file does not exist
+        UI.user_error!("#{ErrorMessage.binary_not_found(@binary_type)}: #{binary_path}")
       end
 
       # Uploads the binary file if it has not already been uploaded
@@ -163,14 +171,22 @@ module Fastlane
         upload_status_response.release_id
       end
 
-      # Gets the upload status for the app release.
-      def get_upload_status(app_id, app_token)
+      # Fetches the status of an uploaded binary
+      #
+      # args
+      #   app_id - Firebase App ID
+      #   upload_token - URL encoded upload token
+      #
+      # Returns the release ID on a successful release, otherwise returns nil.
+      #
+      # Throws a user_error if an invalid app_id is passed in
+      def get_upload_status(app_id, upload_token)
         begin
-          response = connection.get(upload_status_url(app_id, app_token)) do |request|
+          response = connection.get(upload_status_url(app_id, upload_token)) do |request|
             request.headers["Authorization"] = "Bearer " + @auth_token
           end
         rescue Faraday::ResourceNotFound
-          UI.crash!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
+          UI.user_error!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
         end
         return UploadStatusResponse.new(response.body)
       end
