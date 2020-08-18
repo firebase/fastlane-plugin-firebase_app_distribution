@@ -11,7 +11,10 @@ module Fastlane
 
       def initialize(auth_token, platform)
         @auth_token = auth_token
-        if platform == :ios || platform.nil?
+
+        if platform.nil?
+          @binary_type = "IPA/APK"
+        elsif platform == :ios
           @binary_type = "IPA"
         else
           @binary_type = "APK"
