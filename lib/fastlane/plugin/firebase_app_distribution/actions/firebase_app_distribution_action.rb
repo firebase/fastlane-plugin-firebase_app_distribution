@@ -13,7 +13,6 @@ require_relative '../helper/firebase_app_distribution_auth_client'
 module Fastlane
   module Actions
     class FirebaseAppDistributionAction < Action
-      DEFAULT_FIREBASE_CLI_PATH = `which firebase`
       FIREBASECMD_ACTION = "appdistribution:distribute".freeze
 
       extend Auth::FirebaseAppDistributionAuthClient
@@ -108,20 +107,8 @@ module Fastlane
           FastlaneCore::ConfigItem.new(key: :firebase_cli_path,
                                        env_name: "FIREBASEAPPDISTRO_FIREBASE_CLI_PATH",
                                        description: "The absolute path of the firebase cli command",
-                                       default_value: DEFAULT_FIREBASE_CLI_PATH,
-                                       default_value_dynamic: true,
-                                       optional: false,
-                                       type: String,
-                                       verify_block: proc do |value|
-                                         value.chomp!
-                                         if value.to_s == "" || !File.exist?(value)
-                                           UI.user_error!("firebase_cli_path: missing path to firebase cli tool. Please install firebase in $PATH or specify path")
-                                         end
-
-                                         unless is_firebasecmd_supported?(value)
-                                           UI.user_error!("firebase_cli_path: `#{value}` does not support the `#{FIREBASECMD_ACTION}` command. Please download (https://appdistro.page.link/firebase-cli-download) or specify the path to the correct version of firebse")
-                                         end
-                                       end),
+                                       optional: true,
+                                       type: String),
           FastlaneCore::ConfigItem.new(key: :groups,
                                        env_name: "FIREBASEAPPDISTRO_GROUPS",
                                        description: "The groups used for distribution, separated by commas",
