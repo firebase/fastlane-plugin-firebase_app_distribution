@@ -4,7 +4,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
   let(:fake_binary) { double("Binary") }
   let(:headers) { { 'Authorization' => 'Bearer auth_token' } }
 
-  let(:api_client) { Fastlane::Client::FirebaseAppDistributionApiClient.new("auth_token", "android") }
+  let(:api_client) { Fastlane::Client::FirebaseAppDistributionApiClient.new("auth_token", :android) }
   let(:stubs) { Faraday::Adapter::Test::Stubs.new }
   let(:conn) do
     Faraday.new(url: "https://firebaseappdistribution.googleapis.com") do |b|
@@ -435,6 +435,23 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       end
       expect { api_client.enable_access("app_id", "release_id", emails, group_ids) }
         .to raise_error("#{ErrorMessage::INVALID_TESTERS} \nEmails: #{emails} \nGroups: #{group_ids}")
+    end
+  end
+
+  describe 'Error messaging' do
+    it 'uses "APK" when the platform is android' do
+      client = Fastlane::Client::FirebaseAppDistributionApiClient.new("auth_token", :android)
+      expect(client.instance_variable_get(:@binary_type)).to eq('APK')
+    end
+
+    it 'uses "IPA" when the platform is ios' do
+      client = Fastlane::Client::FirebaseAppDistributionApiClient.new("auth_token", :ios)
+      expect(client.instance_variable_get(:@binary_type)).to eq('IPA')
+    end
+
+    it 'uses "APK/IPA" when the platform is nil' do
+      client = Fastlane::Client::FirebaseAppDistributionApiClient.new("auth_token", nil)
+      expect(client.instance_variable_get(:@binary_type)).to eq('IPA/APK')
     end
   end
 end
