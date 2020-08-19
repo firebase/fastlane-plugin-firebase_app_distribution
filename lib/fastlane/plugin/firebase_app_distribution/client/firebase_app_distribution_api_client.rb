@@ -33,7 +33,7 @@ module Fastlane
       # Throws a user_error if app_id, emails, or group_ids are invalid
       def enable_access(app_id, release_id, emails, group_ids)
         if (emails.nil? || emails.empty?) && (group_ids.nil? || group_ids.empty?)
-          UI.message("No testers passed in. Skipping this step")
+          UI.success("✅ No testers passed in. Skipping this step.")
           return
         end
         payload = { emails: emails, groupIds: group_ids }
@@ -46,7 +46,7 @@ module Fastlane
         rescue Faraday::ClientError
           UI.user_error!("#{ErrorMessage::INVALID_TESTERS} \nEmails: #{emails} \nGroups: #{group_ids}")
         end
-        UI.success("Added testers/groups successfully.")
+        UI.success("✅ Added testers/groups.")
       end
 
       # Posts notes for the specified app release. Skips this
@@ -61,7 +61,7 @@ module Fastlane
       def post_notes(app_id, release_id, release_notes)
         payload = { releaseNotes: { releaseNotes: release_notes } }
         if release_notes.nil? || release_notes.empty?
-          UI.message("No release notes passed in. Skipping this step.")
+          UI.success("✅ No release notes passed in. Skipping this step.")
           return
         end
         begin
@@ -73,7 +73,7 @@ module Fastlane
           # rescue Faraday::ClientError
           #   UI.user_error!("#{ErrorMessage::INVALID_RELEASE_ID}: #{release_id}")
         end
-        UI.success("Posted release notes.")
+        UI.success("✅ Posted release notes.")
       end
 
       # Returns the url encoded upload token used for get_upload_status calls:
@@ -141,9 +141,9 @@ module Fastlane
         upload_token = get_upload_token(app_id, binary_path)
         upload_status_response = get_upload_status(app_id, upload_token)
         if upload_status_response.success? || upload_status_response.already_uploaded?
-          UI.success("This #{@binary_type} has been uploaded before. Skipping upload step.")
+          UI.success("✅ This #{@binary_type} has been uploaded before. Skipping upload step.")
         else
-          UI.message("This #{@binary_type} has not been uploaded before")
+          UI.message("This #{@binary_type} has not been uploaded before.")
           UI.message("Uploading the #{@binary_type}.")
           unless upload_status_response.in_progress?
             upload_binary(app_id, binary_path, platform)
@@ -151,7 +151,7 @@ module Fastlane
           MAX_POLLING_RETRIES.times do
             upload_status_response = get_upload_status(app_id, upload_token)
             if upload_status_response.success? || upload_status_response.already_uploaded?
-              UI.success("Uploaded #{@binary_type} successfully!")
+              UI.success("✅ Uploaded the #{@binary_type}.")
               break
             elsif upload_status_response.in_progress?
               sleep(POLLING_INTERVAL_SECONDS)
