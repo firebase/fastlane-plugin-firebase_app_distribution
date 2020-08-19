@@ -140,10 +140,7 @@ module Fastlane
       def upload(app_id, binary_path, platform)
         upload_token = get_upload_token(app_id, binary_path)
         upload_status_response = get_upload_status(app_id, upload_token)
-        if upload_status_response.success? || upload_status_response.already_uploaded?
-          UI.success("This #{@binary_type} has been uploaded before. Skipping upload step.")
-        else
-          UI.message("This #{@binary_type} has not been uploaded before")
+        unless upload_status_response.success? || upload_status_response.already_uploaded?
           UI.message("Uploading the #{@binary_type}.")
           unless upload_status_response.in_progress?
             upload_binary(app_id, binary_path, platform)
