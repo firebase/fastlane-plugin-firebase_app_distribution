@@ -49,7 +49,7 @@ module Fastlane
         emails = string_to_array(testers)
         group_ids = string_to_array(groups)
         fad_api_client.enable_access(app_id, release_id, emails, group_ids)
-        UI.success("App Distribution upload finished successfully")
+        UI.success("🎉 App Distribution upload finished successfully.")
       end
 
       def self.description
