@@ -38,7 +38,7 @@ module Fastlane
         else
           UI.user_error!(ErrorMessage::MISSING_CREDENTIALS)
         end
-        UI.success("Successfully authenticated!")
+        UI.success("Authenticated successfully ✅.")
         token
       end
 
