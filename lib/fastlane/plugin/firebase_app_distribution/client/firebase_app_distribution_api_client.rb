@@ -143,9 +143,8 @@ module Fastlane
         if upload_status_response.success? || upload_status_response.already_uploaded?
           UI.success("✅ This #{@binary_type} has been uploaded before. Skipping upload step.")
         else
-          UI.message("This #{@binary_type} has not been uploaded before.")
-          UI.message("Uploading the #{@binary_type}.")
           unless upload_status_response.in_progress?
+            UI.message("⌛ Uploading the #{@binary_type}.")
             upload_binary(app_id, binary_path, platform)
           end
           MAX_POLLING_RETRIES.times do
