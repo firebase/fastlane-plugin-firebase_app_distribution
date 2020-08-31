@@ -23,6 +23,7 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
     allow(fake_service_creds).to receive(:fetch_access_token!)
       .and_return(payload)
 
+    allow(File).to receive(:open).and_call_original
     allow(File).to receive(:open)
       .and_return(fake_binary)
     allow(fake_binary).to receive(:read)

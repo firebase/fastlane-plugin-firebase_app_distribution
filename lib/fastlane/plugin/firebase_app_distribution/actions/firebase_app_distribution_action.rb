@@ -21,8 +21,9 @@ module Fastlane
       def self.run(params)
         params.values # to validate all inputs before looking for the ipa/apk
         auth_token = fetch_auth_token(params[:service_credentials_file], params[:firebase_cli_token])
-        fad_api_client = Client::FirebaseAppDistributionApiClient.new(auth_token, platform)
         binary_path = params[:ipa_path] || params[:apk_path]
+        platform = lane_platform || platform_from_path(binary_path)
+        fad_api_client = Client::FirebaseAppDistributionApiClient.new(auth_token, platform)
 
         if params[:app] # Set app_id if it is specified as a parameter
           app_id = params[:app]
@@ -65,16 +66,26 @@ module Fastlane
         "Release your beta builds with Firebase App Distribution"
       end
 
-      def self.platform
-        @platform ||= Actions.lane_context[Actions::SharedValues::PLATFORM_NAME]
+      def self.lane_platform
+        Actions.lane_context[Actions::SharedValues::PLATFORM_NAME]
+      end
+
+      def self.platform_from_path(binary_path)
+        return nil unless binary_path
+        case binary_path.split('.').last
+        when 'ipa'
+          :ios
+        when 'apk'
+          :android
+        end
       end
 
       def self.available_options
-        if platform == :ios || platform.nil?
+        if lane_platform == :ios || lane_platform.nil?
           ipa_path_default = Dir["*.ipa"].sort_by { |x| File.mtime(x) }.last
         end
 
-        if platform == :android
+        if lane_platform == :android
           apk_path_default = Dir["*.apk"].last || Dir[File.join("app", "build", "outputs", "apk", "app-release.apk")].last
         end
 
