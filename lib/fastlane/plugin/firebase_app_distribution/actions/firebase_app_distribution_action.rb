@@ -105,9 +105,9 @@ module Fastlane
                                        optional: true,
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :firebase_cli_path,
+                                       deprecated: "This plugin no longer uses the Firebase CLI",
                                        env_name: "FIREBASEAPPDISTRO_FIREBASE_CLI_PATH",
                                        description: "The absolute path of the firebase cli command",
-                                       optional: true,
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :groups,
                                        env_name: "FIREBASEAPPDISTRO_GROUPS",
@@ -174,18 +174,6 @@ module Fastlane
             )
           CODE
         ]
-      end
-
-      ## TODO: figure out if we can surpress color output.
-      def self.is_firebasecmd_supported?(cmd)
-        outerr, status = Open3.capture2e(cmd, "--non-interactive", FIREBASECMD_ACTION, "--help")
-        return false unless status.success?
-
-        if outerr =~ /is not a Firebase command/
-          return false
-        end
-
-        true
       end
     end
   end
