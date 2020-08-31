@@ -6,6 +6,7 @@ describe Fastlane::Helper::FirebaseAppDistributionHelper do
   let(:plist) { double("plist") }
 
   before(:each) do
+    allow(File).to receive(:open).and_call_original
     allow(fake_binary).to receive(:read).and_return("Hello World")
   end
 
