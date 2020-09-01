@@ -16,8 +16,9 @@ module Fastlane
       FIREBASECMD_ACTION = "appdistribution:distribute".freeze
       BASE_URL = "https://firebaseappdistribution.googleapis.com"
       PATH = "/v1alpha/apps/"
+      TOKEN_PATH = "https://oauth2.googleapis.com/token"
       MAX_POLLING_RETRIES = 60
-      POLLING_INTERVAL_S = 2
+      POLLING_INTERVAL_SECONDS = 2
 
       extend Helper::FirebaseAppDistributionHelper
 
@@ -31,7 +32,7 @@ module Fastlane
         elsif platform == :ios
           archive_path = Actions.lane_context[SharedValues::XCODEBUILD_ARCHIVE]
           if archive_path
-            app_id = findout_ios_app_id_from_archive(archive_path)
+            app_id = get_ios_app_id_from_archive(archive_path)
           end
         end
 
@@ -54,7 +55,7 @@ module Fastlane
       def self.auth_token
         @auth_token ||= begin
           client = Signet::OAuth2::Client.new(
-            token_credential_uri: 'https://oauth2.googleapis.com/token',
+            token_credential_uri: TOKEN_PATH,
             client_id: FirebaseAppDistributionLoginAction::CLIENT_ID,
             client_secret: FirebaseAppDistributionLoginAction::CLIENT_SECRET,
             refresh_token: ENV["FIREBASE_TOKEN"]
@@ -209,16 +210,22 @@ module Fastlane
       end
 
       def self.get_upload_token(app_id, binary_path)
-        binary_hash = Digest::SHA256.hexdigest(File.open(binary_path).read)
+        begin
+          binary_hash = Digest::SHA256.hexdigest(File.open(binary_path).read)
+        rescue Errno::ENOENT
+          UI.crash!(ErrorMessage::APK_NOT_FOUND)
+        end
+
         begin
           response = connection.get("#{PATH}#{app_id}") do |request|
             request.headers["Authorization"] = "Bearer " + auth_token
           end
         rescue Faraday::ResourceNotFound
-          UI.crash!("App Distribution could not find your app #{app_id}. Make sure to onboard your app by pressing the \"Get started\" button on the App Distribution page in the Firebase console: https://console.firebase.google.com/project/_/appdistribution")
+          UI.crash!(ErrorMessage::INVALID_APP_ID)
         end
+
         contact_email = response.body[:contactEmail]
-        if contact_email.strip.empty?
+        if contact_email.nil? || contact_email.strip.empty?
           UI.crash!(ErrorMessage::GET_APP_NO_CONTACT_EMAIL_ERROR)
         end
         return CGI.escape("projects/#{response.body[:projectNumber]}/apps/#{response.body[:appId]}/releases/-/binaries/#{binary_hash}")
@@ -228,32 +235,44 @@ module Fastlane
         connection.post("/app-binary-uploads?app_id=#{app_id}", File.open(binary_path).read) do |request|
           request.headers["Authorization"] = "Bearer " + auth_token
         end
+      rescue Faraday::ResourceNotFound
+        UI.crash!(ErrorMessage::INVALID_APP_ID)
+      rescue Errno::ENOENT
+        UI.crash!(ErrorMessage::APK_NOT_FOUND)
       end
 
       def self.upload(app_id, binary_path)
         upload_token = get_upload_token(app_id, binary_path)
-        status = upload_status(upload_token, app_id)
+        status = upload_status(app_id, upload_token)
         if status == "SUCCESS"
           UI.message("This APK/IPA has been uploaded before. Skipping upload step.")
         else
+          UI.message("This APK has not been uploaded before.")
           MAX_POLLING_RETRIES.times do
             if status == "SUCCESS"
               UI.message("Uploaded APK/IPA Successfully!")
               break
             elsif status == "IN_PROGRESS"
-              sleep(POLLING_INTERVAL_S)
+              sleep(POLLING_INTERVAL_SECONDS)
             else
-              UI.message("Uploading the APK/IPA")
+              UI.message("Uploading the APK/IPA.")
               upload_binary(app_id, binary_path)
             end
-            status = upload_status(upload_token, app_id)
+            status = upload_status(app_id, upload_token)
+          end
+          if status != "SUCCESS"
+            UI.message("It took longer than expected to process your APK/IPA, please try again")
           end
         end
       end
 
-      def self.upload_status(app_token, app_id)
-        response = connection.get("#{PATH}#{app_id}/upload_status/#{app_token}") do |request|
-          request.headers["Authorization"] = "Bearer " + auth_token
+      def self.upload_status(app_id, app_token)
+        begin
+          response = connection.get("#{PATH}#{app_id}/upload_status/#{app_token}") do |request|
+            request.headers["Authorization"] = "Bearer " + auth_token
+          end
+        rescue Faraday::ResourceNotFound
+          UI.crash!(ErrorMessage::INVALID_APP_ID)
         end
         response.body[:status]
       end
