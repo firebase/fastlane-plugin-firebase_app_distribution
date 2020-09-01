@@ -15,9 +15,12 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
   end
 
   before(:each) do
+    allow(File).to receive(:open).and_call_original
     allow(File).to receive(:open)
       .with(fake_binary_path)
       .and_return(fake_binary)
+
+    allow(File).to receive(:exist?).and_call_original
     allow(File).to receive(:exist?)
       .with(fake_binary_path)
       .and_return(true)
