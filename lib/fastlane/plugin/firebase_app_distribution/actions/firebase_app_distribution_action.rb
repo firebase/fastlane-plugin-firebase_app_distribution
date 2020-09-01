@@ -1,52 +1,56 @@
-require 'tempfile'
 require 'fastlane/action'
 require 'open3'
 require 'shellwords'
+require 'googleauth'
+require_relative '../helper/upload_status_response'
 require_relative '../helper/firebase_app_distribution_helper'
+require_relative '../helper/firebase_app_distribution_error_message'
+require_relative '../client/firebase_app_distribution_api_client'
+require_relative '../helper/firebase_app_distribution_auth_client'
 
 ## TODO: should always use a file underneath? I think so.
 ## How should we document the usage of release notes?
 module Fastlane
   module Actions
     class FirebaseAppDistributionAction < Action
-      DEFAULT_FIREBASE_CLI_PATH = `which firebase`
       FIREBASECMD_ACTION = "appdistribution:distribute".freeze
 
+      extend Auth::FirebaseAppDistributionAuthClient
       extend Helper::FirebaseAppDistributionHelper
 
       def self.run(params)
         params.values # to validate all inputs before looking for the ipa/apk
-        cmd = [Shellwords.escape(params[:firebase_cli_path].chomp), FIREBASECMD_ACTION]
-        cmd << Shellwords.escape(params[:ipa_path] || params[:apk_path])
-        if params[:app]
-          cmd << "--app #{params[:app]}"
-        else
-          platform = Actions.lane_context[Actions::SharedValues::PLATFORM_NAME]
-          case platform
-          when :android
-          else
-            archivePath = Actions.lane_context[SharedValues::XCODEBUILD_ARCHIVE]
-            if archivePath
-              cmd << "--app"
-              cmd << findout_ios_app_id_from_archive(archivePath)
-            end
+        auth_token = fetch_auth_token(params[:service_credentials_file], params[:firebase_cli_token])
+        binary_path = params[:ipa_path] || params[:apk_path]
+        platform = lane_platform || platform_from_path(binary_path)
+        fad_api_client = Client::FirebaseAppDistributionApiClient.new(auth_token, platform)
+
+        if params[:app] # Set app_id if it is specified as a parameter
+          app_id = params[:app]
+        elsif platform == :ios
+          archive_path = Actions.lane_context[SharedValues::XCODEBUILD_ARCHIVE]
+          if archive_path
+            app_id = get_ios_app_id_from_archive(archive_path)
           end
         end
 
-        cmd << groups_flag(params)
-        cmd << testers_flag(params)
-        cmd << release_notes_flag(params)
-        cmd << flag_value_if_supplied('--token', :firebase_cli_token, params)
-        cmd << flag_if_supplied('--debug', :debug, params)
+        if app_id.nil?
+          UI.crash!(ErrorMessage::MISSING_APP_ID)
+        end
+        release_id = fad_api_client.upload(app_id, binary_path, platform.to_s)
+        if release_id.nil?
+          return
+        end
 
-        Actions.sh_control_output(
-          cmd.compact.join(" "),
-          print_command: false,
-          print_command_output: true
-        )
-      # make sure we do this, even in the case of an error.
-      ensure
-        cleanup_tempfiles
+        release_notes = get_value_from_value_or_file(params[:release_notes], params[:release_notes_file])
+        fad_api_client.post_notes(app_id, release_id, release_notes)
+
+        testers = get_value_from_value_or_file(params[:testers], params[:testers_file])
+        groups = get_value_from_value_or_file(params[:groups], params[:groups_file])
+        emails = string_to_array(testers)
+        group_ids = string_to_array(groups)
+        fad_api_client.enable_access(app_id, release_id, emails, group_ids)
+        UI.success("🎉 App Distribution upload finished successfully.")
       end
 
       def self.description
@@ -54,7 +58,7 @@ module Fastlane
       end
 
       def self.authors
-        ["Stefan Natchev"]
+        ["Stefan Natchev", "Manny Jimenez Github: mannyjimenez0810, Alonso Salas Infante Github: alonsosalasinfante"]
       end
 
       # supports markdown.
@@ -62,14 +66,26 @@ module Fastlane
         "Release your beta builds with Firebase App Distribution"
       end
 
-      def self.available_options
-        platform = Actions.lane_context[Actions::SharedValues::PLATFORM_NAME]
+      def self.lane_platform
+        Actions.lane_context[Actions::SharedValues::PLATFORM_NAME]
+      end
 
-        if platform == :ios || platform.nil?
+      def self.platform_from_path(binary_path)
+        return nil unless binary_path
+        case binary_path.split('.').last
+        when 'ipa'
+          :ios
+        when 'apk'
+          :android
+        end
+      end
+
+      def self.available_options
+        if lane_platform == :ios || lane_platform.nil?
           ipa_path_default = Dir["*.ipa"].sort_by { |x| File.mtime(x) }.last
         end
 
-        if platform == :android
+        if lane_platform == :android
           apk_path_default = Dir["*.apk"].last || Dir[File.join("app", "build", "outputs", "apk", "app-release.apk")].last
         end
 
@@ -100,22 +116,10 @@ module Fastlane
                                        optional: true,
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :firebase_cli_path,
+                                       deprecated: "This plugin no longer uses the Firebase CLI",
                                        env_name: "FIREBASEAPPDISTRO_FIREBASE_CLI_PATH",
                                        description: "The absolute path of the firebase cli command",
-                                       default_value: DEFAULT_FIREBASE_CLI_PATH,
-                                       default_value_dynamic: true,
-                                       optional: false,
-                                       type: String,
-                                       verify_block: proc do |value|
-                                         value.chomp!
-                                         if value.to_s == "" || !File.exist?(value)
-                                           UI.user_error!("firebase_cli_path: missing path to firebase cli tool. Please install firebase in $PATH or specify path")
-                                         end
-
-                                         unless is_firebasecmd_supported?(value)
-                                           UI.user_error!("firebase_cli_path: `#{value}` does not support the `#{FIREBASECMD_ACTION}` command. Please download (https://appdistro.page.link/firebase-cli-download) or specify the path to the correct version of firebse")
-                                         end
-                                       end),
+                                       type: String),
           FastlaneCore::ConfigItem.new(key: :groups,
                                        env_name: "FIREBASEAPPDISTRO_GROUPS",
                                        description: "The groups used for distribution, separated by commas",
@@ -156,7 +160,11 @@ module Fastlane
                                        description: "Print verbose debug output",
                                        optional: true,
                                        default_value: false,
-                                       is_string: false)
+                                       is_string: false),
+          FastlaneCore::ConfigItem.new(key: :service_credentials_file,
+                                       description: "Path to Google service account json",
+                                       optional: true,
+                                       type: String)
         ]
       end
 
@@ -177,18 +185,6 @@ module Fastlane
             )
           CODE
         ]
-      end
-
-      ## TODO: figure out if we can surpress color output.
-      def self.is_firebasecmd_supported?(cmd)
-        outerr, status = Open3.capture2e(cmd, "--non-interactive", FIREBASECMD_ACTION, "--help")
-        return false unless status.success?
-
-        if outerr =~ /is not a Firebase command/
-          return false
-        end
-
-        true
       end
     end
   end
