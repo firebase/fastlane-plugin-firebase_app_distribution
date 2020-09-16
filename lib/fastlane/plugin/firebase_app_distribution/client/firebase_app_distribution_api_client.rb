@@ -89,7 +89,7 @@ module Fastlane
         if binary_path.nil? || !File.exist?(binary_path)
           UI.crash!("#{ErrorMessage.binary_not_found(@binary_type)}: #{binary_path}")
         end
-        binary_hash = Digest::SHA256.hexdigest(File.open(binary_path).read)
+        binary_hash = Digest::SHA256.hexdigest(read_binary(binary_path))
 
         begin
           response = connection.get(v1_apps_url(app_id)) do |request|
@@ -114,7 +114,7 @@ module Fastlane
       #
       # Throws a user_error if an invalid app id is passed in, or if the binary file does not exist
       def upload_binary(app_id, binary_path, platform)
-        connection.post(binary_upload_url(app_id), File.open(binary_path).read) do |request|
+        connection.post(binary_upload_url(app_id), read_binary(binary_path)) do |request|
           request.headers["Authorization"] = "Bearer " + @auth_token
           request.headers["X-APP-DISTRO-API-CLIENT-ID"] = "fastlane"
           request.headers["X-APP-DISTRO-API-CLIENT-TYPE"] =  platform
@@ -222,6 +222,11 @@ module Fastlane
           conn.response(:raise_error) # raise_error middleware will run before the json middleware
           conn.adapter(Faraday.default_adapter)
         end
+      end
+
+      def read_binary(path)
+        # File must be read in binary mode to work on Windows
+        File.open(path, 'rb').read
       end
     end
   end
