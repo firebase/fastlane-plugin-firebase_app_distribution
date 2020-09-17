@@ -20,10 +20,6 @@ module Fastlane
 
       def self.run(params)
         params.values # to validate all inputs before looking for the ipa/apk
-        auth_token = fetch_auth_token(params[:service_credentials_file], params[:firebase_cli_token])
-        binary_path = params[:ipa_path] || params[:apk_path]
-        platform = lane_platform || platform_from_path(binary_path)
-        fad_api_client = Client::FirebaseAppDistributionApiClient.new(auth_token, platform)
 
         if params[:app] # Set app_id if it is specified as a parameter
           app_id = params[:app]
@@ -33,10 +29,16 @@ module Fastlane
             app_id = get_ios_app_id_from_archive(archive_path)
           end
         end
-
         if app_id.nil?
           UI.crash!(ErrorMessage::MISSING_APP_ID)
         end
+
+        platform = lane_platform || platform_from_app_id(app_id)
+        binary_path = binary_path_from_platform(platform, params[:ipa_path], params[:apk_path])
+
+        auth_token = fetch_auth_token(params[:service_credentials_file], params[:firebase_cli_token])
+        fad_api_client = Client::FirebaseAppDistributionApiClient.new(auth_token, platform)
+
         release_id = fad_api_client.upload(app_id, binary_path, platform.to_s)
         if release_id.nil?
           return
@@ -70,13 +72,22 @@ module Fastlane
         Actions.lane_context[Actions::SharedValues::PLATFORM_NAME]
       end
 
-      def self.platform_from_path(binary_path)
-        return nil unless binary_path
-        case binary_path.split('.').last
-        when 'ipa'
+      def self.platform_from_app_id(app_id)
+        if app_id.include?(':ios:')
           :ios
-        when 'apk'
+        elsif app_id.include?(':android:')
           :android
+        end
+      end
+
+      def self.binary_path_from_platform(platform, ipa_path, apk_path)
+        case platform
+        when :ios
+          ipa_path
+        when :android
+          apk_path
+        else
+          ipa_path || apk_path
         end
       end
 
