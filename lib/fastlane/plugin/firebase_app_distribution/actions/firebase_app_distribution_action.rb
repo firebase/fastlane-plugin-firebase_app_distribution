@@ -23,11 +23,9 @@ module Fastlane
 
         if params[:app] # Set app_id if it is specified as a parameter
           app_id = params[:app]
-        elsif platform == :ios
-          archive_path = Actions.lane_context[SharedValues::XCODEBUILD_ARCHIVE]
-          if archive_path
-            app_id = get_ios_app_id_from_archive_plist(archive_path, params[:googleservice_info_plist_path])
-          end
+        elsif xcode_archive_path
+          plist_path = params[:googleservice_info_plist_path]
+          app_id = get_ios_app_id_from_archive_plist(xcode_archive_path, plist_path)
         end
         if app_id.nil?
           UI.crash!(ErrorMessage::MISSING_APP_ID)
@@ -66,6 +64,14 @@ module Fastlane
       # supports markdown.
       def self.details
         "Release your beta builds with Firebase App Distribution"
+      end
+
+      def self.xcode_archive_path
+        # prevents issues on cross-platform build environments where an XCode build happens within
+        # the same lane
+        return nil if lane_platform == :android
+
+        Actions.lane_context[SharedValues::XCODEBUILD_ARCHIVE]
       end
 
       def self.lane_platform
