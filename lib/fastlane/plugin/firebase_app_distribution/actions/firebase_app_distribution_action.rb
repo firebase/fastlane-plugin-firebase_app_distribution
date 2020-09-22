@@ -26,7 +26,7 @@ module Fastlane
         elsif platform == :ios
           archive_path = Actions.lane_context[SharedValues::XCODEBUILD_ARCHIVE]
           if archive_path
-            app_id = get_ios_app_id_from_archive(archive_path)
+            app_id = get_ios_app_id_from_archive_plist(archive_path, params[:googleservice_info_plist_path])
           end
         end
         if app_id.nil?
@@ -111,6 +111,12 @@ module Fastlane
                                        verify_block: proc do |value|
                                          UI.user_error!("firebase_app_distribution: Couldn't find ipa file at path '#{value}'") unless File.exist?(value)
                                        end),
+          FastlaneCore::ConfigItem.new(key: :googleservice_info_plist_path,
+                                       env_name: "GOOGLESERVICE_INFO_PLIST_PATH",
+                                       description: "Path to your GoogleService-Info.plist file, relative to the root of your Xcode project",
+                                       default_value: "GoogleService-Info.plist",
+                                       optional: true,
+                                       type: String),
           # Android Specific
           FastlaneCore::ConfigItem.new(key: :apk_path,
                                        env_name: "FIREBASEAPPDISTRO_APK_PATH",

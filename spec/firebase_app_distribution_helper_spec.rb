@@ -72,7 +72,7 @@ describe Fastlane::Helper::FirebaseAppDistributionHelper do
     end
   end
 
-  describe '#get_ios_app_id_from_archive' do
+  describe '#get_ios_app_id_from_archive_plist' do
     it 'returns identifier ' do
       allow(CFPropertyList::List).to receive(:new)
         .with({ file: "path/Info.plist" })
@@ -89,7 +89,7 @@ describe Fastlane::Helper::FirebaseAppDistributionHelper do
       # Second call uses the application path to find the Google service plist where the app id is stored
       expect(CFPropertyList).to receive(:native_types)
         .and_return(identifier)
-      expect(helper.get_ios_app_id_from_archive("path")).to eq("identifier")
+      expect(helper.get_ios_app_id_from_archive_plist("path", "GoogleService-Info.plist")).to eq("identifier")
     end
   end
 end
