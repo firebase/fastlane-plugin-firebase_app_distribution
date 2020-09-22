@@ -21,16 +21,7 @@ module Fastlane
       def self.run(params)
         params.values # to validate all inputs before looking for the ipa/apk
 
-        if params[:app] # Set app_id if it is specified as a parameter
-          app_id = params[:app]
-        elsif xcode_archive_path
-          plist_path = params[:googleservice_info_plist_path]
-          app_id = get_ios_app_id_from_archive_plist(xcode_archive_path, plist_path)
-        end
-        if app_id.nil?
-          UI.crash!(ErrorMessage::MISSING_APP_ID)
-        end
-
+        app_id = app_id_from_params(params)
         platform = lane_platform || platform_from_app_id(app_id)
         binary_path = binary_path_from_platform(platform, params[:ipa_path], params[:apk_path])
 
@@ -64,6 +55,19 @@ module Fastlane
       # supports markdown.
       def self.details
         "Release your beta builds with Firebase App Distribution"
+      end
+
+      def self.app_id_from_params(params)
+        if params[:app]
+          app_id = params[:app]
+        elsif xcode_archive_path
+          plist_path = params[:googleservice_info_plist_path]
+          app_id = get_ios_app_id_from_archive_plist(xcode_archive_path, plist_path)
+        end
+        if app_id.nil?
+          UI.crash!(ErrorMessage::MISSING_APP_ID)
+        end
+        app_id
       end
 
       def self.xcode_archive_path
