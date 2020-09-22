@@ -26,7 +26,7 @@ module Fastlane
         elsif platform == :ios
           archive_path = Actions.lane_context[SharedValues::XCODEBUILD_ARCHIVE]
           if archive_path
-            app_id = get_ios_app_id_from_archive(archive_path, params[:googleservice_info_plist_path])
+            app_id = get_ios_app_id_from_archive_plist(archive_path, params[:googleservice_info_plist_path])
           end
         end
         if app_id.nil?
