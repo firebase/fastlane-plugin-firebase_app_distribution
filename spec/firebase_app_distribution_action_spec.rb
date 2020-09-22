@@ -1,3 +1,5 @@
+require 'fastlane/action'
+
 describe Fastlane::Actions::FirebaseAppDistributionAction do
   let(:action) { Fastlane::Actions::FirebaseAppDistributionAction }
   describe '#platform_from_app_id' do
@@ -33,6 +35,28 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
 
     it 'returns nil when there is no platform and no paths' do
       expect(action.binary_path_from_platform(nil, nil, nil)).to eq(nil)
+    end
+  end
+
+  describe '#xcode_archive_path' do
+    it 'returns the archive path is set, and platform is not Android' do
+      allow(Fastlane::Actions).to receive(:lane_context).and_return({
+        XCODEBUILD_ARCHIVE: '/path/to/archive'
+      })
+      expect(action.xcode_archive_path).to eq('/path/to/archive')
+    end
+
+    it 'returns nil if platform is Android' do
+      allow(Fastlane::Actions).to receive(:lane_context).and_return({
+        XCODEBUILD_ARCHIVE: '/path/to/archive',
+        PLATFORM_NAME: :android
+      })
+      expect(action.xcode_archive_path).to be_nil
+    end
+
+    it 'returns nil if the archive path is not set' do
+      allow(Fastlane::Actions).to receive(:lane_context).and_return({})
+      expect(action.xcode_archive_path).to be_nil
     end
   end
 end
