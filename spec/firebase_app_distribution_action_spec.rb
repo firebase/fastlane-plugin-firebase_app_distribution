@@ -59,4 +59,46 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
       expect(action.xcode_archive_path).to be_nil
     end
   end
+
+  describe '#app_id_from_params' do
+    it 'returns the app id from the app parameter if set' do
+      expect(action).not_to(receive(:xcode_archive_path))
+
+      params = { app: 'app-id' }
+      result = action.app_id_from_params(params)
+
+      expect(result).to eq('app-id')
+    end
+
+    it 'raises if the app parameter is not set and there is no archive path' do
+      allow(action).to receive(:xcode_archive_path).and_return(nil)
+
+      params = {}
+      expect { action.app_id_from_params(params) }
+        .to raise_error(ErrorMessage::MISSING_APP_ID)
+    end
+
+    it 'returns the app id from the plist if the archive path is set' do
+      allow(action).to receive(:xcode_archive_path).and_return('/path/to/archive')
+      allow(action).to receive(:get_ios_app_id_from_archive_plist)
+        .with('/path/to/archive', '/path/to/plist')
+        .and_return('app-id-from-plist')
+
+      params = { googleservice_info_plist_path: '/path/to/plist' }
+      result = action.app_id_from_params(params)
+
+      expect(result).to eq('app-id-from-plist')
+    end
+
+    it 'raises if the app parameter is not set and the plist is empty' do
+      allow(action).to receive(:xcode_archive_path).and_return('/path/to/archive')
+      allow(action).to receive(:get_ios_app_id_from_archive_plist)
+        .with('/path/to/archive', '/path/to/plist')
+        .and_return(nil)
+
+      params = { googleservice_info_plist_path: '/path/to/plist' }
+      expect { action.app_id_from_params(params) }
+        .to raise_error(ErrorMessage::MISSING_APP_ID)
+    end
+  end
 end
