@@ -11,6 +11,8 @@ module Fastlane
 
       AUTHORIZATION = "Authorization"
       CONTENT_TYPE = "Content-Type"
+      APPLICATION_JSON = "application/json"
+      APPLICATION_OCTET_STREAM = "application/octet-stream"
 
       def initialize(auth_token, platform)
         @auth_token = auth_token
@@ -43,7 +45,7 @@ module Fastlane
         begin
           connection.post(enable_access_url(app_id, release_id), payload.to_json) do |request|
             request.headers[AUTHORIZATION] = "Bearer " + @auth_token
-            request.headers[CONTENT_TYPE] = "application/json"
+            request.headers[CONTENT_TYPE] = APPLICATION_JSON
           end
         rescue Faraday::ResourceNotFound
           UI.user_error!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
@@ -71,7 +73,7 @@ module Fastlane
         begin
           connection.post(release_notes_create_url(app_id, release_id), payload.to_json) do |request|
             request.headers[AUTHORIZATION] = "Bearer " + @auth_token
-            request.headers[CONTENT_TYPE] = "application/json"
+            request.headers[CONTENT_TYPE] = APPLICATION_JSON
           end
         rescue Faraday::ResourceNotFound
           UI.user_error!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
@@ -121,7 +123,7 @@ module Fastlane
       def upload_binary(app_id, binary_path, platform)
         connection.post(binary_upload_url(app_id), read_binary(binary_path)) do |request|
           request.headers[AUTHORIZATION] = "Bearer " + @auth_token
-          request.headers[CONTENT_TYPE] = "application/octet-stream"
+          request.headers[CONTENT_TYPE] = APPLICATION_OCTET_STREAM
           request.headers["X-APP-DISTRO-API-CLIENT-ID"] = "fastlane"
           request.headers["X-APP-DISTRO-API-CLIENT-TYPE"] =  platform
           request.headers["X-APP-DISTRO-API-CLIENT-VERSION"] = Fastlane::FirebaseAppDistribution::VERSION
