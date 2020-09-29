@@ -40,6 +40,7 @@ module Fastlane
         begin
           connection.post(enable_access_url(app_id, release_id), payload.to_json) do |request|
             request.headers["Authorization"] = "Bearer " + @auth_token
+            request.headers["Content-Type"] = "application/json"
           end
         rescue Faraday::ResourceNotFound
           UI.user_error!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
@@ -67,6 +68,7 @@ module Fastlane
         begin
           connection.post(release_notes_create_url(app_id, release_id), payload.to_json) do |request|
             request.headers["Authorization"] = "Bearer " + @auth_token
+            request.headers["Content-Type"] = "application/json"
           end
         rescue Faraday::ResourceNotFound
           UI.user_error!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
