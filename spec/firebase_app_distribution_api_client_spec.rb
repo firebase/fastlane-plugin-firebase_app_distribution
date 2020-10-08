@@ -298,7 +298,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       api_client.post_notes("app_id", "release_id", nil)
     end
 
-    it 'crashes when given an invalid app_id' do
+    it 'fails when given an invalid app_id' do
       stubs.post("/v1alpha/apps/invalid_app_id/releases/release_id/notes", release_notes, headers) do |env|
         [
           404,
@@ -308,6 +308,18 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       end
       expect { api_client.post_notes("invalid_app_id", "release_id", "release_notes") }
         .to raise_error("#{ErrorMessage::INVALID_APP_ID}: invalid_app_id")
+    end
+
+    it 'fails with error message from response when a client error is thrown' do
+      stubs.post("/v1alpha/apps/app_id/releases/release_id/notes", release_notes, headers) do |env|
+        [
+          400,
+          {},
+          { error: { message: "client error response message" } }.to_json
+        ]
+      end
+      expect { api_client.post_notes("app_id", "release_id", "release_notes") }
+        .to raise_error("#{ErrorMessage::INVALID_RELEASE_NOTES}: client error response message")
     end
 
     # BUG: 500 errors causes a ClientError locally but ServerError on CircleCI specs, causing this test to be flaky.
