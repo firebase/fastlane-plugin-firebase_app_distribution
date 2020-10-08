@@ -14,8 +14,9 @@ module Fastlane
       APPLICATION_JSON = "application/json"
       APPLICATION_OCTET_STREAM = "application/octet-stream"
 
-      def initialize(auth_token, platform)
+      def initialize(auth_token, platform, debug=false)
         @auth_token = auth_token
+        @debug = debug
 
         if platform.nil?
           @binary_type = "IPA/APK"
@@ -228,6 +229,7 @@ module Fastlane
         @connection ||= Faraday.new(url: BASE_URL) do |conn|
           conn.response(:json, parser_options: { symbolize_names: true })
           conn.response(:raise_error) # raise_error middleware will run before the json middleware
+          conn.response(:logger, nil, { log_level: :debug }) if @debug
           conn.adapter(Faraday.default_adapter)
         end
       end

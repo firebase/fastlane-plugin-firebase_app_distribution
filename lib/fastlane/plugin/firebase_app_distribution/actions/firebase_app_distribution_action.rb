@@ -26,7 +26,7 @@ module Fastlane
         binary_path = binary_path_from_platform(platform, params[:ipa_path], params[:apk_path])
 
         auth_token = fetch_auth_token(params[:service_credentials_file], params[:firebase_cli_token])
-        fad_api_client = Client::FirebaseAppDistributionApiClient.new(auth_token, platform)
+        fad_api_client = Client::FirebaseAppDistributionApiClient.new(auth_token, platform, params[:debug])
 
         release_id = fad_api_client.upload(app_id, binary_path, platform.to_s)
         if release_id.nil?
