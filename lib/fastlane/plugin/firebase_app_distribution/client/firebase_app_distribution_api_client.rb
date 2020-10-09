@@ -15,7 +15,7 @@ module Fastlane
       APPLICATION_JSON = "application/json"
       APPLICATION_OCTET_STREAM = "application/octet-stream"
 
-      def initialize(auth_token, platform, debug=false)
+      def initialize(auth_token, platform, debug = false)
         @auth_token = auth_token
         @debug = debug
 
