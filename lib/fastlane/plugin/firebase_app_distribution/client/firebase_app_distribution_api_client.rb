@@ -229,7 +229,7 @@ module Fastlane
         @connection ||= Faraday.new(url: BASE_URL) do |conn|
           conn.response(:json, parser_options: { symbolize_names: true })
           conn.response(:raise_error) # raise_error middleware will run before the json middleware
-          conn.response(:logger, nil, { log_level: :debug }) if @debug
+          conn.response(:logger, nil, { headers: false, bodies: { response: true }, log_level: :debug }) if @debug
           conn.adapter(Faraday.default_adapter)
         end
       end
