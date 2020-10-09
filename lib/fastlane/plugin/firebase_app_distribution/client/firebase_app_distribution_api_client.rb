@@ -1,5 +1,6 @@
 require 'fastlane_core/ui/ui'
 require_relative '../actions/firebase_app_distribution_login'
+require_relative '../client/error_response'
 
 module Fastlane
   module Client
@@ -78,8 +79,9 @@ module Fastlane
           end
         rescue Faraday::ResourceNotFound
           UI.user_error!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
-          # rescue Faraday::ClientError
-          #   UI.user_error!("#{ErrorMessage::INVALID_RELEASE_ID}: #{release_id}")
+        rescue Faraday::ClientError => e
+          error = ErrorResponse.new(e.response)
+          UI.user_error!("#{ErrorMessage::INVALID_RELEASE_NOTES}: #{error.message}")
         end
         UI.success("✅ Posted release notes.")
       end

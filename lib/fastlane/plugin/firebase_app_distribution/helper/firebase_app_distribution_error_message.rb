@@ -14,6 +14,7 @@ module ErrorMessage
   INVALID_PATH = "Could not read content from"
   INVALID_TESTERS = "Could not enable access for testers. Check that the groups exist and the tester emails are formatted correctly"
   INVALID_RELEASE_ID = "App distribution failed to fetch release with id"
+  INVALID_RELEASE_NOTES = "Failed to add release notes"
   SERVICE_CREDENTIALS_ERROR = "App Distribution could not generate credentials from the service credentials file specified. Service Account Path"
 
   def self.binary_not_found(binary_type)
