@@ -123,7 +123,7 @@ module Fastlane
                                        end),
           FastlaneCore::ConfigItem.new(key: :googleservice_info_plist_path,
                                        env_name: "GOOGLESERVICE_INFO_PLIST_PATH",
-                                       description: "Path to your GoogleService-Info.plist file, relative to the root of your Xcode project",
+                                       description: "Path to your GoogleService-Info.plist file, relative to the archived product path",
                                        default_value: "GoogleService-Info.plist",
                                        optional: true,
                                        type: String),
