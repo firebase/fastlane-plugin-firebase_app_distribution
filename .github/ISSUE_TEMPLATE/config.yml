@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Feature Request 🚀
+    url: https://firebase.google.com/support/contact/bugs-features/
+    about: Share ideas for new features
