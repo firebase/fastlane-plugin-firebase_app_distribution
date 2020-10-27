@@ -22,7 +22,7 @@ Caution: The output with `debug` set to true could contain sensitive data such a
 -->
 
 ##### Environment
-<!- What version of `fastlane` are you using? What version of `fastlane-plugin-firebase_app_distribution` are you using?  Note your issue may already be fixed in the latest version. The latest version can be found at https://github.com/fastlane/fastlane-plugin-firebase_app_distribution/releases -->
+<!-- What version of `fastlane` are you using? What version of `fastlane-plugin-firebase_app_distribution` are you using?  Note your issue may already be fixed in the latest version. The latest version can be found at https://github.com/fastlane/fastlane-plugin-firebase_app_distribution/releases -->
 
 | Syntax      | Description |
 | ----------- | ----------- |
