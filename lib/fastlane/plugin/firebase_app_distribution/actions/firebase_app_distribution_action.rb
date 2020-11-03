@@ -38,7 +38,7 @@ module Fastlane
 
         testers = get_value_from_value_or_file(params[:testers], params[:testers_file])
         groups = get_value_from_value_or_file(params[:groups], params[:groups_file])
-        emails = string_to_array(testers)
+        emails = string_to_array(testers).uniq
         group_ids = string_to_array(groups)
         fad_api_client.enable_access(app_id, release_id, emails, group_ids)
         UI.success("🎉 App Distribution upload finished successfully.")
