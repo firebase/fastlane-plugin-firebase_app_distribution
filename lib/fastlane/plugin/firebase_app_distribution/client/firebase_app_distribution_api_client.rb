@@ -201,6 +201,16 @@ module Fastlane
         return UploadStatusResponse.new(response.body)
       end
 
+      def self.configure_connection(conn) # :nodoc:
+        conn.response(:json, parser_options: { symbolize_names: true })
+        conn.response(:raise_error) # raise_error middleware will run before the json middleware
+        # The Firebase API seems to use the POST verb where it should use PUT, and all of those
+        # are idempotent. Retry them since they can randomly fail in the wild.
+        conn.request(:retry, { max: 5,
+                               retry_statuses: [500, 501, 502, 503],
+                               methods: %i[delete get head options put post] })
+      end
+
       private
 
       def v1_apps_url(app_id)
@@ -229,8 +239,7 @@ module Fastlane
 
       def connection
         @connection ||= Faraday.new(url: BASE_URL) do |conn|
-          conn.response(:json, parser_options: { symbolize_names: true })
-          conn.response(:raise_error) # raise_error middleware will run before the json middleware
+          self.class.configure_connection(conn)
           conn.response(:logger, nil, { headers: false, bodies: { response: true }, log_level: :debug }) if @debug
           conn.adapter(Faraday.default_adapter)
         end
