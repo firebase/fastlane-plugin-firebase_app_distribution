@@ -150,6 +150,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         responses.shift
       end
       api_client.upload_binary("app_id", fake_binary_path, "android")
+      expect(responses).to be_empty, "the upload should have been retried after the initial failure"
     end
   end
 
