@@ -206,9 +206,12 @@ module Fastlane
         conn.response(:raise_error) # raise_error middleware will run before the json middleware
         # The Firebase API seems to use the POST verb where it should use PUT, and all of those
         # are idempotent. Retry them since they can randomly fail in the wild.
-        conn.request(:retry, { max: 5,
-                               retry_statuses: [500, 501, 502, 503],
-                               methods: %i[delete get head options put post] })
+        conn.request(:retry, { retry_statuses: [500, 501, 502, 503],
+                               methods: %i[delete get head options put post],
+                               max: 5,
+                               interval: 0.05,
+                               interval_randomness: 0.5,
+                               backoff_factor: 2 })
       end
 
       private
