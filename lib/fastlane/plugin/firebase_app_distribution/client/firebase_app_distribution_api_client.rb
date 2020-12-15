@@ -37,7 +37,7 @@ module Fastlane
       #   emails - String array of app testers' email addresses
       #   group_ids - String array of Firebase tester group IDs
       #
-      # Throws a user_error if app_id, emails, or group_ids are invalid
+      # Throws a user_error emails, or group_ids are invalid
       def enable_access(app_id, release_id, emails, group_ids)
         if (emails.nil? || emails.empty?) && (group_ids.nil? || group_ids.empty?)
           UI.success("✅ No testers passed in. Skipping this step.")
@@ -49,8 +49,6 @@ module Fastlane
             request.headers[AUTHORIZATION] = "Bearer " + @auth_token
             request.headers[CONTENT_TYPE] = APPLICATION_JSON
           end
-        rescue Faraday::ResourceNotFound
-          UI.user_error!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
         rescue Faraday::ClientError
           UI.user_error!("#{ErrorMessage::INVALID_TESTERS} \nEmails: #{emails} \nGroups: #{group_ids}")
         end
@@ -65,7 +63,7 @@ module Fastlane
       #   release_id - App release ID, returned by upload_status endpoint
       #   release_notes - String of notes for this release
       #
-      # Throws a user_error if app_id or release_id are invalid
+      # Throws a user_error if the release_notes are invalid
       def post_notes(app_id, release_id, release_notes)
         payload = { releaseNotes: { releaseNotes: release_notes } }
         if release_notes.nil? || release_notes.empty?
@@ -77,8 +75,6 @@ module Fastlane
             request.headers[AUTHORIZATION] = "Bearer " + @auth_token
             request.headers[CONTENT_TYPE] = APPLICATION_JSON
           end
-        rescue Faraday::ResourceNotFound
-          UI.user_error!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
         rescue Faraday::ClientError => e
           error = ErrorResponse.new(e.response)
           UI.user_error!("#{ErrorMessage::INVALID_RELEASE_NOTES}: #{error.message}")
@@ -122,7 +118,7 @@ module Fastlane
       #   binary_path - Absolute path to your app's apk/ipa file
       #   platform - 'android' or 'ios'
       #
-      # Throws a user_error if an invalid app id is passed in, or if the binary file does not exist
+      # Throws a user_error if the binary file does not exist
       def upload_binary(app_id, binary_path, platform)
         connection.post(binary_upload_url(app_id), read_binary(binary_path)) do |request|
           request.headers[AUTHORIZATION] = "Bearer " + @auth_token
@@ -131,8 +127,6 @@ module Fastlane
           request.headers["X-APP-DISTRO-API-CLIENT-TYPE"] =  platform
           request.headers["X-APP-DISTRO-API-CLIENT-VERSION"] = Fastlane::FirebaseAppDistribution::VERSION
         end
-      rescue Faraday::ResourceNotFound
-        UI.user_error!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
       rescue Errno::ENOENT # Raised when binary_path file does not exist
         UI.user_error!("#{ErrorMessage.binary_not_found(@binary_type)}: #{binary_path}")
       end
@@ -188,15 +182,9 @@ module Fastlane
       #   upload_token - URL encoded upload token
       #
       # Returns the release ID on a successful release, otherwise returns nil.
-      #
-      # Throws a user_error if an invalid app_id is passed in
       def get_upload_status(app_id, upload_token)
-        begin
-          response = connection.get(upload_status_url(app_id, upload_token)) do |request|
-            request.headers[AUTHORIZATION] = "Bearer " + @auth_token
-          end
-        rescue Faraday::ResourceNotFound
-          UI.user_error!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
+        response = connection.get(upload_status_url(app_id, upload_token)) do |request|
+          request.headers[AUTHORIZATION] = "Bearer " + @auth_token
         end
         return UploadStatusResponse.new(response.body)
       end

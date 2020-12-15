@@ -112,18 +112,6 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       api_client.upload_binary("app_id", fake_binary_path, "android")
     end
 
-    it 'should crash if given an invalid app_id' do
-      stubs.post("/app-binary-uploads?app_id=invalid_app_id", fake_binary_contents, upload_headers) do |env|
-        [
-          404,
-          {},
-          {}
-        ]
-      end
-      expect { api_client.upload_binary("invalid_app_id", fake_binary_path, "android") }
-        .to raise_error("#{ErrorMessage::INVALID_APP_ID}: invalid_app_id")
-    end
-
     it 'crashes when given an invalid binary_path' do
       expect(File).to receive(:open)
         .with("invalid_binary_path", "rb")
@@ -298,19 +286,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       api_client.post_notes("app_id", "release_id", nil)
     end
 
-    it 'fails when given an invalid app_id' do
-      stubs.post("/v1alpha/apps/invalid_app_id/releases/release_id/notes", release_notes, headers) do |env|
-        [
-          404,
-          {},
-          {}
-        ]
-      end
-      expect { api_client.post_notes("invalid_app_id", "release_id", "release_notes") }
-        .to raise_error("#{ErrorMessage::INVALID_APP_ID}: invalid_app_id")
-    end
-
-    it 'fails with error message from response when a client error is thrown' do
+    it 'raises a user error when a client error is returned' do
       stubs.post("/v1alpha/apps/app_id/releases/release_id/notes", release_notes, headers) do |env|
         [
           400,
@@ -347,18 +323,6 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       end
       status = api_client.get_upload_status("app_id", "app_token")
       expect(status.success?).to eq(true)
-    end
-
-    it 'crashes when given an invalid app_id' do
-      stubs.get("/v1alpha/apps/invalid_app_id/upload_status/app_token", headers) do |env|
-        [
-          404,
-          {},
-          {}
-        ]
-      end
-      expect { api_client.get_upload_status("invalid_app_id", "app_token") }
-        .to raise_error("#{ErrorMessage::INVALID_APP_ID}: invalid_app_id")
     end
   end
 
@@ -409,37 +373,9 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       api_client.enable_access("app_id", "release_id", [], [])
     end
 
-    it 'crashes when given an invalid appId' do
-      payload = { emails: ["testers"], groupIds: ["groups"] }
-      stubs.post("/v1alpha/apps/invalid_app_id/releases/release_id/enable_access", payload.to_json) do |env|
-        [
-          404,
-          {},
-          {}
-        ]
-      end
-      expect { api_client.enable_access("invalid_app_id", "release_id", ["testers"], ["groups"]) }
-        .to raise_error("#{ErrorMessage::INVALID_APP_ID}: invalid_app_id")
-    end
-
-    it 'crashes when given an invalid groupIds' do
-      emails = ["testers"]
+    it 'raises a user eror when a client error is returned' do
+      emails = ["invalid_tester_email"]
       group_ids = ["invalid_group_id"]
-      payload = { emails: emails, groupIds: group_ids }
-      stubs.post("/v1alpha/apps/app_id/releases/release_id/enable_access", payload.to_json) do |env|
-        [
-          400,
-          {},
-          {}
-        ]
-      end
-      expect { api_client.enable_access("app_id", "release_id", emails, group_ids) }
-        .to raise_error("#{ErrorMessage::INVALID_TESTERS} \nEmails: #{emails} \nGroups: #{group_ids}")
-    end
-
-    it 'crashes when given an invalid email' do
-      emails = ["invalid_tester"]
-      group_ids = ["groups"]
       payload = { emails: emails, groupIds: group_ids }
       stubs.post("/v1alpha/apps/app_id/releases/release_id/enable_access", payload.to_json) do |env|
         [
