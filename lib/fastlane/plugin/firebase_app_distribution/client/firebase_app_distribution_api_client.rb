@@ -37,7 +37,7 @@ module Fastlane
       #   emails - String array of app testers' email addresses
       #   group_ids - String array of Firebase tester group IDs
       #
-      # Throws a user_error emails, or group_ids are invalid
+      # Throws a user_error if emails or group_ids are invalid
       def enable_access(app_id, release_id, emails, group_ids)
         if (emails.nil? || emails.empty?) && (group_ids.nil? || group_ids.empty?)
           UI.success("✅ No testers passed in. Skipping this step.")
