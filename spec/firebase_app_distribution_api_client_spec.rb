@@ -88,7 +88,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         .with("invalid_binary_path")
         .and_return(false)
       expect { api_client.get_upload_token("app_id", "invalid_binary_path") }
-        .to raise_error("#{ErrorMessage.binary_not_found('APK')}: invalid_binary_path")
+        .to raise_error("#{ErrorMessage.binary_not_found('AAB/APK')}: invalid_binary_path")
     end
   end
 
@@ -97,7 +97,9 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       { 'Authorization' => 'Bearer auth_token',
       'X-APP-DISTRO-API-CLIENT-ID' => 'fastlane',
       'X-APP-DISTRO-API-CLIENT-TYPE' =>  "android",
-      'X-APP-DISTRO-API-CLIENT-VERSION' => Fastlane::FirebaseAppDistribution::VERSION }
+      'X-APP-DISTRO-API-CLIENT-VERSION' => Fastlane::FirebaseAppDistribution::VERSION,
+      'X-GOOG-UPLOAD-FILE-NAME' => File.basename(fake_binary_path),
+      'X-GOOG-UPLOAD-PROTOCOL' => 'raw' }
     end
     it 'uploads the binary successfully when the input is valid' do
       stubs.post("/app-binary-uploads?app_id=app_id", fake_binary_contents, upload_headers) do |env|
@@ -117,7 +119,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         .with("invalid_binary_path", "rb")
         .and_raise(Errno::ENOENT.new("file not found"))
       expect { api_client.upload_binary("app_id", "invalid_binary_path", "android") }
-        .to raise_error("#{ErrorMessage.binary_not_found('APK')}: invalid_binary_path")
+        .to raise_error("#{ErrorMessage.binary_not_found('AAB/APK')}: invalid_binary_path")
     end
   end
 
@@ -234,7 +236,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         .with("app_id", fake_binary_path, "android")
 
       expect { api_client.upload("app_id", fake_binary_path, "android") }
-        .to raise_error("#{ErrorMessage.upload_binary_error('APK')}: #{upload_status_response_error.message}")
+        .to raise_error("#{ErrorMessage.upload_binary_error('AAB/APK')}: #{upload_status_response_error.message}")
     end
 
     it 'crashes after failing to upload with status unspecified' do
@@ -245,7 +247,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         .with("app_id", fake_binary_path, "android")
 
       expect { api_client.upload("app_id", fake_binary_path, "android") }
-        .to raise_error(ErrorMessage.upload_binary_error("APK"))
+        .to raise_error(ErrorMessage.upload_binary_error("AAB/APK"))
     end
 
     it 'does not call upload when the intial check returns in progress' do
@@ -390,9 +392,9 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
   end
 
   describe 'Error messaging' do
-    it 'uses "APK" when the platform is android' do
+    it 'uses "AAB/APK" when the platform is android' do
       client = Fastlane::Client::FirebaseAppDistributionApiClient.new("auth_token", :android)
-      expect(client.instance_variable_get(:@binary_type)).to eq('APK')
+      expect(client.instance_variable_get(:@binary_type)).to eq('AAB/APK')
     end
 
     it 'uses "IPA" when the platform is ios' do
@@ -400,9 +402,9 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       expect(client.instance_variable_get(:@binary_type)).to eq('IPA')
     end
 
-    it 'uses "APK/IPA" when the platform is nil' do
+    it 'uses "AAB/APK/IPA" when the platform is nil' do
       client = Fastlane::Client::FirebaseAppDistributionApiClient.new("auth_token", nil)
-      expect(client.instance_variable_get(:@binary_type)).to eq('IPA/APK')
+      expect(client.instance_variable_get(:@binary_type)).to eq('AAB/APK/IPA')
     end
   end
 end

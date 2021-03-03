@@ -18,23 +18,31 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
 
   describe '#binary_path_from_platform' do
     it 'returns the ipa_path for an iOS app' do
-      expect(action.binary_path_from_platform(:ios, '/ipa/path', '/apk/path')).to eq('/ipa/path')
+      expect(action.binary_path_from_platform(:ios, '/ipa/path', '/apk/path', '/aab/path')).to eq('/ipa/path')
     end
 
     it 'returns the apk_path for an Android app' do
-      expect(action.binary_path_from_platform(:android, '/ipa/path', '/apk/path')).to eq('/apk/path')
+      expect(action.binary_path_from_platform(:android, '/ipa/path', '/apk/path', nil)).to eq('/apk/path')
+    end
+
+    it 'returns the apk_path for an Android app when apk_path and aab_path are provided' do
+      expect(action.binary_path_from_platform(:android, '/ipa/path', '/apk/path', '/aab/path')).to eq('/apk/path')
+    end
+
+    it 'returns the aab_path for an Android app when there is no apk_path' do
+      expect(action.binary_path_from_platform(:android, nil, nil, '/aab/path')).to eq('/aab/path')
     end
 
     it 'returns the ipa_path by default when there is no platform' do
-      expect(action.binary_path_from_platform(nil, '/ipa/path', '/apk/path')).to eq('/ipa/path')
+      expect(action.binary_path_from_platform(nil, '/ipa/path', '/apk/path', '/aab/path')).to eq('/ipa/path')
     end
 
     it 'falls back on the apk_path when there is no platform and no ipa_path' do
-      expect(action.binary_path_from_platform(nil, nil, '/apk/path')).to eq('/apk/path')
+      expect(action.binary_path_from_platform(nil, nil, '/apk/path', '/aab/path')).to eq('/apk/path')
     end
 
     it 'returns nil when there is no platform and no paths' do
-      expect(action.binary_path_from_platform(nil, nil, nil)).to eq(nil)
+      expect(action.binary_path_from_platform(nil, nil, nil, nil)).to eq(nil)
     end
   end
 

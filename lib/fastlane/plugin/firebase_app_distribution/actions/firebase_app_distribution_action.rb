@@ -19,11 +19,11 @@ module Fastlane
       extend Helper::FirebaseAppDistributionHelper
 
       def self.run(params)
-        params.values # to validate all inputs before looking for the ipa/apk
+        params.values # to validate all inputs before looking for the ipa/apk/aab
 
         app_id = app_id_from_params(params)
         platform = lane_platform || platform_from_app_id(app_id)
-        binary_path = binary_path_from_platform(platform, params[:ipa_path], params[:apk_path])
+        binary_path = binary_path_from_platform(platform, params[:ipa_path], params[:apk_path], params[:aab_path])
 
         auth_token = fetch_auth_token(params[:service_credentials_file], params[:firebase_cli_token])
         fad_api_client = Client::FirebaseAppDistributionApiClient.new(auth_token, platform, params[:debug])
@@ -90,12 +90,12 @@ module Fastlane
         end
       end
 
-      def self.binary_path_from_platform(platform, ipa_path, apk_path)
+      def self.binary_path_from_platform(platform, ipa_path, apk_path, aab_path)
         case platform
         when :ios
           ipa_path
         when :android
-          apk_path
+          apk_path || aab_path
         else
           ipa_path || apk_path
         end
@@ -108,6 +108,7 @@ module Fastlane
 
         if lane_platform == :android
           apk_path_default = Dir["*.apk"].last || Dir[File.join("app", "build", "outputs", "apk", "app-release.apk")].last
+          aab_path_default = Dir["*.aab"].last || Dir[File.join("app", "build", "outputs", "bundle", "release", "app-release.aab")].last
         end
 
         [
@@ -136,6 +137,15 @@ module Fastlane
                                        optional: true,
                                        verify_block: proc do |value|
                                          UI.user_error!("firebase_app_distribution: Couldn't find apk file at path '#{value}'") unless File.exist?(value)
+                                       end),
+          FastlaneCore::ConfigItem.new(key: :aab_path,
+                                       env_name: "FIREBASEAPPDISTRO_AAB_PATH",
+                                       description: "Path to your AAB file",
+                                       default_value: Actions.lane_context[SharedValues::GRADLE_AAB_OUTPUT_PATH] || aab_path_default,
+                                       default_value_dynamic: true,
+                                       optional: true,
+                                       verify_block: proc do |value|
+                                         UI.user_error!("firebase_app_distribution: Couldn't find aab file at path '#{value}'") unless File.exist?(value)
                                        end),
           FastlaneCore::ConfigItem.new(key: :app,
                                        env_name: "FIREBASEAPPDISTRO_APP",

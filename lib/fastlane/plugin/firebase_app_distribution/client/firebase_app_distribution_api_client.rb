@@ -20,11 +20,11 @@ module Fastlane
         @debug = debug
 
         if platform.nil?
-          @binary_type = "IPA/APK"
+          @binary_type = "AAB/APK/IPA"
         elsif platform == :ios
           @binary_type = "IPA"
         else
-          @binary_type = "APK"
+          @binary_type = "AAB/APK"
         end
       end
 
@@ -87,7 +87,7 @@ module Fastlane
       #
       # args
       #   app_id - Firebase App ID
-      #   binary_path - Absolute path to your app's apk/ipa file
+      #   binary_path - Absolute path to your app's aab/apk/ipa file
       #
       # Throws a user_error if an invalid app id is passed in, the binary file does
       # not exist, or invalid auth credentials are used (e.g. wrong project permissions)
@@ -115,7 +115,7 @@ module Fastlane
       #
       # args
       #   app_id - Firebase App ID
-      #   binary_path - Absolute path to your app's apk/ipa file
+      #   binary_path - Absolute path to your app's aab/apk/ipa file
       #   platform - 'android' or 'ios'
       #
       # Throws a user_error if the binary file does not exist
@@ -126,6 +126,8 @@ module Fastlane
           request.headers["X-APP-DISTRO-API-CLIENT-ID"] = "fastlane"
           request.headers["X-APP-DISTRO-API-CLIENT-TYPE"] =  platform
           request.headers["X-APP-DISTRO-API-CLIENT-VERSION"] = Fastlane::FirebaseAppDistribution::VERSION
+          request.headers["X-GOOG-UPLOAD-FILE-NAME"] = File.basename(binary_path)
+          request.headers["X-GOOG-UPLOAD-PROTOCOL"] = "raw"
         end
       rescue Errno::ENOENT # Raised when binary_path file does not exist
         UI.user_error!("#{ErrorMessage.binary_not_found(@binary_type)}: #{binary_path}")
@@ -136,7 +138,7 @@ module Fastlane
       #
       # args
       #   app_id - Firebase App ID
-      #   binary_path - Absolute path to your app's apk/ipa file
+      #   binary_path - Absolute path to your app's aab/apk/ipa file
       #
       # Returns the release_id on a successful release, otherwise returns nil.
       #
