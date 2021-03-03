@@ -113,15 +113,6 @@ module Fastlane
       end
 
       def self.available_options
-        if lane_platform == :ios || lane_platform.nil?
-          ipa_path_default = Dir["*.ipa"].sort_by { |x| File.mtime(x) }.last
-        end
-
-        if lane_platform == :android
-          apk_path_default = Dir["*.apk"].last || Dir[File.join("app", "build", "outputs", "apk", "app-release.apk")].last
-          aab_path_default = Dir["*.aab"].last || Dir[File.join("app", "build", "outputs", "bundle", "release", "app-release.aab")].last
-        end
-
         [
           # iOS Specific
           FastlaneCore::ConfigItem.new(key: :ipa_path,
