@@ -15,17 +15,9 @@ module Fastlane
       APPLICATION_JSON = "application/json"
       APPLICATION_OCTET_STREAM = "application/octet-stream"
 
-      def initialize(auth_token, platform, debug = false)
+      def initialize(auth_token, debug = false)
         @auth_token = auth_token
         @debug = debug
-
-        if platform.nil?
-          @binary_type = "AAB/APK/IPA"
-        elsif platform == :ios
-          @binary_type = "IPA"
-        else
-          @binary_type = "AAB/APK"
-        end
       end
 
       # Enables tester access to the specified app release. Skips this
@@ -92,8 +84,10 @@ module Fastlane
       # Throws a user_error if an invalid app id is passed in, the binary file does
       # not exist, or invalid auth credentials are used (e.g. wrong project permissions)
       def get_upload_token(app_id, binary_path)
+        binary_type = get_binary_type(binary_path)
+
         if binary_path.nil? || !File.exist?(binary_path)
-          UI.crash!("#{ErrorMessage.binary_not_found(@binary_type)}: #{binary_path}")
+          UI.crash!("#{ErrorMessage.binary_not_found(binary_type)}: #{binary_path}")
         end
         binary_hash = Digest::SHA256.hexdigest(read_binary(binary_path))
 
@@ -130,7 +124,8 @@ module Fastlane
           request.headers["X-GOOG-UPLOAD-PROTOCOL"] = "raw"
         end
       rescue Errno::ENOENT # Raised when binary_path file does not exist
-        UI.user_error!("#{ErrorMessage.binary_not_found(@binary_type)}: #{binary_path}")
+        binary_type = get_binary_type(binary_path)
+        UI.user_error!("#{ErrorMessage.binary_not_found(binary_type)}: #{binary_path}")
       end
 
       # Uploads the binary file if it has not already been uploaded
@@ -145,32 +140,34 @@ module Fastlane
       # Throws a UI error if the number of polling retries exceeds MAX_POLLING_RETRIES
       # Crashes if not able to upload the binary
       def upload(app_id, binary_path, platform)
+        binary_type = get_binary_type(binary_path)
+
         upload_token = get_upload_token(app_id, binary_path)
         upload_status_response = get_upload_status(app_id, upload_token)
         if upload_status_response.success? || upload_status_response.already_uploaded?
-          UI.success("✅ This #{@binary_type} has been uploaded before. Skipping upload step.")
+          UI.success("✅ This #{binary_type} has been uploaded before. Skipping upload step.")
         else
           unless upload_status_response.in_progress?
-            UI.message("⌛ Uploading the #{@binary_type}.")
+            UI.message("⌛ Uploading the #{binary_type}.")
             upload_binary(app_id, binary_path, platform)
           end
           MAX_POLLING_RETRIES.times do
             upload_status_response = get_upload_status(app_id, upload_token)
             if upload_status_response.success? || upload_status_response.already_uploaded?
-              UI.success("✅ Uploaded the #{@binary_type}.")
+              UI.success("✅ Uploaded the #{binary_type}.")
               break
             elsif upload_status_response.in_progress?
               sleep(POLLING_INTERVAL_SECONDS)
             else
               if !upload_status_response.message.nil?
-                UI.user_error!("#{ErrorMessage.upload_binary_error(@binary_type)}: #{upload_status_response.message}")
+                UI.user_error!("#{ErrorMessage.upload_binary_error(binary_type)}: #{upload_status_response.message}")
               else
-                UI.user_error!(ErrorMessage.upload_binary_error(@binary_type))
+                UI.user_error!(ErrorMessage.upload_binary_error(binary_type))
               end
             end
           end
           unless upload_status_response.success?
-            UI.error("It took longer than expected to process your #{@binary_type}, please try again.")
+            UI.error("It took longer than expected to process your #{binary_type}, please try again.")
             return nil
           end
         end
@@ -229,6 +226,15 @@ module Fastlane
       def read_binary(path)
         # File must be read in binary mode to work on Windows
         File.open(path, 'rb').read
+      end
+
+      def get_binary_type(binary_path)
+        extension = File.extname(binary_path)
+        return 'APK' if extension == '.apk'
+        return 'AAB' if extension == '.aab'
+        return 'IPA' if extension == '.ipa'
+
+        return 'file'
       end
     end
   end
