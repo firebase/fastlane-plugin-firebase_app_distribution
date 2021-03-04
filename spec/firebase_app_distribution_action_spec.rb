@@ -233,9 +233,9 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
             .to receive(:get_app)
             .with(android_app_id, 'FULL')
             .and_return(App.new({
-            projectNumber: project_number,
-            appId: android_app_id,
-            contactEmail: 'user@example.com'
+              projectNumber: project_number,
+              appId: android_app_id,
+              contactEmail: 'user@example.com'
             }.merge(params)))
         end
 
