@@ -1,3 +1,5 @@
+require_relative 'aab_certificate'
+
 class App
   # AAB states
   class AabState
@@ -12,6 +14,7 @@ class App
 
   def initialize(response)
     @response = response
+    @aab_certificate = AabCertificate.new(response[:aabCertificate])
   end
 
   def app_id
@@ -29,4 +32,6 @@ class App
   def aab_state
     @response[:aabState]
   end
+
+  attr_reader :aab_certificate
 end
