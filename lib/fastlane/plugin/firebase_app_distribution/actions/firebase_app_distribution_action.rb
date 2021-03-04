@@ -41,7 +41,7 @@ module Fastlane
         end
 
         if binary_type == :AAB && app.aab_certificate.empty?
-          updated_app = fad_api_client.get_app(app_id, app_view)
+          updated_app = fad_api_client.get_app(app_id)
           unless updated_app.aab_certificate.empty?
             UI.message("After you upload an AAB for the first time, App Distribution " \
               "generates a new test certificate. All AAB uploads are re-signed with this test " \
