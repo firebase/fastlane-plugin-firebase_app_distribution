@@ -95,15 +95,15 @@ describe Fastlane::Helper::FirebaseAppDistributionHelper do
 
   describe '#binary_type_from_path' do
     it 'returns IPA' do
-      expect(helper.binary_type_from_path('debug.ipa')).to eq(Fastlane::Helper::FirebaseAppDistributionHelper::IPA)
+      expect(helper.binary_type_from_path('debug.ipa')).to eq(:IPA)
     end
 
     it 'returns APK' do
-      expect(helper.binary_type_from_path('debug.apk')).to eq(Fastlane::Helper::FirebaseAppDistributionHelper::APK)
+      expect(helper.binary_type_from_path('debug.apk')).to eq(:APK)
     end
 
     it 'returns AAB' do
-      expect(helper.binary_type_from_path('debug.aab')).to eq(Fastlane::Helper::FirebaseAppDistributionHelper::AAB)
+      expect(helper.binary_type_from_path('debug.aab')).to eq(:AAB)
     end
 
     it 'raises error if file extension is unsupported' do

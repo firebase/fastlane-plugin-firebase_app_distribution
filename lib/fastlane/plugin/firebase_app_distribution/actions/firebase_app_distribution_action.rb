@@ -31,7 +31,7 @@ module Fastlane
         fad_api_client = Client::FirebaseAppDistributionApiClient.new(auth_token, params[:debug])
 
         # If binary is an AAB get FULL view of app which includes the aab_state
-        app_view = binary_type == Helper::FirebaseAppDistributionHelper::AAB ? 'FULL' : 'BASIC'
+        app_view = binary_type == :AAB ? 'FULL' : 'BASIC'
         app = fad_api_client.get_app(app_id, app_view)
         validate_app!(app, binary_type)
 
@@ -124,7 +124,7 @@ module Fastlane
           UI.user_error!(ErrorMessage::GET_APP_NO_CONTACT_EMAIL_ERROR)
         end
 
-        if binary_type == Helper::FirebaseAppDistributionHelper::AAB && app.aab_state != App::AabState::ACTIVE && app.aab_state != App::AabState::UNAVAILABLE
+        if binary_type == :AAB && app.aab_state != App::AabState::ACTIVE && app.aab_state != App::AabState::UNAVAILABLE
           case app.aab_state
           when App::AabState::PLAY_ACCOUNT_NOT_LINKED
             UI.user_error!(ErrorMessage::PLAY_ACCOUNT_NOT_LINKED)
