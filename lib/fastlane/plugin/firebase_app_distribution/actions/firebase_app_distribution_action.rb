@@ -40,6 +40,19 @@ module Fastlane
           return
         end
 
+        if binary_type == :AAB && app.aab_certificate.empty?
+          updated_app = fad_api_client.get_app(app_id)
+          unless updated_app.aab_certificate.empty?
+            UI.message("After you upload an AAB for the first time, App Distribution " \
+              "generates a new test certificate. All AAB uploads are re-signed with this test " \
+              "certificate. Use the certificate fingerprints below to register your app " \
+              "signing key with API providers, such as Google Sign-In and Google Maps.\n" \
+              "MD-1 certificate fingerprint: #{updated_app.aab_certificate.md5_certificate_hash}\n" \
+              "SHA-1 certificate fingerprint: #{updated_app.aab_certificate.sha1_certificate_hash}\n" \
+              "SHA-256 certificate fingerprint: #{updated_app.aab_certificate.sha256_certificate_hash}")
+          end
+        end
+
         release_notes = get_value_from_value_or_file(params[:release_notes], params[:release_notes_file])
         fad_api_client.post_notes(app_id, release_id, release_notes)
 

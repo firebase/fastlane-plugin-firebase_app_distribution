@@ -56,6 +56,36 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       expect(app.project_number).to eq("project_number")
       expect(app.app_id).to eq("app_id")
       expect(app.contact_email).to eq("user@example.com")
+      expect(app.aab_certificate.empty?).to eq(true)
+    end
+
+    it 'returns an app with appView BASIC and aab certificate' do
+      response = {
+        projectNumber: "project_number",
+        appId: "app_id",
+        contactEmail: "user@example.com",
+        aabCertificate: {
+          certificateHashMd5: "md5-cert-hash",
+          certificateHashSha1: "sha1-cert-hash",
+          certificateHashSha256: "sha256-cert-hash"
+        }
+      }
+      stubs.get("/v1alpha/apps/app_id?appView=BASIC", headers) do |env|
+        [
+          200,
+          {},
+          response
+        ]
+      end
+      app = api_client.get_app("app_id")
+      binary_hash = Digest::SHA256.hexdigest(fake_binary_contents)
+      expect(app.project_number).to eq("project_number")
+      expect(app.app_id).to eq("app_id")
+      expect(app.contact_email).to eq("user@example.com")
+      expect(app.aab_certificate.empty?).to eq(false)
+      expect(app.aab_certificate.md5_certificate_hash).to eq("md5-cert-hash")
+      expect(app.aab_certificate.sha1_certificate_hash).to eq("sha1-cert-hash")
+      expect(app.aab_certificate.sha256_certificate_hash).to eq("sha256-cert-hash")
     end
 
     it 'returns an app with appView FULL' do

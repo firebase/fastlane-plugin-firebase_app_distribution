@@ -228,10 +228,10 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
 
         before { allow(File).to receive(:exist?).with('debug.aab').and_return(true) }
 
-        def stub_get_app(params)
+        def stub_get_app(params, app_view = 'FULL')
           allow_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient)
             .to receive(:get_app)
-            .with(android_app_id, 'FULL')
+            .with(android_app_id, app_view)
             .and_return(App.new({
               projectNumber: project_number,
               appId: android_app_id,

@@ -1,3 +1,5 @@
+require_relative 'aab_certificate'
+
 class App
   # AAB states
   class AabState
@@ -10,8 +12,11 @@ class App
     UNAVAILABLE = "AAB_STATE_UNAVAILABLE"
   end
 
+  attr_reader :aab_certificate
+
   def initialize(response)
     @response = response
+    @aab_certificate = AabCertificate.new(response[:aabCertificate])
   end
 
   def app_id
