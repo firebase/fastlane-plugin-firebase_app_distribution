@@ -184,16 +184,12 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
     end
 
     it 'raises error if it cannot find a valid binary path' do
-      allow(File).to receive(:exist?).with('debug.ipa').and_return(false)
-
       expect do
         action.run(params.merge(ipa_path: nil))
       end.to raise_error("Couldn't find binary")
     end
 
     it 'raises error if binary does not exist' do
-      allow(File).to receive(:exist?).with('debug.ipa').and_return(false)
-
       expect do
         action.run(params)
       end.to raise_error("Couldn't find binary at path debug.ipa")
@@ -222,12 +218,6 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
     end
 
     describe 'with android app' do
-      let(:params) do
-        {
-          app: android_app_id
-        }
-      end
-
       describe 'when uploading an AAB' do
         let(:params) do
           {
@@ -239,7 +229,10 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
         before { allow(File).to receive(:exist?).with('debug.aab').and_return(true) }
 
         def stub_get_app(params)
-          allow_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient).to receive(:get_app).with(android_app_id, 'FULL').and_return(App.new({
+          allow_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient)
+            .to receive(:get_app)
+            .with(android_app_id, 'FULL')
+            .and_return(App.new({
             projectNumber: project_number,
             appId: android_app_id,
             contactEmail: 'user@example.com'
