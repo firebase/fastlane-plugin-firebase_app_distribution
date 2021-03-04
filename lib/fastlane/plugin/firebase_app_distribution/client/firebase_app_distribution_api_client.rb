@@ -1,10 +1,14 @@
 require 'fastlane_core/ui/ui'
 require_relative '../actions/firebase_app_distribution_login'
 require_relative '../client/error_response'
+require_relative '../client/app'
+require_relative '../helper/firebase_app_distribution_helper'
 
 module Fastlane
   module Client
     class FirebaseAppDistributionApiClient
+      include Helper::FirebaseAppDistributionHelper
+
       BASE_URL = "https://firebaseappdistribution.googleapis.com"
       TOKEN_CREDENTIAL_URI = "https://oauth2.googleapis.com/token"
       MAX_POLLING_RETRIES = 60
@@ -74,35 +78,22 @@ module Fastlane
         UI.success("✅ Posted release notes.")
       end
 
-      # Returns the url encoded upload token used for get_upload_status calls:
-      # projects/<project-number>/apps/<app-id>/releases/-/binaries/<binary-hash>
+      # Get app
       #
       # args
       #   app_id - Firebase App ID
-      #   binary_path - Absolute path to your app's aab/apk/ipa file
       #
-      # Throws a user_error if an invalid app id is passed in, the binary file does
-      # not exist, or invalid auth credentials are used (e.g. wrong project permissions)
-      def get_upload_token(app_id, binary_path)
-        binary_type = get_binary_type(binary_path)
-
-        if binary_path.nil? || !File.exist?(binary_path)
-          UI.crash!("#{ErrorMessage.binary_not_found(binary_type)}: #{binary_path}")
-        end
-        binary_hash = Digest::SHA256.hexdigest(read_binary(binary_path))
-
+      # Throws a user_error if the app hasn't been onboarded to App Distribution
+      def get_app(app_id, app_view = 'BASIC')
         begin
-          response = connection.get(v1_apps_url(app_id)) do |request|
+          response = connection.get("#{v1_apps_url(app_id)}?appView=#{app_view}") do |request|
             request.headers[AUTHORIZATION] = "Bearer " + @auth_token
           end
         rescue Faraday::ResourceNotFound
           UI.user_error!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
         end
-        contact_email = response.body[:contactEmail]
-        if contact_email.nil? || contact_email.strip.empty?
-          UI.user_error!(ErrorMessage::GET_APP_NO_CONTACT_EMAIL_ERROR)
-        end
-        return upload_token_format(response.body[:appId], response.body[:projectNumber], binary_hash)
+
+        App.new(response.body)
       end
 
       # Uploads the app binary to the Firebase API
@@ -124,7 +115,7 @@ module Fastlane
           request.headers["X-GOOG-UPLOAD-PROTOCOL"] = "raw"
         end
       rescue Errno::ENOENT # Raised when binary_path file does not exist
-        binary_type = get_binary_type(binary_path)
+        binary_type = binary_type_from_path(binary_path)
         UI.user_error!("#{ErrorMessage.binary_not_found(binary_type)}: #{binary_path}")
       end
 
@@ -132,17 +123,18 @@ module Fastlane
       # Takes at least POLLING_INTERVAL_SECONDS between polling get_upload_status
       #
       # args
-      #   app_id - Firebase App ID
+      #   project_number - Firebase project number
+      #   app_id - Firebase app ID
       #   binary_path - Absolute path to your app's aab/apk/ipa file
       #
       # Returns the release_id on a successful release, otherwise returns nil.
       #
       # Throws a UI error if the number of polling retries exceeds MAX_POLLING_RETRIES
       # Crashes if not able to upload the binary
-      def upload(app_id, binary_path, platform)
-        binary_type = get_binary_type(binary_path)
+      def upload(project_number, app_id, binary_path, platform)
+        binary_type = binary_type_from_path(binary_path)
 
-        upload_token = get_upload_token(app_id, binary_path)
+        upload_token = get_upload_token(project_number, app_id, binary_path)
         upload_status_response = get_upload_status(app_id, upload_token)
         if upload_status_response.success? || upload_status_response.already_uploaded?
           UI.success("✅ This #{binary_type} has been uploaded before. Skipping upload step.")
@@ -210,7 +202,8 @@ module Fastlane
         "#{v1_apps_url(app_id)}/upload_status/#{app_token}"
       end
 
-      def upload_token_format(app_id, project_number, binary_hash)
+      def get_upload_token(project_number, app_id, binary_path)
+        binary_hash = Digest::SHA256.hexdigest(read_binary(binary_path))
         CGI.escape("projects/#{project_number}/apps/#{app_id}/releases/-/binaries/#{binary_hash}")
       end
 
@@ -226,15 +219,6 @@ module Fastlane
       def read_binary(path)
         # File must be read in binary mode to work on Windows
         File.open(path, 'rb').read
-      end
-
-      def get_binary_type(binary_path)
-        extension = File.extname(binary_path)
-        return 'APK' if extension == '.apk'
-        return 'AAB' if extension == '.aab'
-        return 'IPA' if extension == '.ipa'
-
-        return 'file'
       end
     end
   end

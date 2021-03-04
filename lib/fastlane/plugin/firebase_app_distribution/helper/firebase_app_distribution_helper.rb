@@ -4,6 +4,19 @@ module Fastlane
   UI = FastlaneCore::UI unless Fastlane.const_defined?("UI")
   module Helper
     module FirebaseAppDistributionHelper
+      APK = 'APK'
+      AAB = 'AAB'
+      IPA = 'IPA'
+
+      def binary_type_from_path(binary_path)
+        extension = File.extname(binary_path)
+        return APK if extension == '.apk'
+        return AAB if extension == '.aab'
+        return IPA if extension == '.ipa'
+
+        UI.user_error!("Unsupported distribution file format, should be .ipa, .apk or .aab")
+      end
+
       def get_value_from_value_or_file(value, path)
         if (value.nil? || value.empty?) && !path.nil?
           begin
