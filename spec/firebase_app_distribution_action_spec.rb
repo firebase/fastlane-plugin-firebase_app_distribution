@@ -2,13 +2,17 @@ require 'fastlane/action'
 
 describe Fastlane::Actions::FirebaseAppDistributionAction do
   let(:action) { Fastlane::Actions::FirebaseAppDistributionAction }
+  let(:project_number) { '1' }
+  let(:ios_app_id) { '1:1234567890:ios:321abc456def7890' }
+  let(:android_app_id) { '1:1234567890:android:321abc456def7890' }
+
   describe '#platform_from_app_id' do
     it 'returns :android for an Android app' do
-      expect(action.platform_from_app_id('1:1234567890:android:321abc456def7890')).to eq(:android)
+      expect(action.platform_from_app_id(android_app_id)).to eq(:android)
     end
 
     it 'returns :ios for an iOS app' do
-      expect(action.platform_from_app_id('1:1234567890:ios:321abc456def7890')).to eq(:ios)
+      expect(action.platform_from_app_id(ios_app_id)).to eq(:ios)
     end
 
     it 'returns nil for a Web app' do
@@ -16,25 +20,89 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
     end
   end
 
-  describe '#binary_path_from_platform' do
-    it 'returns the ipa_path for an iOS app' do
-      expect(action.binary_path_from_platform(:ios, '/ipa/path', '/apk/path')).to eq('/ipa/path')
+  describe '#get_binary_path' do
+    describe 'with an iOS app' do
+      it 'returns the value for ipa_path' do
+        expect(action.get_binary_path(:ios, { app: ios_app_id, ipa_path: 'binary.ipa' })).to eq('binary.ipa')
+      end
+
+      it 'attempts to find them most recent ipa' do
+        allow(Dir).to receive('[]').with('*.ipa').and_return(['binary.ipa'])
+        allow(File).to receive(:mtime).and_return(0)
+        expect(action.get_binary_path(:ios, { app: ios_app_id })).to eq('binary.ipa')
+      end
     end
 
-    it 'returns the apk_path for an Android app' do
-      expect(action.binary_path_from_platform(:android, '/ipa/path', '/apk/path')).to eq('/apk/path')
-    end
+    describe 'with an Android app' do
+      before { allow(Fastlane::Actions.lane_context).to receive('[]') }
 
-    it 'returns the ipa_path by default when there is no platform' do
-      expect(action.binary_path_from_platform(nil, '/ipa/path', '/apk/path')).to eq('/ipa/path')
-    end
+      it 'returns the value for apk_path for an Android app' do
+        expect(action.get_binary_path(:android, { app: android_app_id, apk_path: 'binary.apk' })).to eq('binary.apk')
+      end
 
-    it 'falls back on the apk_path when there is no platform and no ipa_path' do
-      expect(action.binary_path_from_platform(nil, nil, '/apk/path')).to eq('/apk/path')
-    end
+      it 'returns the value for android_artifact_path for an Android app' do
+        expect(action.get_binary_path(:android, { app: android_app_id, android_artifact_path: 'binary.apk' })).to eq('binary.apk')
+      end
 
-    it 'returns nil when there is no platform and no paths' do
-      expect(action.binary_path_from_platform(nil, nil, nil)).to eq(nil)
+      describe 'when android_artifact_type is not set' do
+        let(:params) { { app: android_app_id } }
+
+        it 'returns SharedValues::GRADLE_APK_OUTPUT_PATH value' do
+          allow(Fastlane::Actions.lane_context).to receive('[]').with(Fastlane::Actions::SharedValues::GRADLE_APK_OUTPUT_PATH).and_return('binary.apk')
+          expect(action.get_binary_path(:android, params)).to eq('binary.apk')
+        end
+
+        it 'attempts to find apk in current director and returns value' do
+          allow(Dir).to receive('[]').with('*.apk').and_return(['first-binary.apk', 'last-binary.apk'])
+          expect(action.get_binary_path(:android, params)).to eq('last-binary.apk')
+        end
+
+        it 'attempts to find apk in output folder and returns value' do
+          allow(Dir).to receive('[]').with('*.apk').and_return([])
+          allow(Dir).to receive('[]').with('app/build/outputs/apk/release/app-release.apk').and_return(['first-binary.apk', 'last-binary.apk'])
+          expect(action.get_binary_path(:android, params)).to eq('last-binary.apk')
+        end
+      end
+
+      describe 'when android_artifact_type equals APK' do
+        let(:params) { { app: android_app_id, android_artifact_type: 'APK' } }
+
+        it 'returns SharedValues::GRADLE_APK_OUTPUT_PATH value' do
+          allow(Fastlane::Actions.lane_context).to receive('[]').with(Fastlane::Actions::SharedValues::GRADLE_APK_OUTPUT_PATH).and_return('binary.apk')
+          expect(action.get_binary_path(:android, params)).to eq('binary.apk')
+        end
+
+        it 'attempts to find apk in current director and returns value' do
+          allow(Dir).to receive('[]').with('*.apk').and_return(['first-binary.apk', 'last-binary.apk'])
+          expect(action.get_binary_path(:android, params)).to eq('last-binary.apk')
+        end
+
+        it 'attempts to find apk in output folder and returns value' do
+          allow(Dir).to receive('[]').with('*.apk').and_return([])
+          allow(Dir).to receive('[]').with('app/build/outputs/apk/release/app-release.apk').and_return(['first-binary.apk', 'last-binary.apk'])
+          expect(action.get_binary_path(:android, params)).to eq('last-binary.apk')
+        end
+      end
+
+      describe 'when android_artifact_type equals AAB' do
+        let(:params) { { app: android_app_id, android_artifact_type: 'AAB' } }
+
+        it 'returns SharedValues::GRADLE_AAB_OUTPUT_PATH value' do
+          allow(Fastlane::Actions.lane_context).to receive('[]').with(Fastlane::Actions::SharedValues::GRADLE_AAB_OUTPUT_PATH).and_return('binary.aab')
+          expect(action.get_binary_path(:android, params)).to eq('binary.aab')
+        end
+
+        it 'attempts to find apk in current director and returns value' do
+          allow(Dir).to receive('[]').with('*.aab').and_return(['first-binary.aab', 'last-binary.aab'])
+          expect(action.get_binary_path(:android, params)).to eq('last-binary.aab')
+        end
+
+        it 'attempts to find apk in output folder and returns value' do
+          allow(Dir).to receive('[]').with('*.aab').and_return([])
+          allow(Dir).to receive('[]').with('app/build/outputs/bundle/release/app-release.aab').and_return(['first-binary.aab', 'last-binary.aab'])
+          expect(action.get_binary_path(:android, params)).to eq('last-binary.aab')
+        end
+      end
     end
   end
 
@@ -99,6 +167,118 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
       params = { googleservice_info_plist_path: '/path/to/plist' }
       expect { action.app_id_from_params(params) }
         .to raise_error(ErrorMessage::MISSING_APP_ID)
+    end
+  end
+
+  describe '#run' do
+    let(:params) do
+      {
+        app: ios_app_id,
+        ipa_path: 'debug.ipa'
+      }
+    end
+
+    before(:each) do
+      allow(File).to receive(:exist?).and_call_original
+      allow(action).to receive(:fetch_auth_token).and_return('fake-auth-token')
+    end
+
+    it 'raises error if it cannot find a valid binary path' do
+      expect do
+        action.run(params.merge(ipa_path: nil))
+      end.to raise_error("Couldn't find binary")
+    end
+
+    it 'raises error if binary does not exist' do
+      expect do
+        action.run(params)
+      end.to raise_error("Couldn't find binary at path debug.ipa")
+    end
+
+    it 'raises error if contact email is nil' do
+      allow(File).to receive(:exist?).with('debug.ipa').and_return(true)
+      allow_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient).to receive(:get_app).with(ios_app_id, 'BASIC').and_return(App.new({
+        contactEmail: nil
+      }))
+
+      expect do
+        action.run(params)
+      end.to raise_error(ErrorMessage::GET_APP_NO_CONTACT_EMAIL_ERROR)
+    end
+
+    it 'raises error if contact email is blank' do
+      allow(File).to receive(:exist?).with('debug.ipa').and_return(true)
+      allow_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient).to receive(:get_app).with(ios_app_id, 'BASIC').and_return(App.new({
+        contactEmail: ''
+      }))
+
+      expect do
+        action.run(params)
+      end.to raise_error(ErrorMessage::GET_APP_NO_CONTACT_EMAIL_ERROR)
+    end
+
+    describe 'with android app' do
+      describe 'when uploading an AAB' do
+        let(:params) do
+          {
+            app: android_app_id,
+            android_artifact_path: 'debug.aab'
+          }
+        end
+
+        before { allow(File).to receive(:exist?).with('debug.aab').and_return(true) }
+
+        def stub_get_app(params)
+          allow_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient)
+            .to receive(:get_app)
+            .with(android_app_id, 'FULL')
+            .and_return(App.new({
+              projectNumber: project_number,
+              appId: android_app_id,
+              contactEmail: 'user@example.com'
+            }.merge(params)))
+        end
+
+        it 'raises error if play account is not linked' do
+          stub_get_app(aabState: App::AabState::PLAY_ACCOUNT_NOT_LINKED)
+
+          expect do
+            action.run(params)
+          end.to raise_error(ErrorMessage::PLAY_ACCOUNT_NOT_LINKED)
+        end
+
+        it 'raises error if app not published' do
+          stub_get_app(aabState: App::AabState::APP_NOT_PUBLISHED)
+
+          expect do
+            action.run(params)
+          end.to raise_error(ErrorMessage::APP_NOT_PUBLISHED)
+        end
+
+        it 'raises error if no matching app in play account' do
+          stub_get_app(aabState: App::AabState::NO_APP_WITH_GIVEN_BUNDLE_ID_IN_PLAY_ACCOUNT)
+
+          expect do
+            action.run(params)
+          end.to raise_error(ErrorMessage::NO_APP_WITH_GIVEN_BUNDLE_ID_IN_PLAY_ACCOUNT)
+        end
+
+        it 'raises error if terms have not been accepted' do
+          stub_get_app(aabState: App::AabState::PLAY_IAS_TERMS_NOT_ACCEPTED)
+
+          expect do
+            action.run(params)
+          end.to raise_error(ErrorMessage::PLAY_IAS_TERMS_NOT_ACCEPTED)
+        end
+
+        it 'raises error if aab state is unrecognized' do
+          stub_get_app(aabState: 'UNKNOWN')
+
+          expect do
+            action.run(params)
+          end.to raise_error(ErrorMessage.aab_upload_error('UNKNOWN'))
+        end
+      end
     end
   end
 end

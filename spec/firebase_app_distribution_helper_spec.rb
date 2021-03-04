@@ -92,4 +92,24 @@ describe Fastlane::Helper::FirebaseAppDistributionHelper do
       expect(helper.get_ios_app_id_from_archive_plist("path", "GoogleService-Info.plist")).to eq("identifier")
     end
   end
+
+  describe '#binary_type_from_path' do
+    it 'returns IPA' do
+      expect(helper.binary_type_from_path('debug.ipa')).to eq(:IPA)
+    end
+
+    it 'returns APK' do
+      expect(helper.binary_type_from_path('debug.apk')).to eq(:APK)
+    end
+
+    it 'returns AAB' do
+      expect(helper.binary_type_from_path('debug.aab')).to eq(:AAB)
+    end
+
+    it 'raises error if file extension is unsupported' do
+      expect do
+        helper.binary_type_from_path('debug.invalid')
+      end.to raise_error("Unsupported distribution file format, should be .ipa, .apk or .aab")
+    end
+  end
 end

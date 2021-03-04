@@ -13,22 +13,29 @@ require_relative '../helper/firebase_app_distribution_auth_client'
 module Fastlane
   module Actions
     class FirebaseAppDistributionAction < Action
-      FIREBASECMD_ACTION = "appdistribution:distribute".freeze
-
       extend Auth::FirebaseAppDistributionAuthClient
       extend Helper::FirebaseAppDistributionHelper
 
       def self.run(params)
-        params.values # to validate all inputs before looking for the ipa/apk
+        params.values # to validate all inputs before looking for the ipa/apk/aab
 
         app_id = app_id_from_params(params)
         platform = lane_platform || platform_from_app_id(app_id)
-        binary_path = binary_path_from_platform(platform, params[:ipa_path], params[:apk_path])
+
+        binary_path = get_binary_path(platform, params)
+        UI.user_error!("Couldn't find binary") if binary_path.nil?
+        UI.user_error!("Couldn't find binary at path #{binary_path}") unless File.exist?(binary_path)
+        binary_type = binary_type_from_path(binary_path)
 
         auth_token = fetch_auth_token(params[:service_credentials_file], params[:firebase_cli_token])
-        fad_api_client = Client::FirebaseAppDistributionApiClient.new(auth_token, platform, params[:debug])
+        fad_api_client = Client::FirebaseAppDistributionApiClient.new(auth_token, params[:debug])
 
-        release_id = fad_api_client.upload(app_id, binary_path, platform.to_s)
+        # If binary is an AAB get FULL view of app which includes the aab_state
+        app_view = binary_type == :AAB ? 'FULL' : 'BASIC'
+        app = fad_api_client.get_app(app_id, app_view)
+        validate_app!(app, binary_type)
+
+        release_id = fad_api_client.upload(app.project_number, app_id, binary_path, platform.to_s)
         if release_id.nil?
           return
         end
@@ -90,37 +97,56 @@ module Fastlane
         end
       end
 
-      def self.binary_path_from_platform(platform, ipa_path, apk_path)
-        case platform
-        when :ios
-          ipa_path
-        when :android
-          apk_path
-        else
-          ipa_path || apk_path
+      def self.get_binary_path(platform, params)
+        if platform == :ios
+          return params[:ipa_path] ||
+                 Actions.lane_context[SharedValues::IPA_OUTPUT_PATH] ||
+                 Dir["*.ipa"].sort_by { |x| File.mtime(x) }.last
+        end
+
+        if platform == :android
+          return params[:apk_path] || params[:android_artifact_path] if params[:apk_path] || params[:android_artifact_path]
+
+          if params[:android_artifact_type] == 'AAB'
+            return Actions.lane_context[SharedValues::GRADLE_AAB_OUTPUT_PATH] ||
+                   Dir["*.aab"].last ||
+                   Dir[File.join("app", "build", "outputs", "bundle", "release", "app-release.aab")].last
+          end
+
+          return Actions.lane_context[SharedValues::GRADLE_APK_OUTPUT_PATH] ||
+                 Dir["*.apk"].last ||
+                 Dir[File.join("app", "build", "outputs", "apk", "release", "app-release.apk")].last
+        end
+      end
+
+      def self.validate_app!(app, binary_type)
+        if app.contact_email.nil? || app.contact_email.strip.empty?
+          UI.user_error!(ErrorMessage::GET_APP_NO_CONTACT_EMAIL_ERROR)
+        end
+
+        if binary_type == :AAB && app.aab_state != App::AabState::ACTIVE && app.aab_state != App::AabState::UNAVAILABLE
+          case app.aab_state
+          when App::AabState::PLAY_ACCOUNT_NOT_LINKED
+            UI.user_error!(ErrorMessage::PLAY_ACCOUNT_NOT_LINKED)
+          when App::AabState::APP_NOT_PUBLISHED
+            UI.user_error!(ErrorMessage::APP_NOT_PUBLISHED)
+          when App::AabState::NO_APP_WITH_GIVEN_BUNDLE_ID_IN_PLAY_ACCOUNT
+            UI.user_error!(ErrorMessage::NO_APP_WITH_GIVEN_BUNDLE_ID_IN_PLAY_ACCOUNT)
+          when App::AabState::PLAY_IAS_TERMS_NOT_ACCEPTED
+            UI.user_error!(ErrorMessage::PLAY_IAS_TERMS_NOT_ACCEPTED)
+          else
+            UI.user_error!(ErrorMessage.aab_upload_error(app.aab_state))
+          end
         end
       end
 
       def self.available_options
-        if lane_platform == :ios || lane_platform.nil?
-          ipa_path_default = Dir["*.ipa"].sort_by { |x| File.mtime(x) }.last
-        end
-
-        if lane_platform == :android
-          apk_path_default = Dir["*.apk"].last || Dir[File.join("app", "build", "outputs", "apk", "app-release.apk")].last
-        end
-
         [
           # iOS Specific
           FastlaneCore::ConfigItem.new(key: :ipa_path,
                                        env_name: "FIREBASEAPPDISTRO_IPA_PATH",
                                        description: "Path to your IPA file. Optional if you use the _gym_ or _xcodebuild_ action",
-                                       default_value: Actions.lane_context[SharedValues::IPA_OUTPUT_PATH] || ipa_path_default,
-                                       default_value_dynamic: true,
-                                       optional: true,
-                                       verify_block: proc do |value|
-                                         UI.user_error!("firebase_app_distribution: Couldn't find ipa file at path '#{value}'") unless File.exist?(value)
-                                       end),
+                                       optional: true),
           FastlaneCore::ConfigItem.new(key: :googleservice_info_plist_path,
                                        env_name: "GOOGLESERVICE_INFO_PLIST_PATH",
                                        description: "Path to your GoogleService-Info.plist file, relative to the archived product path",
@@ -130,12 +156,21 @@ module Fastlane
           # Android Specific
           FastlaneCore::ConfigItem.new(key: :apk_path,
                                        env_name: "FIREBASEAPPDISTRO_APK_PATH",
+                                       deprecated: "The apk_path parameter is deprecated. Please use android_artifact_path instead",
                                        description: "Path to your APK file",
-                                       default_value: Actions.lane_context[SharedValues::GRADLE_APK_OUTPUT_PATH] || apk_path_default,
+                                       optional: true),
+          FastlaneCore::ConfigItem.new(key: :android_artifact_path,
+                                       env_name: "FIREBASEAPPDISTRO_ANDROID_ARTIFACT_PATH",
+                                       description: "Path to your APK or AAB file",
+                                       optional: true),
+          FastlaneCore::ConfigItem.new(key: :android_artifact_type,
+                                       env_name: "FIREBASEAPPDISTRO_ANDROID_ARTIFACT_TYPE",
+                                       description: "Android artifact type. Set to 'APK' or 'AAB'. Defaults to 'APK' if not set",
+                                       default_value: "APK",
                                        default_value_dynamic: true,
                                        optional: true,
                                        verify_block: proc do |value|
-                                         UI.user_error!("firebase_app_distribution: Couldn't find apk file at path '#{value}'") unless File.exist?(value)
+                                         UI.user_error!("firebase_app_distribution: '#{value}' is not a valid value for android_artifact_path. Should be 'APK' or 'AAB'") unless ['APK', 'AAB'].include?(value)
                                        end),
           FastlaneCore::ConfigItem.new(key: :app,
                                        env_name: "FIREBASEAPPDISTRO_APP",

@@ -16,6 +16,14 @@ module ErrorMessage
   INVALID_RELEASE_ID = "App distribution failed to fetch release with id"
   INVALID_RELEASE_NOTES = "Failed to add release notes"
   SERVICE_CREDENTIALS_ERROR = "App Distribution could not generate credentials from the service credentials file specified. Service Account Path"
+  PLAY_ACCOUNT_NOT_LINKED = "This project is not linked to a Google Play account."
+  APP_NOT_PUBLISHED = "This app is not published in the Google Play console."
+  NO_APP_WITH_GIVEN_BUNDLE_ID_IN_PLAY_ACCOUNT = "App with matching package name does not exist in Google Play."
+  PLAY_IAS_TERMS_NOT_ACCEPTED = "You must accept the Play Internal App Sharing (IAS) terms to upload AABs."
+
+  def self.aab_upload_error(aab_state)
+    "Failed to process the AAB: #{aab_state}"
+  end
 
   def self.binary_not_found(binary_type)
     "Could not find the #{binary_type}. Make sure you set the #{binary_type} path parameter to point to your #{binary_type}"

@@ -1,10 +1,10 @@
 describe Fastlane::Client::FirebaseAppDistributionApiClient do
-  let(:fake_binary_path) { "binary_path" }
+  let(:fake_binary_path) { "binary.apk" }
   let(:fake_binary_contents) { "Hello World" }
   let(:fake_binary) { double("Binary") }
   let(:headers) { { 'Authorization' => 'Bearer auth_token' } }
 
-  let(:api_client) { Fastlane::Client::FirebaseAppDistributionApiClient.new("auth_token", :android) }
+  let(:api_client) { Fastlane::Client::FirebaseAppDistributionApiClient.new("auth_token") }
   let(:stubs) { Faraday::Adapter::Test::Stubs.new }
   let(:conn) do
     Faraday.new(url: "https://firebaseappdistribution.googleapis.com") do |b|
@@ -37,58 +37,47 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
     Faraday.default_connection = nil
   end
 
-  describe '#get_upload_token' do
-    it 'returns the upload token after a successfull GET call' do
-      stubs.get("/v1alpha/apps/app_id", headers) do |env|
+  describe '#get_app' do
+    it 'returns an app with appView BASIC' do
+      response = {
+        projectNumber: "project_number",
+        appId: "app_id",
+        contactEmail: "user@example.com"
+      }
+      stubs.get("/v1alpha/apps/app_id?appView=BASIC", headers) do |env|
         [
           200,
           {},
-          {
-            projectNumber: "project_number",
-            appId: "app_id",
-            contactEmail: "Hello@world.com"
-          }
+          response
         ]
       end
-      upload_token = api_client.get_upload_token("app_id", fake_binary_path)
+      app = api_client.get_app("app_id")
       binary_hash = Digest::SHA256.hexdigest(fake_binary_contents)
-      expect(upload_token).to eq(CGI.escape("projects/project_number/apps/app_id/releases/-/binaries/#{binary_hash}"))
+      expect(app.project_number).to eq("project_number")
+      expect(app.app_id).to eq("app_id")
+      expect(app.contact_email).to eq("user@example.com")
     end
 
-    it 'crashes if the app has no contact email' do
-      stubs.get("/v1alpha/apps/app_id", headers) do |env|
+    it 'returns an app with appView FULL' do
+      response = {
+        projectNumber: "project_number",
+        appId: "app_id",
+        contactEmail: "user@example.com",
+        aabState: "ACTIVE"
+      }
+      stubs.get("/v1alpha/apps/app_id?appView=FULL", headers) do |env|
         [
           200,
           {},
-          {
-            projectNumber: "project_number",
-            appId: "app_id",
-            contactEmail: ""
-          }
+          response
         ]
       end
-      expect { api_client.get_upload_token("app_id", fake_binary_path) }
-        .to raise_error(ErrorMessage::GET_APP_NO_CONTACT_EMAIL_ERROR)
-    end
-
-    it 'crashes when given an invalid app_id' do
-      stubs.get("/v1alpha/apps/invalid_app_id", headers) do |env|
-        [
-          404,
-          {},
-          {}
-        ]
-      end
-      expect { api_client.get_upload_token("invalid_app_id", fake_binary_path) }
-        .to raise_error("#{ErrorMessage::INVALID_APP_ID}: invalid_app_id")
-    end
-
-    it 'crashes when given an invalid binary_path' do
-      allow(File).to receive(:exist?)
-        .with("invalid_binary_path")
-        .and_return(false)
-      expect { api_client.get_upload_token("app_id", "invalid_binary_path") }
-        .to raise_error("#{ErrorMessage.binary_not_found('APK')}: invalid_binary_path")
+      app = api_client.get_app("app_id", "FULL")
+      binary_hash = Digest::SHA256.hexdigest(fake_binary_contents)
+      expect(app.project_number).to eq("project_number")
+      expect(app.app_id).to eq("app_id")
+      expect(app.contact_email).to eq("user@example.com")
+      expect(app.aab_state).to eq("ACTIVE")
     end
   end
 
@@ -97,7 +86,9 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       { 'Authorization' => 'Bearer auth_token',
       'X-APP-DISTRO-API-CLIENT-ID' => 'fastlane',
       'X-APP-DISTRO-API-CLIENT-TYPE' =>  "android",
-      'X-APP-DISTRO-API-CLIENT-VERSION' => Fastlane::FirebaseAppDistribution::VERSION }
+      'X-APP-DISTRO-API-CLIENT-VERSION' => Fastlane::FirebaseAppDistribution::VERSION,
+      'X-GOOG-UPLOAD-FILE-NAME' => File.basename(fake_binary_path),
+      'X-GOOG-UPLOAD-PROTOCOL' => 'raw' }
     end
     it 'uploads the binary successfully when the input is valid' do
       stubs.post("/app-binary-uploads?app_id=app_id", fake_binary_contents, upload_headers) do |env|
@@ -114,10 +105,10 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
 
     it 'crashes when given an invalid binary_path' do
       expect(File).to receive(:open)
-        .with("invalid_binary_path", "rb")
+        .with("invalid_binary.apk", "rb")
         .and_raise(Errno::ENOENT.new("file not found"))
-      expect { api_client.upload_binary("app_id", "invalid_binary_path", "android") }
-        .to raise_error("#{ErrorMessage.binary_not_found('APK')}: invalid_binary_path")
+      expect { api_client.upload_binary("app_id", "invalid_binary.apk", "android") }
+        .to raise_error("#{ErrorMessage.binary_not_found('APK')}: invalid_binary.apk")
     end
   end
 
@@ -147,32 +138,30 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
           release: {} }
       )
     end
+    let(:upload_token) do
+      CGI.escape("projects/project_number/apps/app_id/releases/-/binaries/#{Digest::SHA256.hexdigest(fake_binary_contents)}")
+    end
 
     before(:each) do
       # Stub out polling interval for quick specs
       stub_const("Fastlane::Client::FirebaseAppDistributionApiClient::POLLING_INTERVAL_SECONDS", 0)
-
-      # Expect a call to get_upload_token every time
-      expect(api_client).to receive(:get_upload_token)
-        .with("app_id", fake_binary_path)
-        .and_return("upload_token")
     end
 
     it 'skips the upload step if the binary has already been uploaded' do
       # upload should not attempt to upload the binary at all
       expect(api_client).to_not(receive(:upload_binary))
       expect(api_client).to receive(:get_upload_status)
-        .with("app_id", "upload_token")
+        .with("app_id", upload_token)
         .and_return(upload_status_response_success)
 
-      release_id = api_client.upload("app_id", fake_binary_path, "android")
+      release_id = api_client.upload("project_number", "app_id", fake_binary_path, "android")
       expect(release_id).to eq("release_id")
     end
 
     it 'uploads the app binary then returns the release_id' do
       # return an error then a success after being uploaded
       expect(api_client).to receive(:get_upload_status)
-        .with("app_id", "upload_token")
+        .with("app_id", upload_token)
         .and_return(upload_status_response_error, upload_status_response_success)
 
       # upload_binary should only be called once
@@ -180,7 +169,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         .with("app_id", fake_binary_path, "android")
         .at_most(:once)
 
-      release_id = api_client.upload("app_id", fake_binary_path, "android")
+      release_id = api_client.upload("project_number", "app_id", fake_binary_path, "android")
       expect(release_id).to eq("release_id")
     end
 
@@ -189,16 +178,16 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       stub_const("Fastlane::Client::FirebaseAppDistributionApiClient::MAX_POLLING_RETRIES", max_polling_retries)
 
       expect(api_client).to receive(:get_upload_status)
-        .with("app_id", "upload_token")
+        .with("app_id", upload_token)
         .and_return(upload_status_response_error)
       expect(api_client).to receive(:upload_binary)
         .with("app_id", fake_binary_path, "android")
       expect(api_client).to receive(:get_upload_status)
-        .with("app_id", "upload_token")
+        .with("app_id", upload_token)
         .and_return(upload_status_response_in_progress)
         .exactly(max_polling_retries).times
 
-      release_id = api_client.upload("app_id", fake_binary_path, "android")
+      release_id = api_client.upload("project_number", "app_id", fake_binary_path, "android")
       expect(release_id).to be_nil
     end
 
@@ -208,56 +197,56 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
 
       # return error the first time
       expect(api_client).to receive(:get_upload_status)
-        .with("app_id", "upload_token")
+        .with("app_id", upload_token)
         .and_return(upload_status_response_error)
       expect(api_client).to receive(:upload_binary)
         .with("app_id", fake_binary_path, "android")
         .at_most(:once)
       # return in_progress for a couple polls
       expect(api_client).to receive(:get_upload_status)
-        .with("app_id", "upload_token")
+        .with("app_id", upload_token)
         .and_return(upload_status_response_in_progress)
         .exactly(2).times
       expect(api_client).to receive(:get_upload_status)
-        .with("app_id", "upload_token")
+        .with("app_id", upload_token)
         .and_return(upload_status_response_success)
 
-      release_id = api_client.upload("app_id", fake_binary_path, "android")
+      release_id = api_client.upload("project_number", "app_id", fake_binary_path, "android")
       expect(release_id).to eq("release_id")
     end
 
     it 'crashes after failing to upload with status error' do
       expect(api_client).to receive(:get_upload_status)
-        .with("app_id", "upload_token")
+        .with("app_id", upload_token)
         .and_return(upload_status_response_error).twice
       expect(api_client).to receive(:upload_binary)
         .with("app_id", fake_binary_path, "android")
 
-      expect { api_client.upload("app_id", fake_binary_path, "android") }
+      expect { api_client.upload("project_number", "app_id", fake_binary_path, "android") }
         .to raise_error("#{ErrorMessage.upload_binary_error('APK')}: #{upload_status_response_error.message}")
     end
 
     it 'crashes after failing to upload with status unspecified' do
       expect(api_client).to receive(:get_upload_status)
-        .with("app_id", "upload_token")
+        .with("app_id", upload_token)
         .and_return(upload_status_response_status_unspecified).twice
       expect(api_client).to receive(:upload_binary)
         .with("app_id", fake_binary_path, "android")
 
-      expect { api_client.upload("app_id", fake_binary_path, "android") }
+      expect { api_client.upload("project_number", "app_id", fake_binary_path, "android") }
         .to raise_error(ErrorMessage.upload_binary_error("APK"))
     end
 
     it 'does not call upload when the intial check returns in progress' do
       expect(api_client).to receive(:get_upload_status)
-        .with("app_id", "upload_token")
+        .with("app_id", upload_token)
         .and_return(upload_status_response_in_progress)
       expect(api_client).to_not(receive(:upload_binary))
       expect(api_client).to receive(:get_upload_status)
-        .with("app_id", "upload_token")
+        .with("app_id", upload_token)
         .and_return(upload_status_response_success)
 
-      release_id = api_client.upload("app_id", fake_binary_path, "android")
+      release_id = api_client.upload("project_number", "app_id", fake_binary_path, "android")
       expect(release_id).to eq("release_id")
     end
   end
@@ -386,23 +375,6 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       end
       expect { api_client.enable_access("app_id", "release_id", emails, group_ids) }
         .to raise_error("#{ErrorMessage::INVALID_TESTERS} \nEmails: #{emails} \nGroups: #{group_ids}")
-    end
-  end
-
-  describe 'Error messaging' do
-    it 'uses "APK" when the platform is android' do
-      client = Fastlane::Client::FirebaseAppDistributionApiClient.new("auth_token", :android)
-      expect(client.instance_variable_get(:@binary_type)).to eq('APK')
-    end
-
-    it 'uses "IPA" when the platform is ios' do
-      client = Fastlane::Client::FirebaseAppDistributionApiClient.new("auth_token", :ios)
-      expect(client.instance_variable_get(:@binary_type)).to eq('IPA')
-    end
-
-    it 'uses "APK/IPA" when the platform is nil' do
-      client = Fastlane::Client::FirebaseAppDistributionApiClient.new("auth_token", nil)
-      expect(client.instance_variable_get(:@binary_type)).to eq('IPA/APK')
     end
   end
 end
