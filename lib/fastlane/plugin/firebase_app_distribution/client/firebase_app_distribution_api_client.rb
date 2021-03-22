@@ -180,6 +180,23 @@ module Fastlane
         return UploadStatusResponse.new(response.body)
       end
 
+      # Get tester UDIDs
+      #
+      # args
+      #   app_id - Firebase App ID
+      #
+      # Returns a list of hashes containing tester device info
+      def get_udids(app_id)
+        begin
+          response = connection.get(get_udids_url(app_id)) do |request|
+            request.headers[AUTHORIZATION] = "Bearer " + @auth_token
+          end
+        rescue Faraday::ResourceNotFound
+          UI.user_error!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
+        end
+        response.body[:testerUdids]
+      end
+
       private
 
       def v1_apps_url(app_id)
@@ -200,6 +217,10 @@ module Fastlane
 
       def upload_status_url(app_id, app_token)
         "#{v1_apps_url(app_id)}/upload_status/#{app_token}"
+      end
+
+      def get_udids_url(app_id)
+        "#{v1_apps_url(app_id)}/testers:getTesterUdids"
       end
 
       def get_upload_token(project_number, app_id, binary_path)

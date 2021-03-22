@@ -345,6 +345,27 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
     end
   end
 
+  describe '#get_udids' do
+    let(:udids) {
+      [
+        { udid: 'device-udid-1', name: 'device-name-1', platform: 'ios' },
+        { udid: 'device-udid-1', name: 'device-name-1', platform: 'ios' },
+      ]
+    }
+
+    it 'returns the list of UDIDs when the get call is successfull' do
+      stubs.get("/v1alpha/apps/app_id/testers:getTesterUdids", headers) do |env|
+        [
+          200,
+          {},
+          { testerUdids: udids },
+        ]
+      end
+      result = api_client.get_udids("app_id")
+      expect(result).to eq(udids)
+    end
+  end
+
   describe '#enable_access' do
     it 'posts successfully when tester emails and groupIds are defined' do
       payload = { emails: ["testers"], groupIds: ["groups"] }
