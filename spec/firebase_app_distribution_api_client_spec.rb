@@ -346,19 +346,19 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
   end
 
   describe '#get_udids' do
-    let(:udids) {
+    let(:udids) do
       [
         { udid: 'device-udid-1', name: 'device-name-1', platform: 'ios' },
-        { udid: 'device-udid-1', name: 'device-name-1', platform: 'ios' },
+        { udid: 'device-udid-1', name: 'device-name-1', platform: 'ios' }
       ]
-    }
+    end
 
     it 'returns the list of UDIDs when the get call is successfull' do
       stubs.get("/v1alpha/apps/app_id/testers:getTesterUdids", headers) do |env|
         [
           200,
           {},
-          { testerUdids: udids },
+          { testerUdids: udids }
         ]
       end
       result = api_client.get_udids("app_id")
@@ -370,7 +370,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         [
           200,
           {},
-          {},
+          {}
         ]
       end
       result = api_client.get_udids("app_id")

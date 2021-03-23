@@ -47,7 +47,7 @@ module Fastlane
 
       # supports markdown.
       def self.details
-        "Export your testers' device names and identifiers in a CSV file, so you can add them your app's provisioning profile. This file can be imported into your Apple developer account using the Register Multiple Devices option. See the [App Distribution docs](https://firebase.google.com/docs/app-distribution/ios/distribute-console#register-tester-devices) for more info."
+        "Export your testers' device identifiers in a CSV file, so you can add them your provisioning profile. This file can be imported into your Apple developer account using the Register Multiple Devices option. See the [App Distribution docs](https://firebase.google.com/docs/app-distribution/ios/distribute-console#register-tester-devices) for more info."
       end
 
       def self.available_options
@@ -95,4 +95,3 @@ module Fastlane
     end
   end
 end
-
