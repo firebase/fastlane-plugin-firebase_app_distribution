@@ -364,6 +364,18 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       result = api_client.get_udids("app_id")
       expect(result).to eq(udids)
     end
+
+    it 'returns an empty list UDIDs when there are no udids' do
+      stubs.get("/v1alpha/apps/app_id/testers:getTesterUdids", headers) do |env|
+        [
+          200,
+          {},
+          {},
+        ]
+      end
+      result = api_client.get_udids("app_id")
+      expect(result).to eq([])
+    end
   end
 
   describe '#enable_access' do

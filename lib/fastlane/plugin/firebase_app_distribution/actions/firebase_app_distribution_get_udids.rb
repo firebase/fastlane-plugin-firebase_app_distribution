@@ -19,8 +19,13 @@ module Fastlane
 
         app_id = params[:app]
         udids = fad_api_client.get_udids(app_id)
-        write_udids_to_file(udids, params[:output_file])
-        UI.success("🎉 App Distribution tester UDIDs written to: #{params[:output_file]}")
+
+        if udids.empty?
+          UI.important("App Distribution fetched 0 tester UDIDs. Nothing written to output file.")
+        else
+          write_udids_to_file(udids, params[:output_file])
+          UI.success("🎉 App Distribution tester UDIDs written to: #{params[:output_file]}")
+        end
       end
 
       def self.write_udids_to_file(udids, output_file)

@@ -194,7 +194,7 @@ module Fastlane
         rescue Faraday::ResourceNotFound
           UI.user_error!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
         end
-        response.body[:testerUdids]
+        response.body[:testerUdids] || []
       end
 
       private
