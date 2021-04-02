@@ -169,7 +169,6 @@ module Fastlane
           # Android Specific
           FastlaneCore::ConfigItem.new(key: :apk_path,
                                        env_name: "FIREBASEAPPDISTRO_APK_PATH",
-                                       deprecated: "The apk_path parameter is deprecated. Please use android_artifact_path instead",
                                        description: "Path to your APK file",
                                        optional: true),
           FastlaneCore::ConfigItem.new(key: :android_artifact_path,
