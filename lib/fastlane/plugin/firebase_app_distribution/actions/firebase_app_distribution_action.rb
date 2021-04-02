@@ -133,24 +133,24 @@ module Fastlane
       end
 
       def self.validate_app!(app, binary_type)
-        # if app.contact_email.nil? || app.contact_email.strip.empty?
-        #   UI.user_error!(ErrorMessage::GET_APP_NO_CONTACT_EMAIL_ERROR)
-        # end
+        if app.contact_email.nil? || app.contact_email.strip.empty?
+          UI.user_error!(ErrorMessage::GET_APP_NO_CONTACT_EMAIL_ERROR)
+        end
 
-        # if binary_type == :AAB && app.aab_state != App::AabState::ACTIVE && app.aab_state != App::AabState::UNAVAILABLE
-        #   case app.aab_state
-        #   when App::AabState::PLAY_ACCOUNT_NOT_LINKED
-        #     UI.user_error!(ErrorMessage::PLAY_ACCOUNT_NOT_LINKED)
-        #   when App::AabState::APP_NOT_PUBLISHED
-        #     UI.user_error!(ErrorMessage::APP_NOT_PUBLISHED)
-        #   when App::AabState::NO_APP_WITH_GIVEN_BUNDLE_ID_IN_PLAY_ACCOUNT
-        #     UI.user_error!(ErrorMessage::NO_APP_WITH_GIVEN_BUNDLE_ID_IN_PLAY_ACCOUNT)
-        #   when App::AabState::PLAY_IAS_TERMS_NOT_ACCEPTED
-        #     UI.user_error!(ErrorMessage::PLAY_IAS_TERMS_NOT_ACCEPTED)
-        #   else
-        #     UI.user_error!(ErrorMessage.aab_upload_error(app.aab_state))
-        #   end
-        # end
+        if binary_type == :AAB && app.aab_state != App::AabState::ACTIVE && app.aab_state != App::AabState::UNAVAILABLE
+          case app.aab_state
+          when App::AabState::PLAY_ACCOUNT_NOT_LINKED
+            UI.user_error!(ErrorMessage::PLAY_ACCOUNT_NOT_LINKED)
+          when App::AabState::APP_NOT_PUBLISHED
+            UI.user_error!(ErrorMessage::APP_NOT_PUBLISHED)
+          when App::AabState::NO_APP_WITH_GIVEN_BUNDLE_ID_IN_PLAY_ACCOUNT
+            UI.user_error!(ErrorMessage::NO_APP_WITH_GIVEN_BUNDLE_ID_IN_PLAY_ACCOUNT)
+          when App::AabState::PLAY_IAS_TERMS_NOT_ACCEPTED
+            UI.user_error!(ErrorMessage::PLAY_IAS_TERMS_NOT_ACCEPTED)
+          else
+            UI.user_error!(ErrorMessage.aab_upload_error(app.aab_state))
+          end
+        end
       end
 
       def self.available_options
