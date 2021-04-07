@@ -170,6 +170,45 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
     end
   end
 
+  describe '#release_notes' do
+    before do
+      allow(Fastlane::Actions.lane_context).to receive('[]')
+        .with(Fastlane::Actions::SharedValues::FL_CHANGELOG)
+        .and_return('changelog-content')
+    end
+
+    describe 'when no release notes are set' do
+      let(:params) { {} }
+      it 'defaults to changelog' do
+        expect(action.release_notes(params)).to eq('changelog-content')
+      end
+    end
+
+    describe 'when only release_notes_file is set' do
+      let(:params) { { release_notes_file: 'release-notes-file-path' } }
+      let(:fake_file) { double('File') }
+
+      it 'uses release_notes_file' do
+        expect(fake_file).to receive(:read).and_return('release-notes-file-content')
+        expect(File).to receive(:open).with('release-notes-file-path').and_return(fake_file)
+        expect(action.release_notes(params)).to eq('release-notes-file-content')
+      end
+    end
+
+    describe 'when release_notes and release_notes_file are set' do
+      let(:params) do
+        {
+          release_notes: 'release-notes-content',
+          release_notes_file: 'release-notes-file-path'
+        }
+      end
+
+      it 'uses release_notes' do
+        expect(action.release_notes(params)).to eq('release-notes-content')
+      end
+    end
+  end
+
   describe '#run' do
     let(:params) do
       {
