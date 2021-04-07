@@ -1,5 +1,6 @@
 *.gem
 Gemfile.lock
+.ruby-version
 
 ## Documentation cache and generated files:
 /.yardoc/
