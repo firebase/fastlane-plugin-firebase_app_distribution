@@ -48,6 +48,10 @@ describe Fastlane::Helper::FirebaseAppDistributionHelper do
       expect { helper.get_value_from_value_or_file(nil, "invalid_path") }
         .to raise_error("#{ErrorMessage::INVALID_PATH}: invalid_path")
     end
+
+    it 'returns nil when the value and path are both nil' do
+      expect(helper.get_value_from_value_or_file(nil, nil)).to eq(nil)
+    end
   end
 
   describe '#string_to_array' do

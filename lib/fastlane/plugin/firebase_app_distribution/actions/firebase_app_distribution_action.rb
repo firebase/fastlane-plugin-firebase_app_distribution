@@ -53,8 +53,7 @@ module Fastlane
           end
         end
 
-        release_notes = get_value_from_value_or_file(params[:release_notes], params[:release_notes_file])
-        fad_api_client.post_notes(app_id, release_id, release_notes)
+        fad_api_client.post_notes(app_id, release_id, release_notes(params))
 
         testers = get_value_from_value_or_file(params[:testers], params[:testers_file])
         groups = get_value_from_value_or_file(params[:groups], params[:groups_file])
@@ -153,6 +152,12 @@ module Fastlane
         end
       end
 
+      def self.release_notes(params)
+        release_notes_param =
+          get_value_from_value_or_file(params[:release_notes], params[:release_notes_file])
+        release_notes_param || Actions.lane_context[SharedValues::FL_CHANGELOG]
+      end
+
       def self.available_options
         [
           # iOS Specific
@@ -217,8 +222,6 @@ module Fastlane
           FastlaneCore::ConfigItem.new(key: :release_notes,
                                        env_name: "FIREBASEAPPDISTRO_RELEASE_NOTES",
                                        description: "Release notes for this build",
-                                       default_value: Actions.lane_context[SharedValues::FL_CHANGELOG],
-                                       default_value_dynamic: true,
                                        optional: true,
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :release_notes_file,
