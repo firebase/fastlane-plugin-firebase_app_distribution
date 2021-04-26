@@ -203,7 +203,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       expect(release_id).to eq("release_id")
     end
 
-    it 'returns nil after polling MAX_POLLING_RETRIES times' do
+    it 'raises an error after polling MAX_POLLING_RETRIES times' do
       max_polling_retries = 2
       stub_const("Fastlane::Client::FirebaseAppDistributionApiClient::MAX_POLLING_RETRIES", max_polling_retries)
 
@@ -217,8 +217,9 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         .and_return(upload_status_response_in_progress)
         .exactly(max_polling_retries).times
 
-      release_id = api_client.upload("project_number", "app_id", fake_binary_path, "android")
-      expect(release_id).to be_nil
+      expect do
+        api_client.upload("project_number", "app_id", fake_binary_path, "android")
+      end.to raise_error
     end
 
     it 'uploads the app binary once then polls until success' do

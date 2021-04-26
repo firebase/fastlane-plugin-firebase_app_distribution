@@ -159,8 +159,7 @@ module Fastlane
             end
           end
           unless upload_status_response.success?
-            UI.error("It took longer than expected to process your #{binary_type}, please try again.")
-            return nil
+            UI.crash!("It took longer than expected to process your #{binary_type}, please try again.")
           end
         end
         upload_status_response.release_id
