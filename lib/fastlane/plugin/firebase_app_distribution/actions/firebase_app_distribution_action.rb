@@ -8,7 +8,6 @@ require_relative '../helper/firebase_app_distribution_error_message'
 require_relative '../client/firebase_app_distribution_api_client'
 require_relative '../helper/firebase_app_distribution_auth_client'
 
-## TODO: should always use a file underneath? I think so.
 ## How should we document the usage of release notes?
 module Fastlane
   module Actions
