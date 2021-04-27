@@ -34,11 +34,7 @@ module Fastlane
         app_view = binary_type == :AAB ? 'FULL' : 'BASIC'
         app = fad_api_client.get_app(app_id, app_view)
         validate_app!(app, binary_type)
-
         release_id = fad_api_client.upload(app.project_number, app_id, binary_path, platform.to_s)
-        if release_id.nil?
-          return
-        end
 
         if binary_type == :AAB && app.aab_certificate.empty?
           updated_app = fad_api_client.get_app(app_id)

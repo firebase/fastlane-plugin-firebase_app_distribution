@@ -127,10 +127,10 @@ module Fastlane
       #   app_id - Firebase app ID
       #   binary_path - Absolute path to your app's aab/apk/ipa file
       #
-      # Returns the release_id on a successful release, otherwise returns nil.
+      # Returns the release_id of the uploaded release.
       #
-      # Throws a UI error if the number of polling retries exceeds MAX_POLLING_RETRIES
-      # Crashes if not able to upload the binary
+      # Crashes if the number of polling retries exceeds MAX_POLLING_RETRIES or if the binary cannot
+      # be uploaded.
       def upload(project_number, app_id, binary_path, platform)
         binary_type = binary_type_from_path(binary_path)
 
