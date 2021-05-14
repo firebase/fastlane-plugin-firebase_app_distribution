@@ -1,6 +1,5 @@
 require 'googleauth'
 require 'googleauth/stores/file_token_store'
-require "google/apis/people_v1"
 require "fileutils"
 
 module Fastlane
