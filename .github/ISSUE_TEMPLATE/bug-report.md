@@ -9,6 +9,11 @@ assignees: ''
 
 <!-- Thanks for using the Firebase App Distribution Fastlane plugin! Find a bug? Please fill in the template below and we'll look into it. -->
 
+### *** Steps to file a bug ***
+1. Try updating to the latest version of [this plugin](https://github.com/fastlane/fastlane-plugin-firebase_app_distribution/releases), and [fastlane](https://github.com/fastlane/fastlane/releases)
+2. If the issue persists, fill out the sections below
+3. Delete this section and submit
+
 ### Issue Description
 <!-- Please include what's happening, expected behavior, and any relevant code samples -->
 
