@@ -62,15 +62,15 @@ module Fastlane
                                       description: "Path to Google service credentials file",
                                       optional: true,
                                       type: String),
-        FastlaneCore::ConfigItem.new(key: :firebase_cli_token,
-                                     description: "Auth token for firebase cli",
-                                     optional: true,
-                                     type: String),
-        FastlaneCore::ConfigItem.new(key: :debug,
-                                     description: "Print verbose debug output",
-                                     optional: true,
-                                     default_value: false,
-                                     is_string: false)
+          FastlaneCore::ConfigItem.new(key: :firebase_cli_token,
+                                       description: "Auth token for firebase cli",
+                                       optional: true,
+                                       type: String),
+          FastlaneCore::ConfigItem.new(key: :debug,
+                                       description: "Print verbose debug output",
+                                       optional: true,
+                                       default_value: false,
+                                       is_string: false)
 
         ]
       end
