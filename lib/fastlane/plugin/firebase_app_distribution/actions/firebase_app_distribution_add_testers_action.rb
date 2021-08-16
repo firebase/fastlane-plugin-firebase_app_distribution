@@ -26,6 +26,9 @@ module Fastlane
 
         fad_api_client.add_testers(params[:project], emails)
 
+        # The add_testers response lists all the testers from the request
+        # regardless of whether or not they were created or if they already
+        # exists so can't get an accurate count of the number of newly created testers
         UI.success("✅ Tester(s) successfully added.")
       end
 
