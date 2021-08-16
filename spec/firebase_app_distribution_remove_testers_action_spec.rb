@@ -25,11 +25,6 @@ describe Fastlane::Actions::FirebaseAppDistributionRemoveTestersAction do
       emails = '1@e.mail,2@e.mail'
       path = 'path/to/file'
       count = 1
-      fake_file = double('file')
-      allow(File).to receive(:open)
-        .with(path)
-        .and_return(fake_file)
-      allow(fake_file).to receive(:read).and_return('')
       expect_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient).to receive(:remove_testers).with(project, emails.split(',')).and_return(count)
       allow(FastlaneCore::UI).to receive(:success)
       expect(FastlaneCore::UI).to receive(:success).with("✅ #{count} tester(s) removed successfully.")

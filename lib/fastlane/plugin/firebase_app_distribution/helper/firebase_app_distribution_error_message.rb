@@ -21,7 +21,7 @@ module ErrorMessage
   APP_NOT_PUBLISHED = "This app is not published in the Google Play console."
   NO_APP_WITH_GIVEN_BUNDLE_ID_IN_PLAY_ACCOUNT = "App with matching package name does not exist in Google Play."
   PLAY_IAS_TERMS_NOT_ACCEPTED = "You must accept the Play Internal App Sharing (IAS) terms to upload AABs."
-  INVALID_EMAIL_ADDRESS = "You passed in invalid email address."
+  INVALID_EMAIL_ADDRESS = "You passed an invalid email address."
   TESTER_LIMIT_VIOLATION = "Creating testers would exceed tester limit"
 
   def self.aab_upload_error(aab_state)

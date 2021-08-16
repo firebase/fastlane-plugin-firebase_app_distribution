@@ -504,7 +504,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
   describe '#remove_testers' do
     let(:headers) { { 'Authorization' => 'Bearer auth_token', 'Content-Type' => 'application/json' } }
 
-    it 'is successful' do
+    it 'returns the number of deleted testers' do
       emails = %w[1@foo.com 2@foo.com]
       stubs.post("/v1/projects/project_number/testers:batchRemove", { emails: emails }.to_json, headers) do |env|
         [

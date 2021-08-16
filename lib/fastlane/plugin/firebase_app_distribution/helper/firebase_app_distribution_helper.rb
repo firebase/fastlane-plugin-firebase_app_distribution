@@ -46,7 +46,8 @@ module Fastlane
       end
 
       def blank?(value)
-        value.respond_to?(:empty) ? !!value.empty? : !value
+        # Taken from https://apidock.com/rails/Object/blank%3F
+        value.respond_to?(:empty?) ? value.empty? : !value
       end
 
       def present?(value)

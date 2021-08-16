@@ -23,11 +23,6 @@ describe Fastlane::Actions::FirebaseAppDistributionAddTestersAction do
       project = 1
       emails = '1@e.mail,2@e.mail'
       path = 'path/to/file'
-      fake_file = double('file')
-      allow(File).to receive(:open)
-        .with(path)
-        .and_return(fake_file)
-      allow(fake_file).to receive(:read).and_return('')
       expect_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient).to receive(:add_testers).with(project, emails.split(','))
 
       action.run({ project: project, emails: emails, file: path })

@@ -30,7 +30,7 @@ module Fastlane
       end
 
       def self.description
-        "Create testers"
+        "Create testers in bulk from a comma-separated list or a file"
       end
 
       def self.authors
