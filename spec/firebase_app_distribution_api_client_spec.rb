@@ -47,7 +47,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       stubs.get("/v1alpha/apps/app_id?appView=BASIC", headers) do |env|
         [
           200,
-          {},
+          {}, # response headers
           response
         ]
       end
@@ -73,7 +73,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       stubs.get("/v1alpha/apps/app_id?appView=BASIC", headers) do |env|
         [
           200,
-          {},
+          {}, # response headers
           response
         ]
       end
@@ -98,7 +98,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       stubs.get("/v1alpha/apps/app_id?appView=FULL", headers) do |env|
         [
           200,
-          {},
+          {}, # response headers
           response
         ]
       end
@@ -124,7 +124,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       stubs.post("/app-binary-uploads?app_id=app_id", fake_binary_contents, upload_headers) do |env|
         [
           202,
-          {},
+          {}, # response headers
           {
             token: "projects/project_id/apps/app_id/releases/-/binaries/binary_hash"
           }
@@ -289,8 +289,8 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       stubs.post("/v1alpha/apps/app_id/releases/release_id/notes", release_notes, headers) do |env|
         [
           200,
-          {},
-          {}
+          {}, # response headers
+          {}  # response body
         ]
       end
       api_client.post_notes("app_id", "release_id", "release_notes")
@@ -310,7 +310,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       stubs.post("/v1alpha/apps/app_id/releases/release_id/notes", release_notes, headers) do |env|
         [
           400,
-          {},
+          {}, # response headers
           { error: { message: "client error response message" } }.to_json
         ]
       end
@@ -337,7 +337,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       stubs.get("/v1alpha/apps/app_id/upload_status/app_token", headers) do |env|
         [
           200,
-          {},
+          {}, # response headers
           { status: "SUCCESS" }
         ]
       end
@@ -358,7 +358,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       stubs.get("/v1alpha/apps/app_id/testers:getTesterUdids", headers) do |env|
         [
           200,
-          {},
+          {}, # response headers
           { testerUdids: udids }
         ]
       end
@@ -370,8 +370,8 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       stubs.get("/v1alpha/apps/app_id/testers:getTesterUdids", headers) do |env|
         [
           200,
-          {},
-          {}
+          {}, # response headers
+          {}  # response body
         ]
       end
       result = api_client.get_udids("app_id")
@@ -385,8 +385,8 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       stubs.post("/v1alpha/apps/app_id/releases/release_id/enable_access", payload.to_json, headers) do |env|
         [
           202,
-          {},
-          {}
+          {}, # response headers
+          {}  # response body
         ]
       end
       api_client.enable_access("app_id", "release_id", ["testers"], ["groups"])
@@ -397,8 +397,8 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       stubs.post("/v1alpha/apps/app_id/releases/release_id/enable_access", payload.to_json, headers) do |env|
         [
           202,
-          {},
-          {}
+          {}, # response headers
+          {}  # response body
         ]
       end
       api_client.enable_access("app_id", "release_id", nil, ["groups"])
@@ -409,8 +409,8 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       stubs.post("/v1alpha/apps/app_id/releases/release_id/enable_access", payload.to_json, headers) do |env|
         [
           202,
-          {},
-          {}
+          {}, # response headers
+          {}  # response body
         ]
       end
       api_client.enable_access("app_id", "release_id", ["testers"], nil)
@@ -433,8 +433,8 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       stubs.post("/v1alpha/apps/app_id/releases/release_id/enable_access", payload.to_json) do |env|
         [
           400,
-          {},
-          {}
+          {}, # response headers
+          {}  # response body
         ]
       end
       expect { api_client.enable_access("app_id", "release_id", emails, group_ids) }
@@ -450,8 +450,8 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       stubs.post("/v1/projects/project_number/testers:batchAdd", { emails: emails }.to_json, headers) do |env|
         [
           200,
-          {},
-          {}
+          {}, # response headers
+          {}  # response body
         ]
       end
 
@@ -465,8 +465,8 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       stubs.post("/v1/projects/project_number/testers:batchAdd", { emails: emails }.to_json, headers) do |env|
         [
           400,
-          {},
-          {}
+          {}, # response headers
+          {}  # response body
         ]
       end
 
@@ -479,8 +479,8 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       stubs.post("/v1/projects/bad_project_number/testers:batchAdd", { emails: emails }.to_json, headers) do |env|
         [
           404,
-          {},
-          {}
+          {}, # response headers
+          {}  # response body
         ]
       end
       expect { api_client.add_testers("bad_project_number", emails) }
@@ -492,8 +492,8 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       stubs.post("/v1/projects/project_number/testers:batchAdd", { emails: emails }.to_json, headers) do |env|
         [
           429,
-          {},
-          {}
+          {}, # response headers
+          {}  # response body
         ]
       end
       expect { api_client.add_testers("project_number", emails) }
@@ -509,7 +509,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       stubs.post("/v1/projects/project_number/testers:batchRemove", { emails: emails }.to_json, headers) do |env|
         [
           200,
-          {},
+          {}, # response headers
           { emails: [{ name: '1@foo.com' }] }
         ]
       end
@@ -524,8 +524,8 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       stubs.post("/v1/projects/bad_project_number/testers:batchRemove", { emails: emails }.to_json, headers) do |env|
         [
           404,
-          {},
-          {}
+          {}, # response headers
+          {}  # response body
         ]
       end
       expect { api_client.remove_testers("bad_project_number", emails) }
