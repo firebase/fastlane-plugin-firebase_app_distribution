@@ -441,4 +441,91 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         .to raise_error("#{ErrorMessage::INVALID_TESTERS} \nEmails: #{emails} \nGroups: #{group_ids}")
     end
   end
+
+  describe '#add_testers' do
+    it 'is successful' do
+      emails = %w[1@foo.com 2@foo.com]
+      stubs.post("/v1/projects/project_number/testers:batchAdd", { emails: emails }, headers) do |env|
+        [
+          200,
+          {},
+          {}
+        ]
+      end
+
+      result = api_client.add_testers("project_number", emails)
+
+      expect(result.success?).to eq(true)
+    end
+
+    it 'fails and prints correct error message for a 400' do
+      emails = %w[foo 2@foo.com]
+      stubs.post("/v1/projects/project_number/testers:batchAdd", { emails: emails }, headers) do |env|
+        [
+          400,
+          {},
+          {}
+        ]
+      end
+
+      expect { api_client.add_testers("project_number", emails) }
+        .to raise_error(ErrorMessage::INVALID_EMAIL_ADDRESS)
+    end
+
+    it 'fails and prints correct error message for a 404' do
+      emails = %w[1@foo.com 2@foo.com]
+      stubs.post("/v1/projects/bad_project_number/testers:batchAdd", { emails: emails }, headers) do |env|
+        [
+          404,
+          {},
+          {}
+        ]
+      end
+      expect { api_client.add_testers("bad_project_number", emails) }
+        .to raise_error(ErrorMessage::INVALID_PROJECT)
+    end
+
+    it 'fails and prints correct error message for a 429' do
+      emails = %w[1@foo.com 2@foo.com]
+      stubs.post("/v1/projects/project_number/testers:batchAdd", { emails: emails }, headers) do |env|
+        [
+          429,
+          {},
+          {}
+        ]
+      end
+      expect { api_client.add_testers("project_number", emails) }
+        .to raise_error(ErrorMessage::TESTER_LIMIT_VIOLATION)
+    end
+  end
+
+  describe '#remove_testers' do
+    it 'is successful' do
+      emails = %w[1@foo.com 2@foo.com]
+      stubs.post("/v1/projects/project_number/testers:batchRemove", { emails: emails }, headers) do |env|
+        [
+          200,
+          {},
+          { testers: [{ name: '1@foo.com' }] }
+        ]
+      end
+
+      result = api_client.remove_testers("project_number", emails)
+
+      expect(result).to eq(1)
+    end
+
+    it 'fails and prints correct error message for a 404' do
+      emails = %w[1@foo.com 2@foo.com]
+      stubs.post("/v1/projects/bad_project_number/testers:batchRemove", { emails: emails }, headers) do |env|
+        [
+          404,
+          {},
+          {}
+        ]
+      end
+      expect { api_client.remove_testers("bad_project_number", emails) }
+        .to raise_error(ErrorMessage::INVALID_PROJECT)
+    end
+  end
 end

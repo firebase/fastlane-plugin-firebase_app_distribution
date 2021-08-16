@@ -196,6 +196,51 @@ module Fastlane
         response.body[:testerUdids] || []
       end
 
+      # Create testers
+      #
+      # args
+      #   project_number - Firebase project number
+      #   emails - An array of emails to be created as testers. A maximum of
+      #            1000 testers can be created at a time.
+      #
+      def add_testers(project_number, emails)
+        payload = { emails: emails }
+        connection.post(add_testers_url(project_number), payload.to_json) do |request|
+          request.headers[AUTHORIZATION] = "Bearer " + @auth_token
+          request.headers[CONTENT_TYPE] = APPLICATION_JSON
+        end
+      rescue Faraday::BadRequestError
+        UI.user_error!(ErrorMessage::INVALID_EMAIL_ADDRESS)
+      rescue Faraday::ResourceNotFound
+        UI.user_error!(ErrorMessage::INVALID_PROJECT)
+      rescue Faraday::ClientError => e
+        if e.response_status == 429
+          UI.user_error!(ErrorMessage::TESTER_LIMIT_VIOLATION)
+        else
+          raise e
+        end
+      end
+
+      # Delete testers
+      #
+      # args
+      #   project_number - Firebase project number
+      #   emails - An array of emails to be deleted as testers. A maximum of
+      #            1000 testers can be deleted at a time.
+      #
+      # Returns the number of testers that were deleted
+      def remove_testers(project_number, emails)
+        payload = { emails: emails }
+        response = connection.post(remove_testers_url(project_number), payload.to_json) do |request|
+          request.headers[AUTHORIZATION] = "Bearer " + @auth_token
+          request.headers[CONTENT_TYPE] = APPLICATION_JSON
+        end
+        UI.message("Response body: #{response.body}")
+        response.body[:emails].count
+      rescue Faraday::ResourceNotFound
+        UI.user_error!(ErrorMessage::INVALID_PROJECT)
+      end
+
       private
 
       def v1_apps_url(app_id)
@@ -225,6 +270,14 @@ module Fastlane
       def get_upload_token(project_number, app_id, binary_path)
         binary_hash = Digest::SHA256.hexdigest(read_binary(binary_path))
         CGI.escape("projects/#{project_number}/apps/#{app_id}/releases/-/binaries/#{binary_hash}")
+      end
+
+      def add_testers_url(project_number)
+        "/v1/projects/#{project_number}/testers:batchAdd"
+      end
+
+      def remove_testers_url(project_number)
+        "/v1/projects/#{project_number}/testers:batchRemove"
       end
 
       def connection

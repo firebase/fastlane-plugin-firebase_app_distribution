@@ -11,6 +11,7 @@ module ErrorMessage
   APP_NOT_ONBOARDED_ERROR = "App Distribution not onboarded"
   GET_APP_NO_CONTACT_EMAIL_ERROR = "App Distribution could not find a contact email associated with this app. Contact Email"
   INVALID_APP_ID = "App Distribution could not find your app. Make sure to onboard your app by pressing the \"Get started\" button on the App Distribution page in the Firebase console: https://console.firebase.google.com/project/_/appdistribution. App ID"
+  INVALID_PROJECT = "App Distribution could not find your Firebase project. Make sure to onboard an app in your project by pressing the \"Get started\" button on the App Distribution page in the Firebase console: https://console.firebase.google.com/project/_/appdistribution."
   INVALID_PATH = "Could not read content from"
   INVALID_TESTERS = "Could not enable access for testers. Check that the groups exist and the tester emails are formatted correctly"
   INVALID_RELEASE_ID = "App distribution failed to fetch release with id"
@@ -20,6 +21,8 @@ module ErrorMessage
   APP_NOT_PUBLISHED = "This app is not published in the Google Play console."
   NO_APP_WITH_GIVEN_BUNDLE_ID_IN_PLAY_ACCOUNT = "App with matching package name does not exist in Google Play."
   PLAY_IAS_TERMS_NOT_ACCEPTED = "You must accept the Play Internal App Sharing (IAS) terms to upload AABs."
+  INVALID_EMAIL_ADDRESS = "You passed in invalid email address."
+  TESTER_LIMIT_VIOLATION = "Creating testers would exceed tester limit"
 
   def self.aab_upload_error(aab_state)
     "Failed to process the AAB: #{aab_state}"

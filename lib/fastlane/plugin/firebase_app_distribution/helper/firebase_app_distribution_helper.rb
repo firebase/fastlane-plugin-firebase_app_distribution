@@ -44,6 +44,14 @@ module Fastlane
         UI.shell_error!("can't extract GOOGLE_APP_ID") if identifier.empty?
         return identifier
       end
+
+      def blank?(value)
+        value.respond_to?(:empty) ? !!value.empty? : !value
+      end
+
+      def present?(value)
+        !blank?(value)
+      end
     end
   end
 end
