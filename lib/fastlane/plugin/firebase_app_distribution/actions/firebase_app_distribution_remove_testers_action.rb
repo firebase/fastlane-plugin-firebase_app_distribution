@@ -39,7 +39,7 @@ module Fastlane
 
       # supports markdown.
       def self.details
-        "delete testers"
+        "Delete testers in bulk from a comma-separated list or a file"
       end
 
       def self.available_options

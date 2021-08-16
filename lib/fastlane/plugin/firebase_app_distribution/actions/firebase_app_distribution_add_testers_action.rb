@@ -42,7 +42,7 @@ module Fastlane
 
       # supports markdown.
       def self.details
-        "Create testers"
+        "Create testers in bulk from a comma-separated list or a file"
       end
 
       def self.available_options
