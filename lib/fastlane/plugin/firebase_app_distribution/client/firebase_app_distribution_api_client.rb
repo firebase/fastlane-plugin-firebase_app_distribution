@@ -1,7 +1,7 @@
 require 'fastlane_core/ui/ui'
 require_relative '../actions/firebase_app_distribution_login'
 require_relative '../client/error_response'
-require_relative '../client/app'
+require_relative '../client/aab_info'
 require_relative '../helper/firebase_app_distribution_helper'
 
 module Fastlane
@@ -25,49 +25,55 @@ module Fastlane
       end
 
       # Enables tester access to the specified app release. Skips this
-      # step if no testers are passed in (emails and group_ids are nil/empty).
+      # step if no testers are passed in (emails and group_aliases are nil/empty).
       #
       # args
-      #   app_id - Firebase App ID
-      #   release_id - App release ID, returned by upload_status endpoint
+      #   release_name - App release resource name, returned by upload_status endpoint
       #   emails - String array of app testers' email addresses
-      #   group_ids - String array of Firebase tester group IDs
+      #   group_aliases - String array of Firebase tester group aliases
       #
-      # Throws a user_error if emails or group_ids are invalid
-      def enable_access(app_id, release_id, emails, group_ids)
-        if (emails.nil? || emails.empty?) && (group_ids.nil? || group_ids.empty?)
+      # Throws a user_error if emails or group_aliases are invalid
+      def distribute(release_name, emails, group_aliases)
+        if (emails.nil? || emails.empty?) && (group_aliases.nil? || group_aliases.empty?)
           UI.success("✅ No testers passed in. Skipping this step.")
           return
         end
-        payload = { emails: emails, groupIds: group_ids }
+        payload = { testerEmails: emails, groupAliases: group_aliases }
         begin
-          connection.post(enable_access_url(app_id, release_id), payload.to_json) do |request|
+          connection.post(distribute_url(release_name), payload.to_json) do |request|
             request.headers[AUTHORIZATION] = "Bearer " + @auth_token
             request.headers[CONTENT_TYPE] = APPLICATION_JSON
           end
         rescue Faraday::ClientError
-          UI.user_error!("#{ErrorMessage::INVALID_TESTERS} \nEmails: #{emails} \nGroups: #{group_ids}")
+          UI.user_error!("#{ErrorMessage::INVALID_TESTERS} \nEmails: #{emails} \nGroups: #{group_aliases}")
         end
         UI.success("✅ Added testers/groups.")
       end
 
-      # Posts notes for the specified app release. Skips this
+      # Update release notes for the specified app release. Skips this
       # step if no notes are passed in (release_notes is nil/empty).
       #
       # args
-      #   app_id - Firebase App ID
-      #   release_id - App release ID, returned by upload_status endpoint
+      #   release_name - App release resource name, returned by upload_status endpoint
       #   release_notes - String of notes for this release
       #
       # Throws a user_error if the release_notes are invalid
-      def post_notes(app_id, release_id, release_notes)
-        payload = { releaseNotes: { releaseNotes: release_notes } }
+      def update_release_notes(release_name, release_notes)
         if release_notes.nil? || release_notes.empty?
           UI.success("✅ No release notes passed in. Skipping this step.")
           return
         end
         begin
-          connection.post(release_notes_create_url(app_id, release_id), payload.to_json) do |request|
+          payload = {
+            release: {
+              name: release_name,
+              releaseNotes: {
+                text: release_notes
+              }
+            },
+            updateMask: "release_notes.text"
+          }
+          connection.patch(update_release_notes_url(release_name), payload.to_json) do |request|
             request.headers[AUTHORIZATION] = "Bearer " + @auth_token
             request.headers[CONTENT_TYPE] = APPLICATION_JSON
           end
@@ -78,42 +84,42 @@ module Fastlane
         UI.success("✅ Posted release notes.")
       end
 
-      # Get app
+      # Get AAB info (Android apps only)
       #
       # args
-      #   app_id - Firebase App ID
+      #   app_name - Firebase App resource name
       #
       # Throws a user_error if the app hasn't been onboarded to App Distribution
-      def get_app(app_id, app_view = 'BASIC')
+      def get_aab_info(app_name)
         begin
-          response = connection.get("#{v1_apps_url(app_id)}?appView=#{app_view}") do |request|
+          response = connection.get(aab_info_url(app_name)) do |request|
             request.headers[AUTHORIZATION] = "Bearer " + @auth_token
           end
         rescue Faraday::ResourceNotFound
-          UI.user_error!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
+          UI.user_error!("#{ErrorMessage::INVALID_APP_ID}: #{app_name}")
         end
 
-        App.new(response.body)
+        AabInfo.new(response.body)
       end
 
       # Uploads the app binary to the Firebase API
       #
       # args
-      #   app_id - Firebase App ID
+      #   app_name - Firebase App resource name
       #   binary_path - Absolute path to your app's aab/apk/ipa file
       #   platform - 'android' or 'ios'
       #
       # Throws a user_error if the binary file does not exist
-      def upload_binary(app_id, binary_path, platform)
-        connection.post(binary_upload_url(app_id), read_binary(binary_path)) do |request|
+      def upload_binary(app_name, binary_path, platform)
+        response = connection.post(binary_upload_url(app_name), read_binary(binary_path)) do |request|
           request.headers[AUTHORIZATION] = "Bearer " + @auth_token
           request.headers[CONTENT_TYPE] = APPLICATION_OCTET_STREAM
-          request.headers["X-APP-DISTRO-API-CLIENT-ID"] = "fastlane"
-          request.headers["X-APP-DISTRO-API-CLIENT-TYPE"] =  platform
-          request.headers["X-APP-DISTRO-API-CLIENT-VERSION"] = Fastlane::FirebaseAppDistribution::VERSION
-          request.headers["X-GOOG-UPLOAD-FILE-NAME"] = File.basename(binary_path)
-          request.headers["X-GOOG-UPLOAD-PROTOCOL"] = "raw"
+          request.headers["X-Firebase-Client"] = "fastlane/#{Fastlane::FirebaseAppDistribution::VERSION}"
+          request.headers["X-Goog-Upload-File-Name"] = File.basename(binary_path)
+          request.headers["X-Goog-Upload-Protocol"] = "raw"
         end
+
+        response.body[:name] || ''
       rescue Errno::ENOENT # Raised when binary_path file does not exist
         binary_type = binary_type_from_path(binary_path)
         UI.user_error!("#{ErrorMessage.binary_not_found(binary_type)}: #{binary_path}")
@@ -123,57 +129,56 @@ module Fastlane
       # Takes at least POLLING_INTERVAL_SECONDS between polling get_upload_status
       #
       # args
-      #   project_number - Firebase project number
-      #   app_id - Firebase app ID
+      #   app_name - Firebase App resource name
       #   binary_path - Absolute path to your app's aab/apk/ipa file
       #
-      # Returns the release_id of the uploaded release.
+      # Returns the release_name of the uploaded release.
       #
       # Crashes if the number of polling retries exceeds MAX_POLLING_RETRIES or if the binary cannot
       # be uploaded.
-      def upload(project_number, app_id, binary_path, platform)
+      def upload(app_name, binary_path, platform)
         binary_type = binary_type_from_path(binary_path)
 
-        upload_token = get_upload_token(project_number, app_id, binary_path)
-        upload_status_response = get_upload_status(app_id, upload_token)
-        if upload_status_response.success? || upload_status_response.already_uploaded?
-          UI.success("✅ This #{binary_type} has been uploaded before. Skipping upload step.")
-        else
-          unless upload_status_response.in_progress?
-            UI.message("⌛ Uploading the #{binary_type}.")
-            upload_binary(app_id, binary_path, platform)
-          end
-          MAX_POLLING_RETRIES.times do
-            upload_status_response = get_upload_status(app_id, upload_token)
-            if upload_status_response.success? || upload_status_response.already_uploaded?
-              UI.success("✅ Uploaded the #{binary_type}.")
-              break
-            elsif upload_status_response.in_progress?
-              sleep(POLLING_INTERVAL_SECONDS)
+        UI.message("⌛ Uploading the #{binary_type}.")
+        operation_name = upload_binary(app_name, binary_path, platform)
+
+        upload_status_response = get_upload_status(operation_name)
+        MAX_POLLING_RETRIES.times do
+          if upload_status_response.success?
+            UI.success("✅ Uploaded #{binary_type} successfully and created release #{upload_status_response.release_version}.")
+            break
+          elsif upload_status_response.release_updated?
+            UI.success("✅ Uploaded #{binary_type} successfully; updated provisioning profile of existing release #{upload_status_response.release_version}.")
+            break
+          elsif upload_status_response.release_unmodified?
+            UI.success("✅ The same #{binary_type} was found in release #{upload_status_response.release_version} with no changes, skipping.")
+            break
+          elsif upload_status_response.in_progress?
+            sleep(POLLING_INTERVAL_SECONDS)
+            upload_status_response = get_upload_status(operation_name)
+          else
+            if !upload_status_response.error_message.nil?
+              UI.user_error!("#{ErrorMessage.upload_binary_error(binary_type)}: #{upload_status_response.error_message}")
             else
-              if !upload_status_response.message.nil?
-                UI.user_error!("#{ErrorMessage.upload_binary_error(binary_type)}: #{upload_status_response.message}")
-              else
-                UI.user_error!(ErrorMessage.upload_binary_error(binary_type))
-              end
+              UI.user_error!(ErrorMessage.upload_binary_error(binary_type))
             end
           end
-          unless upload_status_response.success?
-            UI.crash!("It took longer than expected to process your #{binary_type}, please try again.")
-          end
         end
-        upload_status_response.release_id
+        unless upload_status_response.success?
+          UI.crash!("It took longer than expected to process your #{binary_type}, please try again.")
+        end
+
+        upload_status_response.release_name
       end
 
       # Fetches the status of an uploaded binary
       #
       # args
-      #   app_id - Firebase App ID
-      #   upload_token - URL encoded upload token
+      #   operation_name - Upload operation name (with binary hash)
       #
-      # Returns the release ID on a successful release, otherwise returns nil.
-      def get_upload_status(app_id, upload_token)
-        response = connection.get(upload_status_url(app_id, upload_token)) do |request|
+      # Returns the `done` status, as well as a release, error, or nil
+      def get_upload_status(operation_name)
+        response = connection.get(upload_status_url(operation_name)) do |request|
           request.headers[AUTHORIZATION] = "Bearer " + @auth_token
         end
         return UploadStatusResponse.new(response.body)
@@ -182,7 +187,7 @@ module Fastlane
       # Get tester UDIDs
       #
       # args
-      #   app_id - Firebase App ID
+      #   app_name - Firebase App resource name
       #
       # Returns a list of hashes containing tester device info
       def get_udids(app_id)
@@ -243,33 +248,36 @@ module Fastlane
 
       private
 
-      def v1_apps_url(app_id)
+      def v1alpha_apps_url(app_id)
         "/v1alpha/apps/#{app_id}"
       end
 
-      def release_notes_create_url(app_id, release_id)
-        "#{v1_apps_url(app_id)}/releases/#{release_id}/notes"
+      def v1_apps_url(app_name)
+        "/v1/#{app_name}"
       end
 
-      def enable_access_url(app_id, release_id)
-        "#{v1_apps_url(app_id)}/releases/#{release_id}/enable_access"
+      def aab_info_url(app_name)
+        "#{v1_apps_url(app_name)}/aabInfo"
       end
 
-      def binary_upload_url(app_id)
-        "/app-binary-uploads?app_id=#{app_id}"
+      def update_release_notes_url(release_name)
+        "/v1/#{release_name}"
       end
 
-      def upload_status_url(app_id, app_token)
-        "#{v1_apps_url(app_id)}/upload_status/#{app_token}"
+      def distribute_url(release_name)
+        "/v1/#{release_name}:distribute"
+      end
+
+      def binary_upload_url(app_name)
+        "/upload#{v1_apps_url(app_name)}/releases:upload"
+      end
+
+      def upload_status_url(operation_name)
+        "/v1/#{operation_name}"
       end
 
       def get_udids_url(app_id)
-        "#{v1_apps_url(app_id)}/testers:getTesterUdids"
-      end
-
-      def get_upload_token(project_number, app_id, binary_path)
-        binary_hash = Digest::SHA256.hexdigest(read_binary(binary_path))
-        CGI.escape("projects/#{project_number}/apps/#{app_id}/releases/-/binaries/#{binary_hash}")
+        "#{v1alpha_apps_url(app_id)}/testers:getTesterUdids"
       end
 
       def add_testers_url(project_number)
