@@ -50,7 +50,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       stubs.get("/v1/#{app_name}/aabInfo", headers) do |env|
         [
           200,
-          {},
+          {}, # response headers
           response
         ]
       end
@@ -75,7 +75,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       stubs.get("/v1/#{app_name}/aabInfo", headers) do |env|
         [
           200,
-          {},
+          {}, # response headers
           response
         ]
       end
@@ -99,7 +99,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       stubs.post("/upload/v1/#{app_name}/releases:upload", fake_binary_contents, upload_headers) do |env|
         [
           202,
-          {},
+          {}, # response headers
           {
             name: "#{app_name}/releases/-/operations/binary_hash"
           }
@@ -309,8 +309,8 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       stubs.patch("/v1/#{release_name}", payload.to_json, headers) do |env|
         [
           200,
-          {},
-          {}
+          {}, # response headers
+          {}  # response body
         ]
       end
       api_client.update_release_notes(release_name, "release_notes")
@@ -330,7 +330,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       stubs.patch("/v1/#{release_name}", payload.to_json, headers) do |env|
         [
           400,
-          {},
+          {}, # response headers
           { error: { message: "client error response message" } }.to_json
         ]
       end
@@ -344,7 +344,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       stubs.get("/v1/#{app_name}/releases/-/operations/binary_hash", headers) do |env|
         [
           200,
-          {},
+          {}, # response headers
           { done: true, response: { release: { name: '#{release_name}' }, result: 'RELEASE_CREATED' } }
         ]
       end
@@ -365,7 +365,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       stubs.get("/v1alpha/apps/#{app_id}/testers:getTesterUdids", headers) do |env|
         [
           200,
-          {},
+          {}, # response headers
           { testerUdids: udids }
         ]
       end
@@ -377,8 +377,8 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       stubs.get("/v1alpha/apps/#{app_id}/testers:getTesterUdids", headers) do |env|
         [
           200,
-          {},
-          {}
+          {}, # response headers
+          {}  # response body
         ]
       end
       result = api_client.get_udids(app_id)
@@ -392,8 +392,8 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       stubs.post("/v1/#{release_name}:distribute", payload.to_json, headers) do |env|
         [
           202,
-          {},
-          {}
+          {}, # response headers
+          {}  # response body
         ]
       end
       api_client.distribute(release_name, ["testers"], ["groups"])
@@ -404,8 +404,8 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       stubs.post("/v1/#{release_name}:distribute", payload.to_json, headers) do |env|
         [
           202,
-          {},
-          {}
+          {}, # response headers
+          {}  # response body
         ]
       end
       api_client.distribute(release_name, nil, ["groups"])
@@ -416,8 +416,8 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       stubs.post("/v1/#{release_name}:distribute", payload.to_json, headers) do |env|
         [
           202,
-          {},
-          {}
+          {}, # response headers
+          {}  # response body
         ]
       end
       api_client.distribute(release_name, ["testers"], nil)
@@ -440,12 +440,103 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       stubs.post("/v1/#{release_name}:distribute", payload.to_json) do |env|
         [
           400,
-          {},
-          {}
+          {}, # response headers
+          {}  # response body
         ]
       end
       expect { api_client.distribute(release_name, emails, group_ids) }
         .to raise_error("#{ErrorMessage::INVALID_TESTERS} \nEmails: #{emails} \nGroups: #{group_ids}")
+    end
+  end
+
+  describe '#add_testers' do
+    let(:headers) { { 'Authorization' => 'Bearer auth_token', 'Content-Type' => 'application/json' } }
+
+    it 'is successful' do
+      emails = %w[1@foo.com 2@foo.com]
+      stubs.post("/v1/projects/project_number/testers:batchAdd", { emails: emails }.to_json, headers) do |env|
+        [
+          200,
+          {}, # response headers
+          {}  # response body
+        ]
+      end
+
+      result = api_client.add_testers("project_number", emails)
+
+      expect(result.success?).to eq(true)
+    end
+
+    it 'fails and prints correct error message for a 400' do
+      emails = %w[foo 2@foo.com]
+      stubs.post("/v1/projects/project_number/testers:batchAdd", { emails: emails }.to_json, headers) do |env|
+        [
+          400,
+          {}, # response headers
+          {}  # response body
+        ]
+      end
+
+      expect { api_client.add_testers("project_number", emails) }
+        .to raise_error(ErrorMessage::INVALID_EMAIL_ADDRESS)
+    end
+
+    it 'fails and prints correct error message for a 404' do
+      emails = %w[1@foo.com 2@foo.com]
+      stubs.post("/v1/projects/bad_project_number/testers:batchAdd", { emails: emails }.to_json, headers) do |env|
+        [
+          404,
+          {}, # response headers
+          {}  # response body
+        ]
+      end
+      expect { api_client.add_testers("bad_project_number", emails) }
+        .to raise_error(ErrorMessage::INVALID_PROJECT)
+    end
+
+    it 'fails and prints correct error message for a 429' do
+      emails = %w[1@foo.com 2@foo.com]
+      stubs.post("/v1/projects/project_number/testers:batchAdd", { emails: emails }.to_json, headers) do |env|
+        [
+          429,
+          {}, # response headers
+          {}  # response body
+        ]
+      end
+      expect { api_client.add_testers("project_number", emails) }
+        .to raise_error(ErrorMessage::TESTER_LIMIT_VIOLATION)
+    end
+  end
+
+  describe '#remove_testers' do
+    let(:headers) { { 'Authorization' => 'Bearer auth_token', 'Content-Type' => 'application/json' } }
+
+    it 'returns the number of deleted testers' do
+      emails = %w[1@foo.com 2@foo.com]
+      stubs.post("/v1/projects/project_number/testers:batchRemove", { emails: emails }.to_json, headers) do |env|
+        [
+          200,
+          {}, # response headers
+          { emails: [{ name: '1@foo.com' }] }
+        ]
+      end
+
+      result = api_client.remove_testers("project_number", emails)
+
+      expect(result).to eq(1)
+    end
+
+    it 'fails and prints correct error message for a 404' do
+      emails = %w[1@foo.com 2@foo.com]
+      stubs.post("/v1/projects/bad_project_number/testers:batchRemove", { emails: emails }.to_json, headers) do |env|
+        [
+          404,
+          {}, # response headers
+          {}  # response body
+        ]
+      end
+      expect { api_client.remove_testers("bad_project_number", emails) }
+        .to raise_error(ErrorMessage::INVALID_PROJECT)
     end
   end
 end
