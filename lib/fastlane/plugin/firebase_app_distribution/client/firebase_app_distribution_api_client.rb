@@ -142,13 +142,15 @@ module Fastlane
         upload_status_response = get_upload_status(operation_name)
         MAX_POLLING_RETRIES.times do
           if upload_status_response.success?
-            UI.success("✅ Uploaded #{binary_type} successfully and created release #{upload_status_response.release_version}.")
-            break
-          elsif upload_status_response.release_updated?
-            UI.success("✅ Uploaded #{binary_type} successfully; updated provisioning profile of existing release #{upload_status_response.release_version}.")
-            break
-          elsif upload_status_response.release_unmodified?
-            UI.success("✅ The same #{binary_type} was found in release #{upload_status_response.release_version} with no changes, skipping.")
+            if upload_status_response.release_updated?
+              UI.success("✅ Uploaded #{binary_type} successfully; updated provisioning profile of existing release #{upload_status_response.release_version}.")
+              break
+            elsif upload_status_response.release_unmodified?
+              UI.success("✅ The same #{binary_type} was found in release #{upload_status_response.release_version} with no changes, skipping.")
+              break
+            else
+              UI.success("✅ Uploaded #{binary_type} successfully and created release #{upload_status_response.release_version}.")
+            end
             break
           elsif upload_status_response.in_progress?
             sleep(POLLING_INTERVAL_SECONDS)
@@ -178,7 +180,7 @@ module Fastlane
         response = connection.get(upload_status_url(operation_name)) do |request|
           request.headers[AUTHORIZATION] = "Bearer " + @auth_token
         end
-        return UploadStatusResponse.new(response.body)
+        UploadStatusResponse.new(response.body)
       end
 
       # Get tester UDIDs
