@@ -237,7 +237,6 @@ module Fastlane
           request.headers[AUTHORIZATION] = "Bearer " + @auth_token
           request.headers[CONTENT_TYPE] = APPLICATION_JSON
         end
-        UI.message("Response body: #{response.body}")
         response.body[:emails].count
       rescue Faraday::ResourceNotFound
         UI.user_error!(ErrorMessage::INVALID_PROJECT)
