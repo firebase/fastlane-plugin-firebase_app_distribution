@@ -3,35 +3,63 @@ class UploadStatusResponse
     @response_json_hash = response_json_hash
   end
 
+  def done
+    !!@response_json_hash[:done]
+  end
+
+  def response
+    @response_json_hash[:response]
+  end
+
+  def release
+    response ? response[:release] : nil
+  end
+
+  def release_name
+    release ? release[:name] : nil
+  end
+
+  def release_version
+    if release
+      if release[:display_version] && release[:build_version]
+        "#{release[:display_version]} (#{release[:build_version]})"
+      elsif release[:display_version]
+        release[:display_version]
+      else
+        release[:build_version]
+      end
+    end
+  end
+
   def status
-    @response_json_hash[:status]
+    response ? response[:result] : nil
+  end
+
+  def error
+    @response_json_hash[:error]
+  end
+
+  def error_message
+    error ? error[:message] : nil
   end
 
   def success?
-    status == 'SUCCESS'
+    done && !!release
   end
 
   def in_progress?
-    status == 'IN_PROGRESS'
+    !done
   end
 
   def error?
-    status == 'ERROR'
+    done && message
   end
 
-  def already_uploaded?
-    status == 'ALREADY_UPLOADED'
+  def release_updated?
+    done && status == 'RELEASE_UPDATED'
   end
 
-  def release_hash
-    @response_json_hash[:release]
-  end
-
-  def release_id
-    release_hash ? release_hash[:id] : nil
-  end
-
-  def message
-    @response_json_hash[:message]
+  def release_unmodified?
+    done && status == 'RELEASE_UNMODIFIED'
   end
 end
