@@ -250,7 +250,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
           allow_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient)
             .to receive(:get_aab_info)
             .with(android_app_name)
-            .and_return(AabInfo.new({ integrationState: "ACTIVE" }.merge(params)))
+            .and_return(AabInfo.new({ integrationState: "INTEGRATED" }.merge(params)))
         end
 
         it 'raises error if play account is not linked' do

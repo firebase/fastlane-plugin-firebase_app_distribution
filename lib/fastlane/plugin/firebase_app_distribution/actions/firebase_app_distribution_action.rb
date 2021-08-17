@@ -134,7 +134,7 @@ module Fastlane
       end
 
       def self.validate_aab_setup!(aab_info)
-        if aab_info && aab_info.integration_state != AabInfo::AabState::ACTIVE && aab_info.integration_state != AabInfo::AabState::UNAVAILABLE
+        if aab_info && aab_info.integration_state != AabInfo::AabState::INTEGRATED && aab_info.integration_state != AabInfo::AabState::UNAVAILABLE
           case aab_info.integration_state
           when AabInfo::AabState::PLAY_ACCOUNT_NOT_LINKED
             UI.user_error!(ErrorMessage::PLAY_ACCOUNT_NOT_LINKED)
