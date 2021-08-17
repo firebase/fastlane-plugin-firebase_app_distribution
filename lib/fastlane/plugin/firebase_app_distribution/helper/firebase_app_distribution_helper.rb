@@ -44,6 +44,15 @@ module Fastlane
         UI.shell_error!("can't extract GOOGLE_APP_ID") if identifier.empty?
         return identifier
       end
+
+      def blank?(value)
+        # Taken from https://apidock.com/rails/Object/blank%3F
+        value.respond_to?(:empty?) ? value.empty? : !value
+      end
+
+      def present?(value)
+        !blank?(value)
+      end
     end
   end
 end
