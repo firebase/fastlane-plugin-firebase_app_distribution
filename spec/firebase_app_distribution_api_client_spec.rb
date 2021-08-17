@@ -540,4 +540,3 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
     end
   end
 end
-\
