@@ -2,9 +2,10 @@ require 'fastlane/action'
 
 describe Fastlane::Actions::FirebaseAppDistributionAction do
   let(:action) { Fastlane::Actions::FirebaseAppDistributionAction }
-  let(:project_number) { '1' }
   let(:ios_app_id) { '1:1234567890:ios:321abc456def7890' }
+  let(:ios_app_name) { 'projects/1234567890/apps/1:1234567890:ios:321abc456def7890' }
   let(:android_app_id) { '1:1234567890:android:321abc456def7890' }
+  let(:android_app_name) { 'projects/1234567890/apps/1:1234567890:android:321abc456def7890' }
 
   describe '#platform_from_app_id' do
     it 'returns :android for an Android app' do
@@ -234,28 +235,6 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
       end.to raise_error("Couldn't find binary at path debug.ipa")
     end
 
-    it 'raises error if contact email is nil' do
-      allow(File).to receive(:exist?).with('debug.ipa').and_return(true)
-      allow_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient).to receive(:get_app).with(ios_app_id, 'BASIC').and_return(App.new({
-        contactEmail: nil
-      }))
-
-      expect do
-        action.run(params)
-      end.to raise_error(ErrorMessage::GET_APP_NO_CONTACT_EMAIL_ERROR)
-    end
-
-    it 'raises error if contact email is blank' do
-      allow(File).to receive(:exist?).with('debug.ipa').and_return(true)
-      allow_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient).to receive(:get_app).with(ios_app_id, 'BASIC').and_return(App.new({
-        contactEmail: ''
-      }))
-
-      expect do
-        action.run(params)
-      end.to raise_error(ErrorMessage::GET_APP_NO_CONTACT_EMAIL_ERROR)
-    end
-
     describe 'with android app' do
       describe 'when uploading an AAB' do
         let(:params) do
@@ -267,19 +246,15 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
 
         before { allow(File).to receive(:exist?).with('debug.aab').and_return(true) }
 
-        def stub_get_app(params, app_view = 'FULL')
+        def stub_get_aab_info(params)
           allow_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient)
-            .to receive(:get_app)
-            .with(android_app_id, app_view)
-            .and_return(App.new({
-              projectNumber: project_number,
-              appId: android_app_id,
-              contactEmail: 'user@example.com'
-            }.merge(params)))
+            .to receive(:get_aab_info)
+            .with(android_app_name)
+            .and_return(AabInfo.new({ integrationState: "ACTIVE" }.merge(params)))
         end
 
         it 'raises error if play account is not linked' do
-          stub_get_app(aabState: App::AabState::PLAY_ACCOUNT_NOT_LINKED)
+          stub_get_aab_info(integrationState: AabInfo::AabState::PLAY_ACCOUNT_NOT_LINKED)
 
           expect do
             action.run(params)
@@ -287,7 +262,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
         end
 
         it 'raises error if app not published' do
-          stub_get_app(aabState: App::AabState::APP_NOT_PUBLISHED)
+          stub_get_aab_info(integrationState: AabInfo::AabState::APP_NOT_PUBLISHED)
 
           expect do
             action.run(params)
@@ -295,7 +270,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
         end
 
         it 'raises error if no matching app in play account' do
-          stub_get_app(aabState: App::AabState::NO_APP_WITH_GIVEN_BUNDLE_ID_IN_PLAY_ACCOUNT)
+          stub_get_aab_info(integrationState: AabInfo::AabState::NO_APP_WITH_GIVEN_BUNDLE_ID_IN_PLAY_ACCOUNT)
 
           expect do
             action.run(params)
@@ -303,7 +278,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
         end
 
         it 'raises error if terms have not been accepted' do
-          stub_get_app(aabState: App::AabState::PLAY_IAS_TERMS_NOT_ACCEPTED)
+          stub_get_aab_info(integrationState: AabInfo::AabState::PLAY_IAS_TERMS_NOT_ACCEPTED)
 
           expect do
             action.run(params)
@@ -311,7 +286,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
         end
 
         it 'raises error if aab state is unrecognized' do
-          stub_get_app(aabState: 'UNKNOWN')
+          stub_get_aab_info(integrationState: 'UNKNOWN')
 
           expect do
             action.run(params)

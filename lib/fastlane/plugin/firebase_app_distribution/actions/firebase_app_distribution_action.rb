@@ -19,6 +19,7 @@ module Fastlane
         params.values # to validate all inputs before looking for the ipa/apk/aab
 
         app_id = app_id_from_params(params)
+        app_name = app_name_from_app_id(app_id)
         platform = lane_platform || platform_from_app_id(app_id)
 
         binary_path = get_binary_path(platform, params)
@@ -29,32 +30,34 @@ module Fastlane
         auth_token = fetch_auth_token(params[:service_credentials_file], params[:firebase_cli_token])
         fad_api_client = Client::FirebaseAppDistributionApiClient.new(auth_token, params[:debug])
 
-        # If binary is an AAB get FULL view of app which includes the aab_state
-        app_view = binary_type == :AAB ? 'FULL' : 'BASIC'
-        app = fad_api_client.get_app(app_id, app_view)
-        validate_app!(app, binary_type)
-        release_id = fad_api_client.upload(app.project_number, app_id, binary_path, platform.to_s)
+        # If binary is an AAB, get the AAB info for this app, which includes the integration state and certificate data
+        if binary_type == :AAB
+          aab_info = fad_api_client.get_aab_info(app_name)
+          validate_aab_setup!(aab_info)
+        end
 
-        if binary_type == :AAB && app.aab_certificate.empty?
-          updated_app = fad_api_client.get_app(app_id)
-          unless updated_app.aab_certificate.empty?
+        release_name = fad_api_client.upload(app_name, binary_path, platform.to_s)
+
+        if binary_type == :AAB && aab_info && !aab_info.certs_provided?
+          updated_aab_info = fad_api_client.get_aab_info(app_name)
+          if updated_aab_info.certs_provided?
             UI.message("After you upload an AAB for the first time, App Distribution " \
               "generates a new test certificate. All AAB uploads are re-signed with this test " \
               "certificate. Use the certificate fingerprints below to register your app " \
               "signing key with API providers, such as Google Sign-In and Google Maps.\n" \
-              "MD-1 certificate fingerprint: #{updated_app.aab_certificate.md5_certificate_hash}\n" \
-              "SHA-1 certificate fingerprint: #{updated_app.aab_certificate.sha1_certificate_hash}\n" \
-              "SHA-256 certificate fingerprint: #{updated_app.aab_certificate.sha256_certificate_hash}")
+              "MD-1 certificate fingerprint: #{updated_aab_info.md5_certificate_hash}\n" \
+              "SHA-1 certificate fingerprint: #{updated_aab_info.sha1_certificate_hash}\n" \
+              "SHA-256 certificate fingerprint: #{updated_aab_info.sha256_certificate_hash}")
           end
         end
 
-        fad_api_client.post_notes(app_id, release_id, release_notes(params))
+        fad_api_client.update_release_notes(release_name, release_notes(params))
 
         testers = get_value_from_value_or_file(params[:testers], params[:testers_file])
         groups = get_value_from_value_or_file(params[:groups], params[:groups_file])
         emails = string_to_array(testers)
-        group_ids = string_to_array(groups)
-        fad_api_client.enable_access(app_id, release_id, emails, group_ids)
+        group_aliases = string_to_array(groups)
+        fad_api_client.distribute(release_name, emails, group_aliases)
         UI.success("🎉 App Distribution upload finished successfully.")
       end
 
@@ -82,6 +85,10 @@ module Fastlane
           UI.crash!(ErrorMessage::MISSING_APP_ID)
         end
         app_id
+      end
+
+      def self.app_name_from_app_id(app_id)
+        "projects/#{app_id.split(':')[1]}/apps/#{app_id}"
       end
 
       def self.xcode_archive_path
@@ -126,23 +133,19 @@ module Fastlane
         end
       end
 
-      def self.validate_app!(app, binary_type)
-        if app.contact_email.nil? || app.contact_email.strip.empty?
-          UI.user_error!(ErrorMessage::GET_APP_NO_CONTACT_EMAIL_ERROR)
-        end
-
-        if binary_type == :AAB && app.aab_state != App::AabState::ACTIVE && app.aab_state != App::AabState::UNAVAILABLE
-          case app.aab_state
-          when App::AabState::PLAY_ACCOUNT_NOT_LINKED
+      def self.validate_aab_setup!(aab_info)
+        if aab_info && aab_info.integration_state != AabInfo::AabState::ACTIVE && aab_info.integration_state != AabInfo::AabState::UNAVAILABLE
+          case aab_info.integration_state
+          when AabInfo::AabState::PLAY_ACCOUNT_NOT_LINKED
             UI.user_error!(ErrorMessage::PLAY_ACCOUNT_NOT_LINKED)
-          when App::AabState::APP_NOT_PUBLISHED
+          when AabInfo::AabState::APP_NOT_PUBLISHED
             UI.user_error!(ErrorMessage::APP_NOT_PUBLISHED)
-          when App::AabState::NO_APP_WITH_GIVEN_BUNDLE_ID_IN_PLAY_ACCOUNT
+          when AabInfo::AabState::NO_APP_WITH_GIVEN_BUNDLE_ID_IN_PLAY_ACCOUNT
             UI.user_error!(ErrorMessage::NO_APP_WITH_GIVEN_BUNDLE_ID_IN_PLAY_ACCOUNT)
-          when App::AabState::PLAY_IAS_TERMS_NOT_ACCEPTED
+          when AabInfo::AabState::PLAY_IAS_TERMS_NOT_ACCEPTED
             UI.user_error!(ErrorMessage::PLAY_IAS_TERMS_NOT_ACCEPTED)
           else
-            UI.user_error!(ErrorMessage.aab_upload_error(app.aab_state))
+            UI.user_error!(ErrorMessage.aab_upload_error(aab_info.integration_state))
           end
         end
       end
