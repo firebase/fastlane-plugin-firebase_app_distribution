@@ -303,10 +303,17 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
   end
 
   describe '#update_release_notes' do
-    let(:payload)  { { release: { name: release_name, releaseNotes: { text: "release_notes" } }, updateMask: "release_notes.text" } }
+    let(:payload) do
+      {
+        name: release_name,
+        releaseNotes: {
+          text: "release_notes"
+        }
+      }
+    end
 
     it 'patch call is successful when input is valid' do
-      stubs.patch("/v1/#{release_name}", payload.to_json, headers) do |env|
+      stubs.patch("/v1/#{release_name}?updateMask=release_notes.text", payload.to_json, headers) do |env|
         [
           200,
           {}, # response headers

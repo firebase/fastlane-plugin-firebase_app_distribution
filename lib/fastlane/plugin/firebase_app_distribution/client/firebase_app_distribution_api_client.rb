@@ -65,13 +65,10 @@ module Fastlane
         end
         begin
           payload = {
-            release: {
-              name: release_name,
-              releaseNotes: {
-                text: release_notes
-              }
-            },
-            updateMask: "release_notes.text"
+            name: release_name,
+            releaseNotes: {
+              text: release_notes
+            }
           }
           connection.patch(update_release_notes_url(release_name), payload.to_json) do |request|
             request.headers[AUTHORIZATION] = "Bearer " + @auth_token
@@ -261,7 +258,7 @@ module Fastlane
       end
 
       def update_release_notes_url(release_name)
-        "/v1/#{release_name}"
+        "/v1/#{release_name}?updateMask=release_notes.text"
       end
 
       def distribute_url(release_name)
