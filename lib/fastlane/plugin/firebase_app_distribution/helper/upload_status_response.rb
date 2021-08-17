@@ -21,12 +21,12 @@ class UploadStatusResponse
 
   def release_version
     if release
-      if release[:display_version] && release[:build_version]
-        "#{release[:display_version]} (#{release[:build_version]})"
-      elsif release[:display_version]
-        release[:display_version]
+      if release[:displayVersion] && release[:buildVersion]
+        "#{release[:displayVersion]} (#{release[:buildVersion]})"
+      elsif release[:displayVersion]
+        release[:displayVersion]
       else
-        release[:build_version]
+        release[:buildVersion]
       end
     end
   end
