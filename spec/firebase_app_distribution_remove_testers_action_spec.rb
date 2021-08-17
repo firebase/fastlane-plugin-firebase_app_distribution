@@ -21,19 +21,19 @@ describe Fastlane::Actions::FirebaseAppDistributionRemoveTestersAction do
     end
 
     it 'succeeds and makes call with value from emails param' do
-      project = 1
+      project_number = 1
       emails = '1@e.mail,2@e.mail'
       path = 'path/to/file'
       count = 1
-      expect_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient).to receive(:remove_testers).with(project, emails.split(',')).and_return(count)
+      expect_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient).to receive(:remove_testers).with(project_number, emails.split(',')).and_return(count)
       allow(FastlaneCore::UI).to receive(:success)
       expect(FastlaneCore::UI).to receive(:success).with("✅ #{count} tester(s) removed successfully.")
 
-      action.run({ project: project, emails: emails, file: path })
+      action.run({ project_number: project_number, emails: emails, file: path })
     end
 
     it 'succeeds and makes call with value from file' do
-      project = 1
+      project_number = 1
       emails = '1@e.mail,2@e.mail'
       path = 'path/to/file'
       count = 1
@@ -42,11 +42,11 @@ describe Fastlane::Actions::FirebaseAppDistributionRemoveTestersAction do
         .with(path)
         .and_return(fake_file)
       allow(fake_file).to receive(:read).and_return(emails)
-      expect_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient).to receive(:remove_testers).with(project, emails.split(',')).and_return(count)
+      expect_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient).to receive(:remove_testers).with(project_number, emails.split(',')).and_return(count)
       allow(FastlaneCore::UI).to receive(:success)
       expect(FastlaneCore::UI).to receive(:success).with("✅ #{count} tester(s) removed successfully.")
 
-      action.run({ project: project, file: path })
+      action.run({ project_number: project_number, file: path })
     end
   end
 end

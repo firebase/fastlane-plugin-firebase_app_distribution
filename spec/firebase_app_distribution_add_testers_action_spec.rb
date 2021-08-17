@@ -20,16 +20,16 @@ describe Fastlane::Actions::FirebaseAppDistributionAddTestersAction do
     end
 
     it 'succeeds and makes call with value from emails param' do
-      project = 1
+      project_number = 1
       emails = '1@e.mail,2@e.mail'
       path = 'path/to/file'
-      expect_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient).to receive(:add_testers).with(project, emails.split(','))
+      expect_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient).to receive(:add_testers).with(project_number, emails.split(','))
 
-      action.run({ project: project, emails: emails, file: path })
+      action.run({ project_number: project_number, emails: emails, file: path })
     end
 
     it 'succeeds and makes call with value from file' do
-      project = 1
+      project_number = 1
       emails = '1@e.mail,2@e.mail'
       path = 'path/to/file'
       fake_file = double('file')
@@ -37,9 +37,9 @@ describe Fastlane::Actions::FirebaseAppDistributionAddTestersAction do
         .with(path)
         .and_return(fake_file)
       allow(fake_file).to receive(:read).and_return(emails)
-      expect_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient).to receive(:add_testers).with(project, emails.split(','))
+      expect_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient).to receive(:add_testers).with(project_number, emails.split(','))
 
-      action.run({ project: project, file: path })
+      action.run({ project_number: project_number, file: path })
     end
   end
 end

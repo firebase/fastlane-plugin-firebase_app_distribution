@@ -24,7 +24,7 @@ module Fastlane
           UI.user_error!("A maximum of 1000 testers can be removed at a time.")
         end
 
-        count = fad_api_client.remove_testers(params[:project], emails)
+        count = fad_api_client.remove_testers(params[:project_number], emails)
 
         UI.success("✅ #{count} tester(s) removed successfully.")
       end
@@ -44,7 +44,7 @@ module Fastlane
 
       def self.available_options
         [
-          FastlaneCore::ConfigItem.new(key: :project,
+          FastlaneCore::ConfigItem.new(key: :project_number,
                                       env_name: "FIREBASEAPPDISTRO_PROJECT_NUMBER",
                                       description: "Your Firebase project number. You can find the project number in the Firebase console, on the General Settings page",
                                       type: Integer),

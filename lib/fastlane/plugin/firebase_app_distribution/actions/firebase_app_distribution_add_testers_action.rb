@@ -24,7 +24,7 @@ module Fastlane
           UI.user_error!("A maximum of 1000 testers can be added at a time.")
         end
 
-        fad_api_client.add_testers(params[:project], emails)
+        fad_api_client.add_testers(params[:project_number], emails)
 
         # The add_testers response lists all the testers from the request
         # regardless of whether or not they were created or if they already
@@ -47,7 +47,7 @@ module Fastlane
 
       def self.available_options
         [
-          FastlaneCore::ConfigItem.new(key: :project,
+          FastlaneCore::ConfigItem.new(key: :project_number,
                                       env_name: "FIREBASEAPPDISTRO_PROJECT_NUMBER",
                                       description: "Your Firebase project number. You can find the project number in the Firebase console, on the General Settings page",
                                       type: Integer),
