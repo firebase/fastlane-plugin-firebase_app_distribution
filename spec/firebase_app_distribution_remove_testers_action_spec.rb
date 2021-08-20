@@ -13,11 +13,6 @@ describe Fastlane::Actions::FirebaseAppDistributionRemoveTestersAction do
         .to raise_error("Must specify `emails` or `file`.")
     end
 
-    it 'raises an error if emails and file are blank' do
-      expect { action.run({ project_number: 1 }) }
-        .to raise_error("Must specify `emails` or `file`.")
-    end
-
     it 'raises an error if there are > 1000 emails' do
       emails = (1..1001).map { |i| "#{i}@e.mail" }.join(',')
 
