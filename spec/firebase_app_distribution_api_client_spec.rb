@@ -457,7 +457,13 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
   end
 
   describe '#add_testers' do
-    let(:headers) { { 'Authorization' => 'Bearer auth_token', 'Content-Type' => 'application/json' } }
+    let(:headers) do
+      {
+        'Authorization' => 'Bearer auth_token',
+        'Content-Type' => 'application/json',
+        'X-Firebase-Client' => "fastlane/#{Fastlane::FirebaseAppDistribution::VERSION}"
+      }
+    end
 
     it 'is successful' do
       emails = %w[1@foo.com 2@foo.com]
@@ -516,7 +522,13 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
   end
 
   describe '#remove_testers' do
-    let(:headers) { { 'Authorization' => 'Bearer auth_token', 'Content-Type' => 'application/json' } }
+    let(:headers) do
+      {
+        'Authorization' => 'Bearer auth_token',
+        'Content-Type' => 'application/json',
+        'X-Firebase-Client' => "fastlane/#{Fastlane::FirebaseAppDistribution::VERSION}"
+      }
+    end
 
     it 'returns the number of deleted testers' do
       emails = %w[1@foo.com 2@foo.com]
