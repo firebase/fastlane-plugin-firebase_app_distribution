@@ -13,28 +13,29 @@ module Fastlane
       #   google_service_path - Absolute path to the Google service account file
       #   firebase_cli_token - Firebase CLI refresh token from login action or
       #                        CI environment
+      #   debug - Whether to enable debug-level logging
       #
       # env variables
       #   GOOGLE_APPLICATION_CREDENTIALS - see google_service_path
       #   FIREBASE_TOKEN - see firebase_cli_token
       #
       # Crashes if given invalid or missing credentials
-      def fetch_auth_token(google_service_path, firebase_cli_token)
+      def fetch_auth_token(google_service_path, firebase_cli_token, debug = false)
         if !google_service_path.nil? && !google_service_path.empty?
           UI.message("Authenticating with --service_credentials_file path parameter: #{google_service_path}")
-          token = service_account(google_service_path)
+          token = service_account(google_service_path, debug)
         elsif !firebase_cli_token.nil? && !firebase_cli_token.empty?
           UI.message("Authenticating with --firebase_cli_token parameter")
-          token = firebase_token(firebase_cli_token)
+          token = firebase_token(firebase_cli_token, debug)
         elsif !ENV["FIREBASE_TOKEN"].nil? && !ENV["FIREBASE_TOKEN"].empty?
           UI.message("Authenticating with FIREBASE_TOKEN environment variable")
-          token = firebase_token(ENV["FIREBASE_TOKEN"])
+          token = firebase_token(ENV["FIREBASE_TOKEN"], debug)
         elsif !ENV["GOOGLE_APPLICATION_CREDENTIALS"].nil? && !ENV["GOOGLE_APPLICATION_CREDENTIALS"].empty?
           UI.message("Authenticating with GOOGLE_APPLICATION_CREDENTIALS environment variable: #{ENV['GOOGLE_APPLICATION_CREDENTIALS']}")
-          token = service_account(ENV["GOOGLE_APPLICATION_CREDENTIALS"])
+          token = service_account(ENV["GOOGLE_APPLICATION_CREDENTIALS"], debug)
         elsif (refresh_token = refresh_token_from_firebase_tools)
           UI.message("No authentication method specified. Using cached Firebase CLI credentials.")
-          token = firebase_token(refresh_token)
+          token = firebase_token(refresh_token, debug)
         else
           UI.user_error!(ErrorMessage::MISSING_CREDENTIALS)
         end
@@ -62,7 +63,7 @@ module Fastlane
         end
       end
 
-      def firebase_token(refresh_token)
+      def firebase_token(refresh_token, debug)
         client = Signet::OAuth2::Client.new(
           token_credential_uri: TOKEN_CREDENTIAL_URI,
           client_id: Fastlane::Actions::FirebaseAppDistributionLoginAction::CLIENT_ID,
@@ -72,13 +73,11 @@ module Fastlane
         client.fetch_access_token!
         client.access_token
       rescue Signet::AuthorizationError => error
-        UI.user_error!(
-          "#{ErrorMessage::REFRESH_TOKEN_ERROR}" \
-          "\n\nDetails:\n#{error.message}\nResponse status: #{error.response.status}"
-        )
+        log_authorization_error_details(error) if debug
+        UI.user_error!(ErrorMessage::REFRESH_TOKEN_ERROR)
       end
 
-      def service_account(google_service_path)
+      def service_account(google_service_path, debug)
         service_account_credentials = Google::Auth::ServiceAccountCredentials.make_creds(
           json_key_io: File.open(google_service_path),
           scope: Fastlane::Actions::FirebaseAppDistributionLoginAction::SCOPE
@@ -87,10 +86,14 @@ module Fastlane
       rescue Errno::ENOENT
         UI.user_error!("#{ErrorMessage::SERVICE_CREDENTIALS_NOT_FOUND}: #{google_service_path}")
       rescue Signet::AuthorizationError => error
-        UI.user_error!(
-          "#{ErrorMessage::SERVICE_CREDENTIALS_ERROR}: #{google_service_path}" \
-          "\n\nDetails:\n#{error.message}\nResponse status: #{error.response.status}"
-        )
+        log_authorization_error_details(error) if debug
+        UI.user_error!("#{ErrorMessage::SERVICE_CREDENTIALS_ERROR}: #{google_service_path}")
+      end
+
+      def log_authorization_error_details(error)
+        UI.error("Error fetching access token:")
+        UI.error(error.message)
+        UI.error("Response status: #{error.response.status}")
       end
     end
   end

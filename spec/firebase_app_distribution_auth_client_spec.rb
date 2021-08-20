@@ -101,15 +101,15 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
         it 'crashes if the service credentials are invalid' do
           expect(fake_service_creds).to receive(:fetch_access_token!)
             .and_raise(Signet::AuthorizationError.new("error_message", { response: fake_error_response }))
-          expect { auth_client.fetch_auth_token("invalid_service_path", empty_val) }
-            .to raise_error(/invalid_service_path.*error_message.*400/m)
+          expect { auth_client.fetch_auth_token("invalid_service_path", empty_val, true) }
+            .to raise_error("#{ErrorMessage::SERVICE_CREDENTIALS_ERROR}: invalid_service_path")
         end
 
         it 'crashes if given an invalid firebase token' do
           expect(firebase_auth).to receive(:new)
             .and_raise(Signet::AuthorizationError.new("error_message", { response: fake_error_response }))
-          expect { auth_client.fetch_auth_token(empty_val, "invalid_refresh_token") }
-            .to raise_error(/could not generate credentials.*error_message.*400/m)
+          expect { auth_client.fetch_auth_token(empty_val, "invalid_refresh_token", true) }
+            .to raise_error(ErrorMessage::REFRESH_TOKEN_ERROR)
         end
 
         it 'crashes if the firebase tools json has no tokens field' do
