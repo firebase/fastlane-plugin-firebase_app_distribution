@@ -10,6 +10,7 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
   let(:fake_service_creds) { double("service_account_creds") }
   let(:fake_oauth_client) { double("oauth_client") }
   let(:payload) { { "access_token" => "service_fake_auth_token" } }
+  let(:fake_error_response) { double("error_response") }
 
   before(:each) do
     allow(firebase_auth).to receive(:new)
@@ -30,6 +31,8 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
       .and_return(fake_binary_contents)
     allow(fake_binary_contents).to receive(:key)
       .and_return("fake_service_key")
+
+    allow(fake_error_response).to receive(:status).and_return(400)
   end
 
   describe '#fetch_auth_token' do
@@ -97,15 +100,15 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
 
         it 'crashes if the service credentials are invalid' do
           expect(fake_service_creds).to receive(:fetch_access_token!)
-            .and_raise(Signet::AuthorizationError.new("error"))
-          expect { auth_client.fetch_auth_token("invalid_service_path", empty_val) }
+            .and_raise(Signet::AuthorizationError.new("error_message", { response: fake_error_response }))
+          expect { auth_client.fetch_auth_token("invalid_service_path", empty_val, true) }
             .to raise_error("#{ErrorMessage::SERVICE_CREDENTIALS_ERROR}: invalid_service_path")
         end
 
         it 'crashes if given an invalid firebase token' do
           expect(firebase_auth).to receive(:new)
-            .and_raise(Signet::AuthorizationError.new("error"))
-          expect { auth_client.fetch_auth_token(empty_val, "invalid_refresh_token") }
+            .and_raise(Signet::AuthorizationError.new("error_message", { response: fake_error_response }))
+          expect { auth_client.fetch_auth_token(empty_val, "invalid_refresh_token", true) }
             .to raise_error(ErrorMessage::REFRESH_TOKEN_ERROR)
         end
 
