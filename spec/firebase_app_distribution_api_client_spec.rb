@@ -545,6 +545,21 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       expect(result).to eq(1)
     end
 
+    it 'returns 0 if response is empty' do
+      emails = %w[1@foo.com 2@foo.com]
+      stubs.post("/v1/projects/project_number/testers:batchRemove", { emails: emails }.to_json, headers) do |env|
+        [
+          200,
+          {}, # response headers
+          {}  # response body
+        ]
+      end
+
+      result = api_client.remove_testers("project_number", emails)
+
+      expect(result).to eq(0)
+    end
+
     it 'fails and prints correct error message for a 404' do
       emails = %w[1@foo.com 2@foo.com]
       stubs.post("/v1/projects/bad_project_number/testers:batchRemove", { emails: emails }.to_json, headers) do |env|
