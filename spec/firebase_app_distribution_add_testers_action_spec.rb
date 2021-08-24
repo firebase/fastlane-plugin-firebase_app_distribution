@@ -12,6 +12,11 @@ describe Fastlane::Actions::FirebaseAppDistributionAddTestersAction do
         .to raise_error("Must specify `emails` or `file`.")
     end
 
+    it 'raises an error if there are no emails' do
+      expect { action.run({ project_number: 1, emails: " " }) }
+        .to raise_error("Must pass at least one email")
+    end
+
     it 'raises an error if there are > 1000 emails' do
       emails = (1..1001).map { |i| "#{i}@e.mail" }.join(',')
 

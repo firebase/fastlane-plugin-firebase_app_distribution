@@ -18,7 +18,9 @@ module Fastlane
           UI.user_error!("Must specify `emails` or `file`.")
         end
 
-        emails = get_value_from_value_or_file(params[:emails], params[:file]).split(',')
+        emails = string_to_array(get_value_from_value_or_file(params[:emails], params[:file]))
+
+        UI.user_error!("Must pass at least one email") if blank?(emails)
 
         if emails.count > 1000
           UI.user_error!("A maximum of 1000 testers can be added at a time.")
