@@ -545,7 +545,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       expect(result).to eq(1)
     end
 
-    it 'returns the 0 if response is empty' do
+    it 'returns 0 if response is empty' do
       emails = %w[1@foo.com 2@foo.com]
       stubs.post("/v1/projects/project_number/testers:batchRemove", { emails: emails }.to_json, headers) do |env|
         [
