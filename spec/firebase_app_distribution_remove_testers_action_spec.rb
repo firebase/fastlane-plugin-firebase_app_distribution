@@ -20,6 +20,11 @@ describe Fastlane::Actions::FirebaseAppDistributionRemoveTestersAction do
         .to raise_error("A maximum of 1000 testers can be removed at a time.")
     end
 
+    it 'raises an error if there are no emails' do
+      expect { action.run({ project_number: 1, emails: " " }) }
+        .to raise_error("Must pass at least one email")
+    end
+
     it 'succeeds and makes call with value from emails param' do
       project_number = 1
       emails = '1@e.mail,2@e.mail'
