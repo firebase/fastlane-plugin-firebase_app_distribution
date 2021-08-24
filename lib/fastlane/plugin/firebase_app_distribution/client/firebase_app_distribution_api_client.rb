@@ -242,7 +242,7 @@ module Fastlane
           request.headers[CONTENT_TYPE] = APPLICATION_JSON
           request.headers[FIREBASE_CLIENT] = firebase_client_header_value
         end
-        response.body[:emails].count
+        response.body[:emails] ? response.body[:emails].count : 0
       rescue Faraday::ResourceNotFound
         UI.user_error!(ErrorMessage::INVALID_PROJECT)
       end
