@@ -91,7 +91,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
   describe '#upload_binary' do
     let(:upload_headers) do
       { 'Authorization' => 'Bearer auth_token',
-      'X-Firebase-Client' => "fastlane/#{Fastlane::FirebaseAppDistribution::VERSION}",
+      'X-Client-Version' => "fastlane/#{Fastlane::FirebaseAppDistribution::VERSION}",
       'X-Goog-Upload-File-Name' => File.basename(fake_binary_path),
       'X-Goog-Upload-Protocol' => 'raw' }
     end
@@ -461,7 +461,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       {
         'Authorization' => 'Bearer auth_token',
         'Content-Type' => 'application/json',
-        'X-Firebase-Client' => "fastlane/#{Fastlane::FirebaseAppDistribution::VERSION}"
+        'X-Client-Version' => "fastlane/#{Fastlane::FirebaseAppDistribution::VERSION}"
       }
     end
 
@@ -526,7 +526,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       {
         'Authorization' => 'Bearer auth_token',
         'Content-Type' => 'application/json',
-        'X-Firebase-Client' => "fastlane/#{Fastlane::FirebaseAppDistribution::VERSION}"
+        'X-Client-Version' => "fastlane/#{Fastlane::FirebaseAppDistribution::VERSION}"
       }
     end
 
