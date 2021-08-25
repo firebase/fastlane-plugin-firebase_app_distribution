@@ -18,7 +18,7 @@ module Fastlane
       CONTENT_TYPE = "Content-Type"
       APPLICATION_JSON = "application/json"
       APPLICATION_OCTET_STREAM = "application/octet-stream"
-      FIREBASE_CLIENT = "X-Firebase-Client"
+      CLIENT_VERSION = "X-Client-Version"
 
       def initialize(auth_token, debug = false)
         @auth_token = auth_token
@@ -112,7 +112,7 @@ module Fastlane
         response = connection.post(binary_upload_url(app_name), read_binary(binary_path)) do |request|
           request.headers[AUTHORIZATION] = "Bearer " + @auth_token
           request.headers[CONTENT_TYPE] = APPLICATION_OCTET_STREAM
-          request.headers[FIREBASE_CLIENT] = firebase_client_header_value
+          request.headers[CLIENT_VERSION] = client_version_header_value
           request.headers["X-Goog-Upload-File-Name"] = File.basename(binary_path)
           request.headers["X-Goog-Upload-Protocol"] = "raw"
         end
@@ -213,7 +213,7 @@ module Fastlane
         connection.post(add_testers_url(project_number), payload.to_json) do |request|
           request.headers[AUTHORIZATION] = "Bearer " + @auth_token
           request.headers[CONTENT_TYPE] = APPLICATION_JSON
-          request.headers[FIREBASE_CLIENT] = firebase_client_header_value
+          request.headers[CLIENT_VERSION] = client_version_header_value
         end
       rescue Faraday::BadRequestError
         UI.user_error!(ErrorMessage::INVALID_EMAIL_ADDRESS)
@@ -240,7 +240,7 @@ module Fastlane
         response = connection.post(remove_testers_url(project_number), payload.to_json) do |request|
           request.headers[AUTHORIZATION] = "Bearer " + @auth_token
           request.headers[CONTENT_TYPE] = APPLICATION_JSON
-          request.headers[FIREBASE_CLIENT] = firebase_client_header_value
+          request.headers[CLIENT_VERSION] = client_version_header_value
         end
         response.body[:emails] ? response.body[:emails].count : 0
       rescue Faraday::ResourceNotFound
@@ -249,7 +249,7 @@ module Fastlane
 
       private
 
-      def firebase_client_header_value
+      def client_version_header_value
         "fastlane/#{Fastlane::FirebaseAppDistribution::VERSION}"
       end
 
