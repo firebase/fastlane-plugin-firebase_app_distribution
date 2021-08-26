@@ -12,7 +12,7 @@ module Fastlane
       BASE_URL = "https://firebaseappdistribution.googleapis.com"
       TOKEN_CREDENTIAL_URI = "https://oauth2.googleapis.com/token"
       MAX_POLLING_RETRIES = 60
-      POLLING_INTERVAL_SECONDS = 2
+      POLLING_INTERVAL_SECONDS = 5
 
       AUTHORIZATION = "Authorization"
       CONTENT_TYPE = "Content-Type"
