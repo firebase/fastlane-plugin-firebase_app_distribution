@@ -89,10 +89,6 @@ module Fastlane
         app_id
       end
 
-      def self.app_name_from_app_id(app_id)
-        "projects/#{app_id.split(':')[1]}/apps/#{app_id}"
-      end
-
       def self.xcode_archive_path
         # prevents issues on cross-platform build environments where an XCode build happens within
         # the same lane
