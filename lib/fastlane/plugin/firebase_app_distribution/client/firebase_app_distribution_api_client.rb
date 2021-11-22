@@ -220,7 +220,7 @@ module Fastlane
       rescue Faraday::ResourceNotFound
         UI.user_error!(ErrorMessage::INVALID_PROJECT)
       rescue Faraday::ClientError => e
-        if e.response_status == 429
+        if e.response[:status] == 429
           UI.user_error!(ErrorMessage::TESTER_LIMIT_VIOLATION)
         else
           raise e
