@@ -257,7 +257,7 @@ module Fastlane
       # Returns the response body. Throws a user_error if the app hasn't been onboarded to App Distribution.
       def list_releases(app_name, page_size = 100, page_token = nil)
         begin
-          response = connection.get(list_releases_url(app_name), { pageSize: page_size.to_s }) do |request|
+          response = connection.get(list_releases_url(app_name), { pageSize: page_size.to_s, pageToken: page_token }) do |request|
             request.headers[AUTHORIZATION] = "Bearer " + @auth_token
             request.headers[CLIENT_VERSION] = client_version_header_value
           end

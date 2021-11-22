@@ -90,7 +90,7 @@ module Fastlane
         [
           'release = firebase_app_distribution_get_latest_release(app: "1:1234567890:ios:0a1b2c3d4e5f67890")',
           'increment_build_number({
-            build_number: firebase_app_distribution_get_latest_release(app: "1:1234567890:ios:0a1b2c3d4e5f67890")[:buildVersion] + 1
+            build_number: firebase_app_distribution_get_latest_release(app: "1:1234567890:ios:0a1b2c3d4e5f67890")[:buildVersion].to_i + 1
           })'
         ]
       end
