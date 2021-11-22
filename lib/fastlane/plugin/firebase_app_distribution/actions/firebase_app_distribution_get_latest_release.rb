@@ -16,12 +16,13 @@ module Fastlane
         UI.message("⏳ Fetching latest release for app #{params[:app]}...")
 
         releases = fad_api_client.list_releases(app_name_from_app_id(params[:app]), 1)[:releases] || []
-        if releases.length == 0
-         	UI.user_error!("No releases for app #{params[:app]} found in App Distribution.")
-       	end
-        latest_release = releases[0]
-
-        UI.success("✅ Latest release fetched successfully. Returning and setting Actions.lane_context[:FIREBASE_APP_DISTRO_LATEST_RELEASE].")
+        if releases.empty?
+          latest_release = nil
+          UI.important("No releases for app #{params[:app]} found in App Distribution. Returning nil and setting Actions.lane_context[:FIREBASE_APP_DISTRO_LATEST_RELEASE].")
+        else
+          latest_release = releases[0]
+          UI.success("✅ Latest release fetched successfully. Returning release and setting Actions.lane_context[:FIREBASE_APP_DISTRO_LATEST_RELEASE].")
+        end
         Actions.lane_context[:FIREBASE_APP_DISTRO_LATEST_RELEASE] = latest_release
         return latest_release
       end
@@ -36,7 +37,7 @@ module Fastlane
 
       def self.details
         [
-          "Fetches information about the most recently created release in App Distribution, including the version and release notes.",
+          "Fetches information about the most recently created release in App Distribution, including the version and release notes. Returns nil if no releases are found."
         ].join("\n")
       end
 
@@ -48,7 +49,7 @@ module Fastlane
                                        optional: false,
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :firebase_cli_token,
-                                       description: "Auth token for firebase cli",
+                                       description: "Auth token generated using 'fastlane run firebase_app_distribution_login', or the Firebase CLI's login:ci command",
                                        optional: true,
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :service_credentials_file,
@@ -65,7 +66,7 @@ module Fastlane
 
       def self.output
         [
-          ['FIREBASE_APP_DISTRO_LATEST_RELEASE', 'A hash representing the lastest release created in Firebase App Distribution'],
+          ['FIREBASE_APP_DISTRO_LATEST_RELEASE', 'A hash representing the lastest release created in Firebase App Distribution']
         ]
       end
 
@@ -90,20 +91,20 @@ module Fastlane
           'release = firebase_app_distribution_get_latest_release(app: "1:1234567890:ios:0a1b2c3d4e5f67890")',
           'increment_build_number({
             build_number: firebase_app_distribution_get_latest_release(app: "1:1234567890:ios:0a1b2c3d4e5f67890")[:buildVersion] + 1
-          })',
+          })'
         ]
       end
 
       def self.sample_return_value
-				{
-				  "name": "projects/123456789/apps/1:1234567890:ios:0a1b2c3d4e5f67890/releases/0a1b2c3d4",
-				  "releaseNotes": {
-				    "text": "Here are some release notes!"
-				  },
-				  "displayVersion": "1.2.3",
-				  "buildVersion": "10",
-				  "createTime": "2021-10-06T15:01:23Z",
-				}
+        {
+          name: "projects/123456789/apps/1:1234567890:ios:0a1b2c3d4e5f67890/releases/0a1b2c3d4",
+          releaseNotes: {
+            text: "Here are some release notes!"
+          },
+          displayVersion: "1.2.3",
+          buildVersion: "10",
+          createTime: "2021-10-06T15:01:23Z"
+        }
       end
     end
   end
