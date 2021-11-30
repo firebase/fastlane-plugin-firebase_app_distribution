@@ -220,7 +220,7 @@ module Fastlane
       rescue Faraday::ResourceNotFound
         UI.user_error!(ErrorMessage::INVALID_PROJECT)
       rescue Faraday::ClientError => e
-        if e.response_status == 429
+        if e.response[:status] == 429
           UI.user_error!(ErrorMessage::TESTER_LIMIT_VIOLATION)
         else
           raise e
@@ -245,6 +245,27 @@ module Fastlane
         response.body[:emails] ? response.body[:emails].count : 0
       rescue Faraday::ResourceNotFound
         UI.user_error!(ErrorMessage::INVALID_PROJECT)
+      end
+
+      # List releases
+      #
+      # args
+      #   app_name - Firebase App resource name
+      #   page_size - The number of releases to return in the page
+      #   page_token - A page token, received from a previous call
+      #
+      # Returns the response body. Throws a user_error if the app hasn't been onboarded to App Distribution.
+      def list_releases(app_name, page_size = 100, page_token = nil)
+        begin
+          response = connection.get(list_releases_url(app_name), { pageSize: page_size.to_s, pageToken: page_token }) do |request|
+            request.headers[AUTHORIZATION] = "Bearer " + @auth_token
+            request.headers[CLIENT_VERSION] = client_version_header_value
+          end
+        rescue Faraday::ResourceNotFound
+          UI.user_error!("#{ErrorMessage::INVALID_APP_ID}: #{app_name}")
+        end
+
+        return response.body
       end
 
       private
@@ -279,6 +300,10 @@ module Fastlane
 
       def upload_status_url(operation_name)
         "/v1/#{operation_name}"
+      end
+
+      def list_releases_url(app_name)
+        "#{v1_apps_url(app_name)}/releases"
       end
 
       def get_udids_url(app_id)

@@ -53,6 +53,10 @@ module Fastlane
       def present?(value)
         !blank?(value)
       end
+
+      def app_name_from_app_id(app_id)
+        "projects/#{app_id.split(':')[1]}/apps/#{app_id}"
+      end
     end
   end
 end

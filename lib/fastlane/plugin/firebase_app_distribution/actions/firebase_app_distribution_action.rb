@@ -89,10 +89,6 @@ module Fastlane
         app_id
       end
 
-      def self.app_name_from_app_id(app_id)
-        "projects/#{app_id.split(':')[1]}/apps/#{app_id}"
-      end
-
       def self.xcode_archive_path
         # prevents issues on cross-platform build environments where an XCode build happens within
         # the same lane
@@ -230,7 +226,7 @@ module Fastlane
                                        optional: true,
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :firebase_cli_token,
-                                       description: "Auth token for firebase cli",
+                                       description: "Auth token generated using 'fastlane run firebase_app_distribution_login', or the Firebase CLI's login:ci command",
                                        optional: true,
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :debug,
