@@ -86,7 +86,7 @@ module Fastlane
         [
           <<-CODE
             firebase_app_distribution_get_udids(
-              app: "1:1234567890:ios:0a1b2c3d4e5f67890",
+              app: "<your Firebase app ID>",
               output_file: "tester_udids.txt",
             )
           CODE
