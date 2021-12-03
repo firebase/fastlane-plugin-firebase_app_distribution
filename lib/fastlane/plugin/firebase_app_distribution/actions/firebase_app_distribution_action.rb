@@ -253,7 +253,7 @@ module Fastlane
         [
           <<-CODE
             firebase_app_distribution(
-              app: "1:1234567890:ios:0a1b2c3d4e5f67890",
+              app: "<your Firebase app ID>",
               testers: "snatchev@google.com, rebeccahe@google.com"
             )
           CODE
