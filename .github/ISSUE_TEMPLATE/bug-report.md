@@ -23,7 +23,7 @@ assignees: ''
 ##### Complete verbose output
 <!-- 
 To print verbose output, set the `debug` parameter of the  `firebase_app_distribution` action to` true`.
-Caution: The output with `debug` set to true could contain sensitive data such as email addrresses, app ids, and/or project numbers. Please make sure you double check the output and replace anything sensitive you don't wish to submit in the issue 
+Caution: The output with `debug` set to true could contain sensitive data such as email addresses, app ids, and/or project numbers. Please make sure you double check the output and replace anything sensitive you don't wish to submit in the issue 
 -->
 
 ##### Environment
