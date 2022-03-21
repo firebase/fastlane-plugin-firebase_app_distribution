@@ -73,8 +73,13 @@ module Fastlane
         client.fetch_access_token!
         client.access_token
       rescue Signet::AuthorizationError => error
-        log_authorization_error_details(error) if debug
-        UI.user_error!(ErrorMessage::REFRESH_TOKEN_ERROR)
+        error_message = ErrorMessage::REFRESH_TOKEN_ERROR
+        if debug
+          error_message += "\nRefresh token used: \"#{refresh_token}\"\n#{error_details(error)}"
+        else
+          error_message += " #{debug_instructions}"
+        end
+        UI.user_error!(error_message)
       end
 
       def service_account(google_service_path, debug)
@@ -86,14 +91,21 @@ module Fastlane
       rescue Errno::ENOENT
         UI.user_error!("#{ErrorMessage::SERVICE_CREDENTIALS_NOT_FOUND}: #{google_service_path}")
       rescue Signet::AuthorizationError => error
-        log_authorization_error_details(error) if debug
-        UI.user_error!("#{ErrorMessage::SERVICE_CREDENTIALS_ERROR}: #{google_service_path}")
+        error_message = "#{ErrorMessage::SERVICE_CREDENTIALS_ERROR}: \"#{google_service_path}\""
+        if debug
+          error_message += "\n#{error_details(error)}"
+        else
+          error_message += ". #{debug_instructions}"
+        end
+        UI.user_error!(error_message)
       end
 
-      def log_authorization_error_details(error)
-        UI.error("Error fetching access token:")
-        UI.error(error.message)
-        UI.error("Response status: #{error.response.status}")
+      def error_details(error)
+        "#{error.message}\nResponse status: #{error.response.status}"
+      end
+
+      def debug_instructions
+        "For more information, try again with firebase_app_distribution's \"debug\" parameter set to \"true\"."
       end
     end
   end

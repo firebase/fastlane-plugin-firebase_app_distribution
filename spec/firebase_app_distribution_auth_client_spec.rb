@@ -101,15 +101,29 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
         it 'crashes if the service credentials are invalid' do
           expect(fake_service_creds).to receive(:fetch_access_token!)
             .and_raise(Signet::AuthorizationError.new("error_message", { response: fake_error_response }))
+          expect { auth_client.fetch_auth_token("invalid_service_path", empty_val, false) }
+            .to raise_error("#{ErrorMessage::SERVICE_CREDENTIALS_ERROR}: \"invalid_service_path\". For more information, try again with firebase_app_distribution's \"debug\" parameter set to \"true\".")
+        end
+
+        it 'crashes if the service credentials are invalid in debug mode' do
+          expect(fake_service_creds).to receive(:fetch_access_token!)
+            .and_raise(Signet::AuthorizationError.new("error_message", { response: fake_error_response }))
           expect { auth_client.fetch_auth_token("invalid_service_path", empty_val, true) }
-            .to raise_error("#{ErrorMessage::SERVICE_CREDENTIALS_ERROR}: invalid_service_path")
+            .to raise_error("#{ErrorMessage::SERVICE_CREDENTIALS_ERROR}: \"invalid_service_path\"\nerror_message\nResponse status: 400")
         end
 
         it 'crashes if given an invalid firebase token' do
           expect(firebase_auth).to receive(:new)
             .and_raise(Signet::AuthorizationError.new("error_message", { response: fake_error_response }))
+          expect { auth_client.fetch_auth_token(empty_val, "invalid_refresh_token", false) }
+            .to raise_error("#{ErrorMessage::REFRESH_TOKEN_ERROR} For more information, try again with firebase_app_distribution's \"debug\" parameter set to \"true\".")
+        end
+
+        it 'crashes if given an invalid firebase token in debug mode' do
+          expect(firebase_auth).to receive(:new)
+            .and_raise(Signet::AuthorizationError.new("error_message", { response: fake_error_response }))
           expect { auth_client.fetch_auth_token(empty_val, "invalid_refresh_token", true) }
-            .to raise_error(ErrorMessage::REFRESH_TOKEN_ERROR)
+            .to raise_error("#{ErrorMessage::REFRESH_TOKEN_ERROR}\nRefresh token used: \"invalid_refresh_token\"\nerror_message\nResponse status: 400")
         end
 
         it 'crashes if the firebase tools json has no tokens field' do
