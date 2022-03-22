@@ -4,6 +4,8 @@ module Fastlane
   module Auth
     module FirebaseAppDistributionAuthClient
       TOKEN_CREDENTIAL_URI = "https://oauth2.googleapis.com/token"
+      REDACTION_EXPOSED_LENGTH = 5
+      REDACTION_CHARACTER = "X"
 
       # Returns the auth token for any of the auth methods (Firebase CLI token,
       # Google service account, firebase-tools). To ensure that a specific
@@ -73,8 +75,14 @@ module Fastlane
         client.fetch_access_token!
         client.access_token
       rescue Signet::AuthorizationError => error
-        log_authorization_error_details(error) if debug
-        UI.user_error!(ErrorMessage::REFRESH_TOKEN_ERROR)
+        error_message = ErrorMessage::REFRESH_TOKEN_ERROR
+        if debug
+          error_message += "\nRefresh token used: #{format_token(refresh_token)}\n"
+          error_message += error_details(error)
+        else
+          error_message += " #{debug_instructions}"
+        end
+        UI.user_error!(error_message)
       end
 
       def service_account(google_service_path, debug)
@@ -86,14 +94,32 @@ module Fastlane
       rescue Errno::ENOENT
         UI.user_error!("#{ErrorMessage::SERVICE_CREDENTIALS_NOT_FOUND}: #{google_service_path}")
       rescue Signet::AuthorizationError => error
-        log_authorization_error_details(error) if debug
-        UI.user_error!("#{ErrorMessage::SERVICE_CREDENTIALS_ERROR}: #{google_service_path}")
+        error_message = "#{ErrorMessage::SERVICE_CREDENTIALS_ERROR}: \"#{google_service_path}\""
+        if debug
+          error_message += "\n#{error_details(error)}"
+        else
+          error_message += ". #{debug_instructions}"
+        end
+        UI.user_error!(error_message)
       end
 
-      def log_authorization_error_details(error)
-        UI.error("Error fetching access token:")
-        UI.error(error.message)
-        UI.error("Response status: #{error.response.status}")
+      def error_details(error)
+        "#{error.message}\nResponse status: #{error.response.status}"
+      end
+
+      def debug_instructions
+        "For more information, try again with firebase_app_distribution's \"debug\" parameter set to \"true\"."
+      end
+
+      # Formats and redacts a token for printing out during debug logging. Examples:
+      #   'abcd' -> '"abcd"''
+      #   'abcdef1234' -> '"XXXXXf1234" (redacted)'
+      def format_token(str)
+        redaction_notice = str.length > REDACTION_EXPOSED_LENGTH ? " (redacted)" : ""
+        exposed_start_char = [str.length - REDACTION_EXPOSED_LENGTH, 0].max
+        exposed_characters = str[exposed_start_char, REDACTION_EXPOSED_LENGTH]
+        redacted_characters = REDACTION_CHARACTER * [str.length - REDACTION_EXPOSED_LENGTH, 0].max
+        "\"#{redacted_characters}#{exposed_characters}\"#{redaction_notice}"
       end
     end
   end

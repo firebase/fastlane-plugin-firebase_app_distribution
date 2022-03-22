@@ -13,7 +13,7 @@ module ErrorMessage
   INVALID_PATH = "Could not read content from"
   INVALID_TESTERS = "Could not enable access for testers. Check that the groups exist and the tester emails are formatted correctly"
   INVALID_RELEASE_NOTES = "Failed to add release notes"
-  SERVICE_CREDENTIALS_ERROR = "App Distribution could not generate credentials from the service credentials file specified. Service Account Path"
+  SERVICE_CREDENTIALS_ERROR = "App Distribution could not generate credentials from the service credentials file specified"
   PLAY_ACCOUNT_NOT_LINKED = "This project is not linked to a Google Play account."
   APP_NOT_PUBLISHED = "This app is not published in the Google Play console."
   NO_APP_WITH_GIVEN_BUNDLE_ID_IN_PLAY_ACCOUNT = "App with matching package name does not exist in Google Play."
