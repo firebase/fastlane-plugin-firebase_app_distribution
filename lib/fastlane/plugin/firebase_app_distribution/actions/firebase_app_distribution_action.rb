@@ -18,6 +18,10 @@ module Fastlane
       def self.run(params)
         params.values # to validate all inputs before looking for the ipa/apk/aab
 
+        if params[:debug]
+          UI.important("Warning: Debug logging enabled. Output may include sensitive information.")
+        end
+
         app_id = app_id_from_params(params)
         app_name = app_name_from_app_id(app_id)
         platform = lane_platform || platform_from_app_id(app_id)
