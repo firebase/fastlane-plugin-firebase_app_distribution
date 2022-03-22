@@ -113,12 +113,13 @@ module Fastlane
 
       # Formats and redacts a token for printing out during debug logging. Examples:
       #   'abcd' -> '"abcd"''
-      #   'abcdef1234' -> '"abcdeXXXXX" (redacted)'
+      #   'abcdef1234' -> '"XXXXXf1234" (redacted)'
       def format_token(str)
         redaction_notice = str.length > REDACTION_EXPOSED_LENGTH ? " (redacted)" : ""
-        exposed_characters = str[0, REDACTION_EXPOSED_LENGTH]
+        exposed_start_char = [str.length - REDACTION_EXPOSED_LENGTH, 0].max
+        exposed_characters = str[exposed_start_char, REDACTION_EXPOSED_LENGTH]
         redacted_characters = REDACTION_CHARACTER * [str.length - REDACTION_EXPOSED_LENGTH, 0].max
-        "\"#{exposed_characters}#{redacted_characters}\"#{redaction_notice}"
+        "\"#{redacted_characters}#{exposed_characters}\"#{redaction_notice}"
       end
     end
   end
