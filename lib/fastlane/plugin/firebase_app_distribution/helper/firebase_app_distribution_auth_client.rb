@@ -4,6 +4,8 @@ module Fastlane
   module Auth
     module FirebaseAppDistributionAuthClient
       TOKEN_CREDENTIAL_URI = "https://oauth2.googleapis.com/token"
+      REDACTION_EXPOSED_LENGTH = 5
+      REDACTION_CHARACTER = "X"
 
       # Returns the auth token for any of the auth methods (Firebase CLI token,
       # Google service account, firebase-tools). To ensure that a specific
@@ -75,7 +77,8 @@ module Fastlane
       rescue Signet::AuthorizationError => error
         error_message = ErrorMessage::REFRESH_TOKEN_ERROR
         if debug
-          error_message += "\nRefresh token used: \"#{refresh_token}\"\n#{error_details(error)}"
+          error_message += "\nRefresh token used: #{format_token(refresh_token)}\n"
+          error_message += error_details(error)
         else
           error_message += " #{debug_instructions}"
         end
@@ -106,6 +109,16 @@ module Fastlane
 
       def debug_instructions
         "For more information, try again with firebase_app_distribution's \"debug\" parameter set to \"true\"."
+      end
+
+      # Formats and redacts a token for printing out during debug logging. Examples:
+      #   'abcd' -> '"abcd"''
+      #   'abcdef1234' -> '"abcdeXXXXX" (redacted)'
+      def format_token(str)
+        redaction_notice = str.length > REDACTION_EXPOSED_LENGTH ? " (redacted)" : ""
+        exposed_characters = str[0, REDACTION_EXPOSED_LENGTH]
+        redacted_characters = REDACTION_CHARACTER * [str.length - REDACTION_EXPOSED_LENGTH, 0].max
+        "\"#{exposed_characters}#{redacted_characters}\"#{redaction_notice}"
       end
     end
   end

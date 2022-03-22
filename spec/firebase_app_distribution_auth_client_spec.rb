@@ -123,7 +123,7 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
           expect(firebase_auth).to receive(:new)
             .and_raise(Signet::AuthorizationError.new("error_message", { response: fake_error_response }))
           expect { auth_client.fetch_auth_token(empty_val, "invalid_refresh_token", true) }
-            .to raise_error("#{ErrorMessage::REFRESH_TOKEN_ERROR}\nRefresh token used: \"invalid_refresh_token\"\nerror_message\nResponse status: 400")
+            .to raise_error("#{ErrorMessage::REFRESH_TOKEN_ERROR}\nRefresh token used: \"invalXXXXXXXXXXXXXXXX\" (redacted)\nerror_message\nResponse status: 400")
         end
 
         it 'crashes if the firebase tools json has no tokens field' do
