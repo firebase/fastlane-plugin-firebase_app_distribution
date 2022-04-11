@@ -519,7 +519,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         ]
       end
       expect { api_client.distribute(release_name, emails, group_ids) }
-        .to raise_error("#{ErrorMessage::INVALID_TESTERS} \nEmails: #{emails} \nGroups: #{group_ids}")
+        .to raise_error("#{ErrorMessage::INVALID_TESTERS} \nEmails: #{emails} \nGroup Aliases: #{group_ids}")
     end
   end
 
