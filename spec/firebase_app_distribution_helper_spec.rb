@@ -66,8 +66,8 @@ describe Fastlane::Helper::FirebaseAppDistributionHelper do
     end
 
     it 'returns an array with trimmed values' do
-      array = helper.string_to_array("string1, str ing2 , string3")
-      expect(array).to eq(["string1", "str ing2", "string3"])
+      array = helper.string_to_array(" string1, str ing2  ,  str  ing3 ")
+      expect(array).to eq(["string1", "str ing2", "str  ing3"])
     end
 
     it 'returns nil if the string is undefined' do
