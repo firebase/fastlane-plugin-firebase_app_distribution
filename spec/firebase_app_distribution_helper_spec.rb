@@ -61,8 +61,13 @@ describe Fastlane::Helper::FirebaseAppDistributionHelper do
     end
 
     it 'returns an array when the string passed in has multiple values seperated by commas' do
-      array = helper.string_to_array("string1, string2, string3")
-      expect(array).to eq(["string1", "string2", "string3"])
+      array = helper.string_to_array("string1,string2,string3")
+      expect(array).to eq(%w[string1 string2 string3])
+    end
+
+    it 'returns an array with trimmed values' do
+      array = helper.string_to_array("string1, str ing2 , string3")
+      expect(array).to eq(["string1", "str ing2", "string3"])
     end
 
     it 'returns nil if the string is undefined' do
@@ -73,6 +78,11 @@ describe Fastlane::Helper::FirebaseAppDistributionHelper do
     it 'returns nil when the string is empty' do
       array = helper.string_to_array("")
       expect(array).to eq(nil)
+    end
+
+    it 'returns empty array when the string only contains white spaces' do
+      array = helper.string_to_array(" ")
+      expect(array).to eq([])
     end
   end
 
