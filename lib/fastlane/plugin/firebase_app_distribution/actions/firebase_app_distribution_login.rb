@@ -101,7 +101,7 @@ module Fastlane
           FastlaneCore::ConfigItem.new(key: :port,
                                        env_name: "FIREBASEAPPDISTRO_LOGIN_PORT",
                                        description: "Port for the local web server which receives the response from Google's authorization server",
-                                       default_value: "8080",
+                                       default_value: 8081,
                                        optional: true,
                                        type: String)
 
