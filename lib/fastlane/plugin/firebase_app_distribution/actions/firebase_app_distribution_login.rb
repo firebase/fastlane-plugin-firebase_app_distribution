@@ -1,11 +1,9 @@
 require 'googleauth'
-require 'googleauth/stores/file_token_store'
 require "fileutils"
 
 module Fastlane
   module Actions
     class FirebaseAppDistributionLoginAction < Action
-      OOB_URI = "urn:ietf:wg:oauth:2.0:oob"
       SCOPE = "https://www.googleapis.com/auth/cloud-platform"
 
       # In this type of application, the client secret is not treated as a secret.
@@ -14,24 +12,65 @@ module Fastlane
       CLIENT_SECRET = "j9iVZfS8kkCEFUPaAeJV0sAi"
 
       def self.run(params)
+        callback_uri = "http://localhost:#{params[:port]}"
         client_id = Google::Auth::ClientId.new(CLIENT_ID, CLIENT_SECRET)
-        authorizer = Google::Auth::UserAuthorizer.new(client_id, SCOPE, nil)
-        url = authorizer.get_authorization_url(base_url: OOB_URI)
+        authorizer = Google::Auth::UserAuthorizer.new(client_id, SCOPE, nil, callback_uri)
+
+        # Create an anti-forgery state token as described here:
+        # https://developers.google.com/identity/protocols/OpenIDConnect#createxsrftoken
+        state = SecureRandom.hex(16)
+        url = authorizer.get_authorization_url(state: state)
 
         UI.message("Open the following address in your browser and sign in with your Google account:")
         UI.message(url)
-        UI.message("")
-        code = UI.input("Enter the resulting code here: ")
-        credentials = authorizer.get_credentials_from_code(code: code, base_url: OOB_URI)
-        UI.message("")
 
+        response_params = get_authorization_code(params[:port])
+
+        # Confirm that the state in the response matches the state token used to
+        # generate the authorization URL.
+        unless state == response_params['state'][0]
+          UI.crash!('An error has occurred. The state parameter in the authorization response does not match the expected state, which could mean that a malicious attacker is trying to make a login request.')
+        end
+
+        user_credentials = authorizer.get_credentials_from_code(
+          code: response_params['code'][0]
+        )
         UI.success("Set the refresh token as the FIREBASE_TOKEN environment variable")
-        UI.success("Refresh Token: #{credentials.refresh_token}")
-      rescue Signet::AuthorizationError
-        UI.error("The code you entered is invalid. Copy and paste the code and try again.")
+        UI.success("Refresh Token: #{user_credentials.refresh_token}")
       rescue => error
         UI.error(error.to_s)
-        UI.crash!("An error has occured, please login again.")
+        UI.crash!("An error has occurred, please login again.")
+      end
+
+      def self.get_authorization_code(port)
+        begin
+          server = TCPServer.open(port)
+        rescue Errno::EADDRINUSE => error
+          UI.error(error.to_s)
+          UI.crash!("Port #{port} is in use. Please specify a different one using the port parameter.")
+        end
+        client = server.accept
+        callback_request = client.readline
+        # Use a regular expression to extract the request line from the first line of
+        # the callback request, e.g.:
+        #   GET /?code=AUTH_CODE&state=XYZ&scope=... HTTP/1.1
+        matcher = /GET +([^ ]+)/.match(callback_request)
+        response_params = CGI.parse(URI.parse(matcher[1]).query) unless matcher.nil?
+
+        client.puts("HTTP/1.1 200 OK")
+        client.puts("Content-Type: text/html")
+        client.puts("")
+        client.puts("<b>")
+        if response_params['code'].nil?
+          client.puts("Failed to retrieve authorization code.")
+        else
+          client.puts("Authorization code was successfully retrieved.")
+        end
+        client.puts("</b>")
+        client.puts("<p>Please check the console output.</p>")
+        client.close
+
+        return response_params
       end
 
       #####################################################
@@ -54,6 +93,18 @@ module Fastlane
 
       def self.is_supported?(platform)
         [:ios, :android].include?(platform)
+      end
+
+      def self.available_options
+        [
+          FastlaneCore::ConfigItem.new(key: :port,
+                                       env_name: "FIREBASEAPPDISTRO_LOGIN_PORT",
+                                       description: "Port for the local web server which receives the response from Google's authorization server",
+                                       default_value: "8081",
+                                       optional: true,
+                                       type: String)
+
+        ]
       end
     end
   end
