@@ -30,7 +30,7 @@ module Fastlane
         # Confirm that the state in the response matches the state token used to
         # generate the authorization URL.
         unless state == response_params['state'][0]
-            UI.crash!('An error has occurred. The state parameter returned from callback does not match the expected state, which could mean that a malicious attacker is trying to make a login request.')
+          UI.crash!('An error has occurred. The state parameter returned from callback does not match the expected state, which could mean that a malicious attacker is trying to make a login request.')
         end
 
         user_credentials = authorizer.get_credentials_from_code(
