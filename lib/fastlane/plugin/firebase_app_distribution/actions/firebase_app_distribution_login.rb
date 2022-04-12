@@ -44,7 +44,12 @@ module Fastlane
       end
 
       def self.get_authorization_code(port)
-        server = TCPServer.open(port)
+        begin
+          server = TCPServer.open(port)
+        rescue Errno::EADDRINUSE => error
+          UI.error(error.to_s)
+          UI.crash!("Port #{port} is in use. Please specify a different one using the --port option.")
+        end
         client = server.accept
         callback_request = client.readline
         # Use a regular expression to extract the request line from the first line of
