@@ -48,7 +48,7 @@ module Fastlane
           server = TCPServer.open(port)
         rescue Errno::EADDRINUSE => error
           UI.error(error.to_s)
-          UI.crash!("Port #{port} is in use. Please specify a different one using the --port option.")
+          UI.crash!("Port #{port} is in use. Please specify a different one using the port parameter.")
         end
         client = server.accept
         callback_request = client.readline
@@ -101,7 +101,7 @@ module Fastlane
           FastlaneCore::ConfigItem.new(key: :port,
                                        env_name: "FIREBASEAPPDISTRO_LOGIN_PORT",
                                        description: "Port for the local web server which receives the response from Google's authorization server",
-                                       default_value: 8081,
+                                       default_value: "8081",
                                        optional: true,
                                        type: String)
 
