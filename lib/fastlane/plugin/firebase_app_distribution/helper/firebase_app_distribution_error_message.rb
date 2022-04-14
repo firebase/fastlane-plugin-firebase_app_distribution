@@ -11,7 +11,7 @@ module ErrorMessage
   INVALID_APP_ID = "App Distribution could not find your app. Make sure to onboard your app by pressing the \"Get started\" button on the App Distribution page in the Firebase console: https://console.firebase.google.com/project/_/appdistribution. App ID"
   INVALID_PROJECT = "App Distribution could not find your Firebase project. Make sure to onboard an app in your project by pressing the \"Get started\" button on the App Distribution page in the Firebase console: https://console.firebase.google.com/project/_/appdistribution."
   INVALID_PATH = "Could not read content from"
-  INVALID_TESTERS = "Could not enable access for testers. Check that the groups exist and the tester emails are formatted correctly"
+  INVALID_TESTERS = "Could not enable access for testers. Check that the tester emails are formatted correctly, the groups exist and you are using group aliases (not group names) for specifying groups."
   INVALID_RELEASE_NOTES = "Failed to add release notes"
   SERVICE_CREDENTIALS_ERROR = "App Distribution could not generate credentials from the service credentials file specified"
   PLAY_ACCOUNT_NOT_LINKED = "This project is not linked to a Google Play account."

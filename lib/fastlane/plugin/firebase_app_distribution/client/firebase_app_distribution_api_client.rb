@@ -46,7 +46,7 @@ module Fastlane
             request.headers[CONTENT_TYPE] = APPLICATION_JSON
           end
         rescue Faraday::ClientError
-          UI.user_error!("#{ErrorMessage::INVALID_TESTERS} \nEmails: #{emails} \nGroups: #{group_aliases}")
+          UI.user_error!("#{ErrorMessage::INVALID_TESTERS} \nEmails: #{emails} \nGroup Aliases: #{group_aliases}")
         end
         UI.success("✅ Added testers/groups.")
       end
