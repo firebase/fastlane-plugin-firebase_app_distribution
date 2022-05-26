@@ -31,7 +31,7 @@ module Fastlane
         UI.user_error!("Couldn't find binary at path #{binary_path}") unless File.exist?(binary_path)
         binary_type = binary_type_from_path(binary_path)
 
-        auth_token = fetch_auth_token(
+        auth_token = params[:access_token] || fetch_auth_token(
           params[:service_credentials_file], params[:firebase_cli_token], params[:debug]
         )
         fad_api_client = Client::FirebaseAppDistributionApiClient.new(auth_token, params[:debug])
