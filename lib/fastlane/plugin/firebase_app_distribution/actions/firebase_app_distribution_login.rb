@@ -112,8 +112,8 @@ module Fastlane
       end
 
       def self.deprecated_notes
-        "The firebase_app_distribution_login task is deprecated and will be removed in a future release. See "\
-        "https://firebase.google.com/docs/app-distribution/android/distribute-gradle#step_2_authenticate_with_firebase "\
+        "The firebase_app_distribution_login task is deprecated and will be removed in Q1 2023. See "\
+        "https://firebase.google.com/docs/app-distribution/android/distribute-gradle#authenticate "\
         "for more information on alternative ways to authenticate."
       end
     end
