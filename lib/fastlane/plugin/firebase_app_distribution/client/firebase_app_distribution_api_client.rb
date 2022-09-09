@@ -110,6 +110,7 @@ module Fastlane
       # Throws a user_error if the binary file does not exist
       def upload_binary(app_name, binary_path, platform)
         response = connection.post(binary_upload_url(app_name), read_binary(binary_path)) do |request|
+          request.options.timeout = 300
           request.headers[AUTHORIZATION] = "Bearer " + @auth_token
           request.headers[CONTENT_TYPE] = APPLICATION_OCTET_STREAM
           request.headers[CLIENT_VERSION] = client_version_header_value
