@@ -48,23 +48,23 @@ module Fastlane
       private
 
       def refresh_token_from_firebase_tools
-        config_path = get_config_path
+        config_path = format_config_path
         if File.exist?(config_path)
           begin
-           firebase_tools_tokens = JSON.parse(File.read(config_path))['tokens']
-           if (firebase_tools_tokens.nil?)
-            UI.important("Unable to find \'tokens\' field in file located at #{config_path} Ensure that the file has a tokens field and try again")
-            return
-           end
-           refresh_token = firebase_tools_tokens['refresh_token']
+            firebase_tools_tokens = JSON.parse(File.read(config_path))['tokens']
+            if firebase_tools_tokens.nil?
+              UI.important("Unable to find \'tokens\' field in file located at #{config_path} Ensure that the file has a tokens field and try again")
+              return
+            end
+            refresh_token = firebase_tools_tokens['refresh_token']
           rescue JSON::ParserError
-           UI.important("Malformed json file located at #{config_path}")
+            UI.important("Malformed json file located at #{config_path}")
           end
           refresh_token unless refresh_token.nil? || refresh_token.empty?
         end
       end
 
-      def get_config_path
+      def format_config_path
         if ENV["XDG_CONFIG_HOME"].nil? || ENV["XDG_CONFIG_HOME"].empty?
           File.expand_path(".config/configstore/firebase-tools.json", "~")
         else
