@@ -53,7 +53,7 @@ module Fastlane
          begin
           firebase_tools_tokens = JSON.parse(File.read(config_path))['tokens']
           if (firebase_tools_tokens.nil?)
-           UI.important("Unable to find tokens field in file located at #{config_path} Ensure that the file has a tokens field and try again")
+           UI.important("Unable to find \'tokens\' field in file located at #{config_path} Ensure that the file has a tokens field and try again")
            return
           end
           refresh_token = firebase_tools_tokens['refresh_token']
