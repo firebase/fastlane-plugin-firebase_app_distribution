@@ -3,6 +3,7 @@ module ErrorMessage
   MISSING_APP_ID = "Missing app id. Please check that the app parameter is set and try again"
   SERVICE_CREDENTIALS_NOT_FOUND = "Service credentials file does not exist. Please check the service credentials path and try again"
   PARSE_SERVICE_CREDENTIALS_ERROR = "Failed to extract service account information from the service credentials file"
+  PARSE_FIREBASE_TOOLS_JSON_ERROR = "Failed to extract service account information from the service credentials file"
   UPLOAD_RELEASE_NOTES_ERROR = "App Distribution halted because it had a problem uploading release notes"
   UPLOAD_TESTERS_ERROR = "App Distribution halted because it had a problem adding testers/groups"
   GET_RELEASE_TIMEOUT = "App Distribution failed to fetch release information"
@@ -20,6 +21,7 @@ module ErrorMessage
   PLAY_IAS_TERMS_NOT_ACCEPTED = "You must accept the Play Internal App Sharing (IAS) terms to upload AABs."
   INVALID_EMAIL_ADDRESS = "You passed an invalid email address."
   TESTER_LIMIT_VIOLATION = "Creating testers would exceed tester limit"
+  EMPTY_TOKENS_FIELD = "Unable to find \"tokens\" field in the firebase-tools.json file. Ensure that the file has a tokens field and try again"
 
   def self.aab_upload_error(aab_state)
     "Failed to process the AAB: #{aab_state}"

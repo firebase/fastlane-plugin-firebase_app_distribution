@@ -53,12 +53,12 @@ module Fastlane
           begin
             firebase_tools_tokens = JSON.parse(File.read(config_path))['tokens']
             if firebase_tools_tokens.nil?
-              UI.important("Unable to find \'tokens\' field in file located at #{config_path} Ensure that the file has a tokens field and try again")
+              UI.user_error(ErrorMessage::EMPTY_TOKENS_FIELD)
               return
             end
             refresh_token = firebase_tools_tokens['refresh_token']
           rescue JSON::ParserError
-            UI.important("Malformed json file located at #{config_path}")
+            UI.user_error(ErrorMessage::PARSE_FIREBASE_TOOLS_JSON_ERROR)
           end
           refresh_token unless refresh_token.nil? || refresh_token.empty?
         end
