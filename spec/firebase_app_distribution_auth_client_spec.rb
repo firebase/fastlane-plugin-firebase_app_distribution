@@ -7,6 +7,7 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
   let(:fake_firebase_tools_contents) { "{\"tokens\": {\"refresh_token\": \"refresh_token\"} }" }
   let(:fake_firebase_tools_contents_no_tokens_field) { "{}" }
   let(:fake_firebase_tools_contents_no_refresh_field) { "{\"tokens\": \"empty\"}" }
+  let(:fake_firebase_tools_contents_invalid_json) { "\"tokens\": \"empty\"}" }
   let(:fake_service_creds) { double("service_account_creds") }
   let(:fake_oauth_client) { double("oauth_client") }
   let(:payload) { { "access_token" => "service_fake_auth_token" } }
@@ -138,7 +139,7 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
             .and_return(fake_firebase_tools_contents_no_tokens_field)
           expect(File).to receive(:exist?).and_return(true)
           expect { auth_client.fetch_auth_token(empty_val, empty_val) }
-            .to raise_error(ErrorMessage::MISSING_CREDENTIALS)
+            .to raise_error(ErrorMessage::EMPTY_TOKENS_FIELD)
         end
 
         it 'crashes if the firebase tools json has no refresh_token field' do
@@ -147,6 +148,14 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
           expect(File).to receive(:exist?).and_return(true)
           expect { auth_client.fetch_auth_token(empty_val, empty_val) }
             .to raise_error(ErrorMessage::MISSING_CREDENTIALS)
+        end
+
+        it 'crashes if the firebase tools json fails to parse' do
+          allow(File).to receive(:read)
+            .and_return(fake_firebase_tools_contents_invalid_json)
+          expect(File).to receive(:exist?).and_return(true)
+          expect { auth_client.fetch_auth_token(empty_val, empty_val) }
+            .to raise_error(ErrorMessage::PARSE_FIREBASE_TOOLS_JSON_ERROR)
         end
       end
     end

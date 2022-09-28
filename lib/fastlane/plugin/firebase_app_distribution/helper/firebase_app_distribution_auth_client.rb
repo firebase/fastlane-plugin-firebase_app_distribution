@@ -48,20 +48,27 @@ module Fastlane
       private
 
       def refresh_token_from_firebase_tools
-        if ENV["XDG_CONFIG_HOME"].nil? || ENV["XDG_CONFIG_HOME"].empty?
-          config_path = File.expand_path(".config/configstore/firebase-tools.json", "~")
-        else
-          config_path = File.expand_path("configstore/firebase-tools.json", ENV["XDG_CONFIG_HOME"])
-        end
-
+        config_path = format_config_path
         if File.exist?(config_path)
           begin
-            refresh_token = JSON.parse(File.read(config_path))['tokens']['refresh_token']
-            refresh_token unless refresh_token.nil? || refresh_token.empty?
-          # TODO: Catch parser errors, improve error handling here
-          # Returns nil when there is an empty "tokens" field in the firebase-tools json
-          rescue NoMethodError
+            firebase_tools_tokens = JSON.parse(File.read(config_path))['tokens']
+            if firebase_tools_tokens.nil?
+              UI.user_error!(ErrorMessage::EMPTY_TOKENS_FIELD)
+              return
+            end
+            refresh_token = firebase_tools_tokens['refresh_token']
+          rescue JSON::ParserError
+            UI.user_error!(ErrorMessage::PARSE_FIREBASE_TOOLS_JSON_ERROR)
           end
+          refresh_token unless refresh_token.nil? || refresh_token.empty?
+        end
+      end
+
+      def format_config_path
+        if ENV["XDG_CONFIG_HOME"].nil? || ENV["XDG_CONFIG_HOME"].empty?
+          File.expand_path(".config/configstore/firebase-tools.json", "~")
+        else
+          File.expand_path("configstore/firebase-tools.json", ENV["XDG_CONFIG_HOME"])
         end
       end
 
