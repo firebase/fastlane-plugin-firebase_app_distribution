@@ -53,12 +53,12 @@ module Fastlane
           begin
             firebase_tools_tokens = JSON.parse(File.read(config_path))['tokens']
             if firebase_tools_tokens.nil?
-              UI.user_error(ErrorMessage::EMPTY_TOKENS_FIELD)
+              UI.user_error!(ErrorMessage::EMPTY_TOKENS_FIELD)
               return
             end
             refresh_token = firebase_tools_tokens['refresh_token']
           rescue JSON::ParserError
-            UI.user_error(ErrorMessage::PARSE_FIREBASE_TOOLS_JSON_ERROR)
+            UI.user_error!(ErrorMessage::PARSE_FIREBASE_TOOLS_JSON_ERROR)
           end
           refresh_token unless refresh_token.nil? || refresh_token.empty?
         end
