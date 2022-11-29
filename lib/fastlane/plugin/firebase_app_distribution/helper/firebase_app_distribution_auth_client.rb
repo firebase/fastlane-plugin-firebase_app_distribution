@@ -24,24 +24,23 @@ module Fastlane
       # Crashes if given invalid or missing credentials
       def fetch_auth_token(google_service_path, firebase_cli_token, debug = false)
         if !google_service_path.nil? && !google_service_path.empty?
-          UI.message("Authenticating with --service_credentials_file path parameter: #{google_service_path}")
+          UI.message("🔐 Authenticating with --service_credentials_file path parameter: #{google_service_path}")
           token = service_account(google_service_path, debug)
         elsif !firebase_cli_token.nil? && !firebase_cli_token.empty?
-          UI.message("Authenticating with --firebase_cli_token parameter")
+          UI.message("🔐 Authenticating with --firebase_cli_token parameter")
           token = firebase_token(firebase_cli_token, debug)
         elsif !ENV["FIREBASE_TOKEN"].nil? && !ENV["FIREBASE_TOKEN"].empty?
-          UI.message("Authenticating with FIREBASE_TOKEN environment variable")
+          UI.message("🔐 Authenticating with FIREBASE_TOKEN environment variable")
           token = firebase_token(ENV["FIREBASE_TOKEN"], debug)
         elsif !ENV["GOOGLE_APPLICATION_CREDENTIALS"].nil? && !ENV["GOOGLE_APPLICATION_CREDENTIALS"].empty?
-          UI.message("Authenticating with GOOGLE_APPLICATION_CREDENTIALS environment variable: #{ENV['GOOGLE_APPLICATION_CREDENTIALS']}")
+          UI.message("🔐 Authenticating with GOOGLE_APPLICATION_CREDENTIALS environment variable: #{ENV['GOOGLE_APPLICATION_CREDENTIALS']}")
           token = service_account(ENV["GOOGLE_APPLICATION_CREDENTIALS"], debug)
         elsif (refresh_token = refresh_token_from_firebase_tools)
-          UI.message("No authentication method specified. Using cached Firebase CLI credentials.")
+          UI.message("🔐 No authentication method specified. Using cached Firebase CLI credentials.")
           token = firebase_token(refresh_token, debug)
         else
           UI.user_error!(ErrorMessage::MISSING_CREDENTIALS)
         end
-        UI.success("🔐 Authenticated successfully.")
         token
       end
 
