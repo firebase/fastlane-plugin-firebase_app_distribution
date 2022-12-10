@@ -15,6 +15,8 @@ module Fastlane
       extend Auth::FirebaseAppDistributionAuthClient
       extend Helper::FirebaseAppDistributionHelper
 
+      DEFAULT_UPLOAD_TIMEOUT_SECONDS = 300
+
       def self.run(params)
         params.values # to validate all inputs before looking for the ipa/apk/aab
 
@@ -42,7 +44,9 @@ module Fastlane
           validate_aab_setup!(aab_info)
         end
 
-        release_name = fad_api_client.upload(app_name, binary_path, platform.to_s)
+        upload_timeout = get_upload_timeout(params)
+
+        release_name = fad_api_client.upload(app_name, binary_path, platform.to_s, upload_timeout)
 
         if binary_type == :AAB && aab_info && !aab_info.certs_provided?
           updated_aab_info = fad_api_client.get_aab_info(app_name)
@@ -132,6 +136,14 @@ module Fastlane
           return Actions.lane_context[SharedValues::GRADLE_APK_OUTPUT_PATH] ||
                  Dir["*.apk"].last ||
                  Dir[File.join("app", "build", "outputs", "apk", "release", "app-release.apk")].last
+        end
+      end
+
+      def self.get_upload_timeout(params)
+        if params[:upload_timeout]
+          return params[:upload_timeout]
+        else
+          return DEFAULT_UPLOAD_TIMEOUT_SECONDS
         end
       end
 
@@ -242,7 +254,12 @@ module Fastlane
           FastlaneCore::ConfigItem.new(key: :service_credentials_file,
                                        description: "Path to Google service account json",
                                        optional: true,
-                                       type: String)
+                                       type: String),
+          FastlaneCore::ConfigItem.new(key: :upload_timeout,
+                                       description: "The amount of seconds before the upload will timeout, if not completed",
+                                       optional: true,
+                                       default_value: DEFAULT_UPLOAD_TIMEOUT_SECONDS,
+                                       type: Integer)
         ]
       end
 

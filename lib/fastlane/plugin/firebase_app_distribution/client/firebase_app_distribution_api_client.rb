@@ -106,11 +106,12 @@ module Fastlane
       #   app_name - Firebase App resource name
       #   binary_path - Absolute path to your app's aab/apk/ipa file
       #   platform - 'android' or 'ios'
+      #   timeout - The amount of seconds before the upload will timeout, if not completed
       #
       # Throws a user_error if the binary file does not exist
-      def upload_binary(app_name, binary_path, platform)
+      def upload_binary(app_name, binary_path, platform, timeout)
         response = connection.post(binary_upload_url(app_name), read_binary(binary_path)) do |request|
-          request.options.timeout = 300 # seconds
+          request.options.timeout = timeout # seconds
           request.headers[AUTHORIZATION] = "Bearer " + @auth_token
           request.headers[CONTENT_TYPE] = APPLICATION_OCTET_STREAM
           request.headers[CLIENT_VERSION] = client_version_header_value
@@ -130,16 +131,17 @@ module Fastlane
       # args
       #   app_name - Firebase App resource name
       #   binary_path - Absolute path to your app's aab/apk/ipa file
+      #   timeout - The amount of seconds before the upload will timeout, if not completed
       #
       # Returns the release_name of the uploaded release.
       #
       # Crashes if the number of polling retries exceeds MAX_POLLING_RETRIES or if the binary cannot
       # be uploaded.
-      def upload(app_name, binary_path, platform)
+      def upload(app_name, binary_path, platform, timeout)
         binary_type = binary_type_from_path(binary_path)
 
         UI.message("⌛ Uploading the #{binary_type}.")
-        operation_name = upload_binary(app_name, binary_path, platform)
+        operation_name = upload_binary(app_name, binary_path, platform, timeout)
 
         upload_status_response = get_upload_status(operation_name)
         MAX_POLLING_RETRIES.times do

@@ -7,6 +7,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
   let(:fake_binary_contents) { "Hello World" }
   let(:fake_binary) { double("Binary") }
   let(:headers) { { 'Authorization' => 'Bearer auth_token' } }
+  let(:upload_timeout) { 300 }
 
   let(:api_client) { Fastlane::Client::FirebaseAppDistributionApiClient.new("auth_token") }
   let(:stubs) { Faraday::Adapter::Test::Stubs.new }
@@ -105,14 +106,14 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
           }
         ]
       end
-      api_client.upload_binary(app_name, fake_binary_path, "android")
+      api_client.upload_binary(app_name, fake_binary_path, "android", upload_timeout)
     end
 
     it 'crashes when given an invalid binary_path' do
       expect(File).to receive(:open)
         .with("invalid_binary.apk", "rb")
         .and_raise(Errno::ENOENT.new("file not found"))
-      expect { api_client.upload_binary(app_name, "invalid_binary.apk", "android") }
+      expect { api_client.upload_binary(app_name, "invalid_binary.apk", "android", upload_timeout) }
         .to raise_error("#{ErrorMessage.binary_not_found('APK')}: invalid_binary.apk")
     end
   end
@@ -185,7 +186,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
 
     it 'uploads the app binary then returns the release name' do
       expect(api_client).to receive(:upload_binary)
-        .with(app_name, fake_binary_path, "android")
+        .with(app_name, fake_binary_path, "android", upload_timeout)
         .and_return(operation_name)
         .at_most(:once)
       expect(api_client).to receive(:get_upload_status)
@@ -197,13 +198,13 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         .and_return(upload_status_response_success)
         .at_most(:once)
 
-      result = api_client.upload(app_name, fake_binary_path, "android")
+      result = api_client.upload(app_name, fake_binary_path, "android", upload_timeout)
       expect(result).to eq(release_name)
     end
 
     it 'uploads the app binary for an existing unmodified binary' do
       expect(api_client).to receive(:upload_binary)
-        .with(app_name, fake_binary_path, "android")
+        .with(app_name, fake_binary_path, "android", upload_timeout)
         .and_return(operation_name)
         .at_most(:once)
       expect(api_client).to receive(:get_upload_status)
@@ -215,13 +216,13 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         .and_return(upload_status_response_release_unmodified)
         .at_most(:once)
 
-      result = api_client.upload(app_name, fake_binary_path, "android")
+      result = api_client.upload(app_name, fake_binary_path, "android", upload_timeout)
       expect(result).to eq(release_name)
     end
 
     it 'uploads the app binary for an existing updated binary' do
       expect(api_client).to receive(:upload_binary)
-        .with(app_name, fake_binary_path, "android")
+        .with(app_name, fake_binary_path, "android", upload_timeout)
         .and_return(operation_name)
         .at_most(:once)
       expect(api_client).to receive(:get_upload_status)
@@ -233,7 +234,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         .and_return(upload_status_response_release_updated)
         .at_most(:once)
 
-      result = api_client.upload(app_name, fake_binary_path, "android")
+      result = api_client.upload(app_name, fake_binary_path, "android", upload_timeout)
       expect(result).to eq(release_name)
     end
 
@@ -242,7 +243,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       stub_const("Fastlane::Client::FirebaseAppDistributionApiClient::MAX_POLLING_RETRIES", max_polling_retries)
 
       expect(api_client).to receive(:upload_binary)
-        .with(app_name, fake_binary_path, "android")
+        .with(app_name, fake_binary_path, "android", upload_timeout)
         .and_return(operation_name)
       expect(api_client).to receive(:get_upload_status)
         .with(operation_name)
@@ -250,7 +251,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         .exactly(max_polling_retries + 1).times # adding 1 for initial call
 
       expect do
-        api_client.upload(app_name, fake_binary_path, "android")
+        api_client.upload(app_name, fake_binary_path, "android", upload_timeout)
       end.to raise_error
     end
 
@@ -259,7 +260,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       stub_const("Fastlane::Client::FirebaseAppDistributionApiClient::MAX_POLLING_RETRIES", max_polling_retries)
 
       expect(api_client).to receive(:upload_binary)
-        .with(app_name, fake_binary_path, "android")
+        .with(app_name, fake_binary_path, "android", upload_timeout)
         .and_return(operation_name)
         .at_most(:once)
       # return in_progress for a couple polls
@@ -271,33 +272,33 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         .with(operation_name)
         .and_return(upload_status_response_success)
 
-      result = api_client.upload(app_name, fake_binary_path, "android")
+      result = api_client.upload(app_name, fake_binary_path, "android", upload_timeout)
       expect(result).to eq(release_name)
     end
 
     it 'crashes after failing to upload with status error' do
       expect(api_client).to receive(:upload_binary)
-        .with(app_name, fake_binary_path, "android")
+        .with(app_name, fake_binary_path, "android", upload_timeout)
         .and_return(operation_name)
       expect(api_client).to receive(:get_upload_status)
         .with(operation_name)
         .and_return(upload_status_response_error)
         .at_most(:once)
 
-      expect { api_client.upload(app_name, fake_binary_path, "android") }
+      expect { api_client.upload(app_name, fake_binary_path, "android", upload_timeout) }
         .to raise_error("#{ErrorMessage.upload_binary_error('APK')}: #{upload_status_response_error.error_message}")
     end
 
     it 'crashes after failing to upload with status unspecified' do
       expect(api_client).to receive(:upload_binary)
-        .with(app_name, fake_binary_path, "android")
+        .with(app_name, fake_binary_path, "android", upload_timeout)
         .and_return(operation_name)
       expect(api_client).to receive(:get_upload_status)
         .with(operation_name)
         .and_return(upload_status_response_status_unspecified)
         .at_most(:once)
 
-      expect { api_client.upload(app_name, fake_binary_path, "android") }
+      expect { api_client.upload(app_name, fake_binary_path, "android", upload_timeout) }
         .to raise_error(ErrorMessage.upload_binary_error("APK"))
     end
   end
