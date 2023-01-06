@@ -184,7 +184,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       stub_const("Fastlane::Client::FirebaseAppDistributionApiClient::POLLING_INTERVAL_SECONDS", 0)
     end
 
-    it 'uploads the app binary then returns the release name' do
+    it 'uploads the app binary then returns the upload response' do
       expect(api_client).to receive(:upload_binary)
         .with(app_name, fake_binary_path, "android", upload_timeout)
         .and_return(operation_name)
@@ -199,7 +199,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         .at_most(:once)
 
       result = api_client.upload(app_name, fake_binary_path, "android", upload_timeout)
-      expect(result).to eq(release_name)
+      expect(result).to eq(upload_status_response_success)
     end
 
     it 'uploads the app binary for an existing unmodified binary' do
@@ -217,7 +217,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         .at_most(:once)
 
       result = api_client.upload(app_name, fake_binary_path, "android", upload_timeout)
-      expect(result).to eq(release_name)
+      expect(result).to eq(upload_status_response_release_unmodified)
     end
 
     it 'uploads the app binary for an existing updated binary' do
@@ -235,7 +235,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         .at_most(:once)
 
       result = api_client.upload(app_name, fake_binary_path, "android", upload_timeout)
-      expect(result).to eq(release_name)
+      expect(result).to eq(upload_status_response_release_updated)
     end
 
     it 'raises an error after polling MAX_POLLING_RETRIES times' do
@@ -273,7 +273,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         .and_return(upload_status_response_success)
 
       result = api_client.upload(app_name, fake_binary_path, "android", upload_timeout)
-      expect(result).to eq(release_name)
+      expect(result).to eq(upload_status_response_success)
     end
 
     it 'crashes after failing to upload with status error' do

@@ -31,6 +31,18 @@ class UploadStatusResponse
     end
   end
 
+  def firebase_console_uri
+    release ? release[:firebaseConsoleUri] : nil
+  end
+
+  def testing_uri
+    release ? release[:testingUri] : nil
+  end
+
+  def binary_download_uri
+    release ? release[:binaryDownloadUri] : nil
+  end
+
   def status
     response ? response[:result] : nil
   end
