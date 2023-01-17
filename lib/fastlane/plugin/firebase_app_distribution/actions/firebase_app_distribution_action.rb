@@ -46,7 +46,8 @@ module Fastlane
 
         upload_timeout = get_upload_timeout(params)
 
-        release_name = fad_api_client.upload(app_name, binary_path, platform.to_s, upload_timeout)
+        upload_status_response = fad_api_client.upload(app_name, binary_path, platform.to_s, upload_timeout)
+        release_name = upload_status_response.release_name
 
         if binary_type == :AAB && aab_info && !aab_info.certs_provided?
           updated_aab_info = fad_api_client.get_aab_info(app_name)
@@ -69,6 +70,18 @@ module Fastlane
         group_aliases = string_to_array(groups)
         fad_api_client.distribute(release_name, emails, group_aliases)
         UI.success("🎉 App Distribution upload finished successfully.")
+
+        if upload_status_response.firebase_console_uri
+          UI.message("🔗 View this release in the Firebase console: #{upload_status_response.firebase_console_uri}")
+        end
+
+        if upload_status_response.testing_uri
+          UI.message("🔗 Share this release with testers: #{upload_status_response.testing_uri}")
+        end
+
+        if upload_status_response.binary_download_uri
+          UI.message("🔗 Download the release binary (link expires in 1 hour): #{upload_status_response.binary_download_uri}")
+        end
       end
 
       def self.description

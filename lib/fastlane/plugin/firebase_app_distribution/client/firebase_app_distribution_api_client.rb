@@ -171,7 +171,7 @@ module Fastlane
           UI.crash!("It took longer than expected to process your #{binary_type}, please try again.")
         end
 
-        upload_status_response.release_name
+        upload_status_response
       end
 
       # Fetches the status of an uploaded binary
