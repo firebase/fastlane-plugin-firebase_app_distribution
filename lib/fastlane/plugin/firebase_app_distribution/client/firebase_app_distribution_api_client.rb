@@ -44,6 +44,7 @@ module Fastlane
           connection.post(distribute_url(release_name), payload.to_json) do |request|
             request.headers[AUTHORIZATION] = "Bearer " + @auth_token
             request.headers[CONTENT_TYPE] = APPLICATION_JSON
+            request.headers[CLIENT_VERSION] = client_version_header_value
           end
         rescue Faraday::ClientError
           UI.user_error!("#{ErrorMessage::INVALID_TESTERS} \nEmails: #{emails} \nGroup Aliases: #{group_aliases}")
@@ -74,6 +75,7 @@ module Fastlane
           connection.patch(update_release_notes_url(release_name), payload.to_json) do |request|
             request.headers[AUTHORIZATION] = "Bearer " + @auth_token
             request.headers[CONTENT_TYPE] = APPLICATION_JSON
+            request.headers[CLIENT_VERSION] = client_version_header_value
           end
         rescue Faraday::ClientError => e
           error = ErrorResponse.new(e.response)
@@ -92,6 +94,7 @@ module Fastlane
         begin
           response = connection.get(aab_info_url(app_name)) do |request|
             request.headers[AUTHORIZATION] = "Bearer " + @auth_token
+            request.headers[CLIENT_VERSION] = client_version_header_value
           end
         rescue Faraday::ResourceNotFound
           UI.user_error!("#{ErrorMessage::INVALID_APP_ID}: #{app_name}")
@@ -183,6 +186,7 @@ module Fastlane
       def get_upload_status(operation_name)
         response = connection.get(upload_status_url(operation_name)) do |request|
           request.headers[AUTHORIZATION] = "Bearer " + @auth_token
+          request.headers[CLIENT_VERSION] = client_version_header_value
         end
         UploadStatusResponse.new(response.body)
       end
@@ -197,6 +201,7 @@ module Fastlane
         begin
           response = connection.get(get_udids_url(app_id)) do |request|
             request.headers[AUTHORIZATION] = "Bearer " + @auth_token
+            request.headers[CLIENT_VERSION] = client_version_header_value
           end
         rescue Faraday::ResourceNotFound
           UI.user_error!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
