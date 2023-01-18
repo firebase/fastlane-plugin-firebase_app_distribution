@@ -76,7 +76,7 @@ module Fastlane
         end
 
         if upload_status_response.testing_uri
-          UI.message("🔗 Share this release with testers: #{upload_status_response.testing_uri}")
+          UI.message("🔗 Share this release with testers who have access: #{upload_status_response.testing_uri}")
         end
 
         if upload_status_response.binary_download_uri
