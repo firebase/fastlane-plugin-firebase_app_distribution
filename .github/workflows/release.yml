@@ -3,23 +3,31 @@ name: Build and publish to RubyGems
 on:
   # Run this workflow manually from the Actions tab.
   workflow_dispatch:
+    inputs:
+      rubygems_otp_token:
+        description: 'OTP token for RubyGems'
+        required: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Publish to RubyGems
-      # This plugin:
-      #   1. Sets up the ruby container
-      #   2. Installs bundler and dependencies
-      #   3. Runs `rake release`, which creates and pushes a
-      #      GitHub tag based on the latest version to GitHub,
-      #      and then publishes the gem to RubyGems.
-      # https://github.com/marketplace/actions/publish-to-rubygems
-      uses: cadwallion/publish-rubygems-action@master
-      env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-          RUBYGEMS_API_KEY: ${{secrets.RUBYGEMS_API_KEY}}
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.0
+
+      - name: Publish to RubyGems
+        run: |
+          mkdir -p $HOME/.gem
+          touch $HOME/.gem/credentials
+          chmod 0600 $HOME/.gem/credentials
+          printf -- "---\n:rubygems_api_key: ${{ secrets.RUBYGEMS_API_KEY }}\n" > $HOME/.gem/credentials
+          gem build *.gemspec
+          gem push *.gem --otp ${{ inputs.rubygems_otp_token }}
