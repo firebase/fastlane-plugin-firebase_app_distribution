@@ -314,24 +314,21 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
     end
 
     it 'patch call is successful when input is valid' do
+      response = {
+        name: 'release-name',
+        releaseNotes: {
+          text: 'release_notes'
+        }
+      }
       stubs.patch("/v1/#{release_name}?updateMask=release_notes.text", payload.to_json, headers) do |env|
         [
           200,
           {}, # response headers
-          {}  # response body
+          response
         ]
       end
-      api_client.update_release_notes(release_name, "release_notes")
-    end
 
-    it 'skips posting when release_notes is empty' do
-      expect(conn).to_not(receive(:post))
-      api_client.update_release_notes(release_name, "")
-    end
-
-    it 'skips posting when release_notes is nil' do
-      expect(conn).to_not(receive(:post))
-      api_client.update_release_notes(release_name, nil)
+      expect(api_client.update_release_notes(release_name, "release_notes")).to eq(response)
     end
 
     it 'raises a user error when a client error is returned' do

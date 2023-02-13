@@ -293,6 +293,59 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
           end.to raise_error(ErrorMessage.aab_upload_error('UNKNOWN'))
         end
       end
+
+      it 'updates FIREBASE_APP_DISTRO_LATEST_RELEASE with release returned from upload call' do
+        release = {
+          name: "release-name"
+        }
+        upload_response = UploadStatusResponse.new({
+         response: {
+         release: release
+        }
+
+        })
+        allow(File).to receive(:exist?).with('path/to.apk').and_return(true)
+        allow_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient)
+          .to receive(:upload)
+          .and_return(upload_response)
+        allow_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient)
+          .to receive(:distribute)
+
+        action.run({
+          app: android_app_id,
+          android_artifact_path: 'path/to.apk'
+        })
+
+        expect_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient).to_not(receive(:update_release_notes))
+        expect(Fastlane::Actions.lane_context[:FIREBASE_APP_DISTRO_RELEASE]).to eq(release)
+      end
+
+      it 'updates FIREBASE_APP_DISTRO_LATEST_RELEASE with release returned from update release notes call' do
+        release = {
+          name: "release-name"
+        }
+        updated_release = release.merge({ releaseNotes: 'updated' })
+        upload_response = UploadStatusResponse.new({
+                                                     release: release
+                                                   })
+        allow(File).to receive(:exist?).with('path/to.apk').and_return(true)
+        allow_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient)
+          .to receive(:upload)
+          .and_return(upload_response)
+        allow_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient)
+          .to receive(:update_release_notes)
+          .and_return(updated_release)
+        allow_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient)
+          .to receive(:distribute)
+
+        action.run({
+                     app: android_app_id,
+                     android_artifact_path: 'path/to.apk',
+                     release_notes: 'updated'
+                   })
+
+        expect(Fastlane::Actions.lane_context[:FIREBASE_APP_DISTRO_RELEASE]).to eq(updated_release)
+      end
     end
   end
 end

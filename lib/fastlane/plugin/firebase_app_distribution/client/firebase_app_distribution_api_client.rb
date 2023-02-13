@@ -71,16 +71,17 @@ module Fastlane
               text: release_notes
             }
           }
-          connection.patch(update_release_notes_url(release_name), payload.to_json) do |request|
+          response = connection.patch(update_release_notes_url(release_name), payload.to_json) do |request|
             request.headers[AUTHORIZATION] = "Bearer " + @auth_token
             request.headers[CONTENT_TYPE] = APPLICATION_JSON
             request.headers[CLIENT_VERSION] = client_version_header_value
           end
+          UI.success("✅ Posted release notes.")
+          response.body
         rescue Faraday::ClientError => e
           error = ErrorResponse.new(e.response)
           UI.user_error!("#{ErrorMessage::INVALID_RELEASE_NOTES}: #{error.message}")
         end
-        UI.success("✅ Posted release notes.")
       end
 
       # Get AAB info (Android apps only)
