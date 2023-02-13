@@ -7,6 +7,11 @@ module Fastlane
       REDACTION_EXPOSED_LENGTH = 5
       REDACTION_CHARACTER = "X"
 
+      # In this type of application, the client secret is not treated as a secret.
+      # See: https://developers.google.com/identity/protocols/OAuth2InstalledApp
+      CLIENT_ID = "563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"
+      CLIENT_SECRET = "j9iVZfS8kkCEFUPaAeJV0sAi
+
       # Returns the auth token for any of the auth methods (Firebase CLI token,
       # Google service account, firebase-tools). To ensure that a specific
       # auth method is used, unset all other auth variables/parameters to nil/empty
@@ -74,8 +79,8 @@ module Fastlane
       def firebase_token(refresh_token, debug)
         client = Signet::OAuth2::Client.new(
           token_credential_uri: TOKEN_CREDENTIAL_URI,
-          client_id: Fastlane::Actions::FirebaseAppDistributionLoginAction::CLIENT_ID,
-          client_secret: Fastlane::Actions::FirebaseAppDistributionLoginAction::CLIENT_SECRET,
+          client_id: CLIENT_ID,
+          client_secret: CLIENT_SECRET,
           refresh_token: refresh_token
         )
         client.fetch_access_token!

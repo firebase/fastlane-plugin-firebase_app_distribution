@@ -1,5 +1,4 @@
 require 'fastlane_core/ui/ui'
-require_relative '../actions/firebase_app_distribution_login'
 require_relative '../client/error_response'
 require_relative '../client/aab_info'
 require_relative '../helper/firebase_app_distribution_helper'
