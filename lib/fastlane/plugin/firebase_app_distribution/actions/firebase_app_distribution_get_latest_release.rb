@@ -49,7 +49,7 @@ module Fastlane
                                        optional: false,
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :firebase_cli_token,
-                                       description: "Auth token generated using 'fastlane run firebase_app_distribution_login', or the Firebase CLI's login:ci command",
+                                       description: "Auth token generated using Firebase CLI's login:ci command",
                                        optional: true,
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :service_credentials_file,
