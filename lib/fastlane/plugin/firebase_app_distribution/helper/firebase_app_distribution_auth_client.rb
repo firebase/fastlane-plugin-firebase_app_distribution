@@ -10,7 +10,7 @@ module Fastlane
       # In this type of application, the client secret is not treated as a secret.
       # See: https://developers.google.com/identity/protocols/OAuth2InstalledApp
       CLIENT_ID = "563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"
-      CLIENT_SECRET = "j9iVZfS8kkCEFUPaAeJV0sAi
+      CLIENT_SECRET = "j9iVZfS8kkCEFUPaAeJV0sAi"
 
       # Returns the auth token for any of the auth methods (Firebase CLI token,
       # Google service account, firebase-tools). To ensure that a specific
