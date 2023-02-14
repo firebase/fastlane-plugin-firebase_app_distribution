@@ -5,6 +5,9 @@ require_relative '../helper/firebase_app_distribution_helper'
 
 module Fastlane
   module Actions
+    module SharedValues
+      FIREBASE_APP_DISTRO_LATEST_RELEASE ||= :FIREBASE_APP_DISTRO_LATEST_RELEASE
+    end
     class FirebaseAppDistributionGetLatestReleaseAction < Action
       extend Auth::FirebaseAppDistributionAuthClient
       extend Helper::FirebaseAppDistributionHelper
@@ -18,12 +21,12 @@ module Fastlane
         releases = fad_api_client.list_releases(app_name_from_app_id(params[:app]), 1)[:releases] || []
         if releases.empty?
           latest_release = nil
-          UI.important("No releases for app #{params[:app]} found in App Distribution. Returning nil and setting Actions.lane_context[:FIREBASE_APP_DISTRO_LATEST_RELEASE].")
+          UI.important("No releases for app #{params[:app]} found in App Distribution. Returning nil and setting Actions.lane_context[SharedValues::FIREBASE_APP_DISTRO_LATEST_RELEASE].")
         else
           latest_release = releases[0]
-          UI.success("✅ Latest release fetched successfully. Returning release and setting Actions.lane_context[:FIREBASE_APP_DISTRO_LATEST_RELEASE].")
+          UI.success("✅ Latest release fetched successfully. Returning release and setting Actions.lane_context[SharedValues::FIREBASE_APP_DISTRO_LATEST_RELEASE].")
         end
-        Actions.lane_context[:FIREBASE_APP_DISTRO_LATEST_RELEASE] = latest_release
+        Actions.lane_context[SharedValues::FIREBASE_APP_DISTRO_LATEST_RELEASE] = latest_release
         return latest_release
       end
 
