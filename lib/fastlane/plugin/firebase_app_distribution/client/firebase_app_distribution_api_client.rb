@@ -58,12 +58,10 @@ module Fastlane
       #   release_name - App release resource name, returned by upload_status endpoint
       #   release_notes - String of notes for this release
       #
+      # Returns a hash of the release
+      #
       # Throws a user_error if the release_notes are invalid
       def update_release_notes(release_name, release_notes)
-        if release_notes.nil? || release_notes.empty?
-          UI.success("✅ No release notes passed in. Skipping this step.")
-          return
-        end
         begin
           payload = {
             name: release_name,
@@ -136,7 +134,7 @@ module Fastlane
       #   binary_path - Absolute path to your app's aab/apk/ipa file
       #   timeout - The amount of seconds before the upload will timeout, if not completed
       #
-      # Returns the release_name of the uploaded release.
+      # Returns a `UploadStatusResponse` with the upload is complete.
       #
       # Crashes if the number of polling retries exceeds MAX_POLLING_RETRIES or if the binary cannot
       # be uploaded.
