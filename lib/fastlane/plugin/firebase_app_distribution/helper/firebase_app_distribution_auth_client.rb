@@ -6,6 +6,12 @@ module Fastlane
       TOKEN_CREDENTIAL_URI = "https://oauth2.googleapis.com/token"
       REDACTION_EXPOSED_LENGTH = 5
       REDACTION_CHARACTER = "X"
+      SCOPE = "https://www.googleapis.com/auth/cloud-platform"
+
+      # In this type of application, the client secret is not treated as a secret.
+      # See: https://developers.google.com/identity/protocols/OAuth2InstalledApp
+      CLIENT_ID = "563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"
+      CLIENT_SECRET = "j9iVZfS8kkCEFUPaAeJV0sAi"
 
       # Returns the auth token for any of the auth methods (Firebase CLI token,
       # Google service account, firebase-tools). To ensure that a specific
@@ -13,8 +19,7 @@ module Fastlane
       #
       # args
       #   google_service_path - Absolute path to the Google service account file
-      #   firebase_cli_token - Firebase CLI refresh token from login action or
-      #                        CI environment
+      #   firebase_cli_token - Refresh token
       #   debug - Whether to enable debug-level logging
       #
       # env variables
@@ -74,8 +79,8 @@ module Fastlane
       def firebase_token(refresh_token, debug)
         client = Signet::OAuth2::Client.new(
           token_credential_uri: TOKEN_CREDENTIAL_URI,
-          client_id: Fastlane::Actions::FirebaseAppDistributionLoginAction::CLIENT_ID,
-          client_secret: Fastlane::Actions::FirebaseAppDistributionLoginAction::CLIENT_SECRET,
+          client_id: CLIENT_ID,
+          client_secret: CLIENT_SECRET,
           refresh_token: refresh_token
         )
         client.fetch_access_token!
@@ -94,7 +99,7 @@ module Fastlane
       def service_account(google_service_path, debug)
         service_account_credentials = Google::Auth::ServiceAccountCredentials.make_creds(
           json_key_io: File.open(google_service_path),
-          scope: Fastlane::Actions::FirebaseAppDistributionLoginAction::SCOPE
+          scope: SCOPE
         )
         service_account_credentials.fetch_access_token!["access_token"]
       rescue Errno::ENOENT
