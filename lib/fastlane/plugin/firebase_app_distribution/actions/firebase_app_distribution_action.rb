@@ -11,6 +11,10 @@ require_relative '../helper/firebase_app_distribution_auth_client'
 ## How should we document the usage of release notes?
 module Fastlane
   module Actions
+    module SharedValues
+      FIREBASE_APP_DISTRO_RELEASE ||= :FIREBASE_APP_DISTRO_RELEASE
+    end
+
     class FirebaseAppDistributionAction < Action
       extend Auth::FirebaseAppDistributionAuthClient
       extend Helper::FirebaseAppDistributionHelper
@@ -75,8 +79,7 @@ module Fastlane
         emails = string_to_array(testers)
         group_aliases = string_to_array(groups)
         fad_api_client.distribute(release_name, emails, group_aliases)
-        UI.success("🎉 App Distribution upload finished successfully. Setting Actions.lane_context[:FIREBASE_APP_DISTRO_RELEASE] to the uploaded release.")
-        Actions.lane_context[:FIREBASE_APP_DISTRO_RELEASE] = release
+        UI.success("🎉 App Distribution upload finished successfully. Setting Actions.lane_context[SharedValues::FIREBASE_APP_DISTRO_RELEASE] to the uploaded release.")
 
         if upload_status_response.firebase_console_uri
           UI.message("🔗 View this release in the Firebase console: #{upload_status_response.firebase_console_uri}")
@@ -90,7 +93,7 @@ module Fastlane
           UI.message("🔗 Download the release binary (link expires in 1 hour): #{upload_status_response.binary_download_uri}")
         end
 
-        Actions.lane_context[:FIREBASE_APP_DISTRO_RELEASE] = release
+        Actions.lane_context[SharedValues::FIREBASE_APP_DISTRO_RELEASE] = release
         release
       end
 
