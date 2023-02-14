@@ -301,6 +301,12 @@ module Fastlane
           CODE
         ]
       end
+
+      def self.output
+        [
+          ['FIREBASE_APP_DISTRO_RELEASE', 'A hash representing the uploaded release created in Firebase App Distribution']
+        ]
+      end
     end
   end
 end
