@@ -27,7 +27,7 @@ describe Fastlane::Actions::FirebaseAppDistributionGetLatestReleaseAction do
       allow_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient).to receive(:list_releases).with('projects/1234567890/apps/1:1234567890:ios:321abc456def7890', 1).and_return({ releases: [release] })
 
       expect(action.run({ app: '1:1234567890:ios:321abc456def7890' })).to eq(release)
-      expect(Fastlane::Actions.lane_context[:FIREBASE_APP_DISTRO_LATEST_RELEASE]).to eq(release)
+      expect(Fastlane::Actions.lane_context[Fastlane::Actions::SharedValues::FIREBASE_APP_DISTRO_LATEST_RELEASE]).to eq(release)
     end
   end
 end
