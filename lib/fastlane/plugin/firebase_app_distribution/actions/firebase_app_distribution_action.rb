@@ -65,7 +65,7 @@ module Fastlane
 
         release_notes = release_notes(params)
         if release_notes.nil? || release_notes.empty?
-          UI.info("⏩ No release notes passed in. Skipping this step.")
+          UI.message("⏩ No release notes passed in. Skipping this step.")
         else
           release = fad_api_client.update_release_notes(release_name, release_notes)
         end
