@@ -89,6 +89,9 @@ module Fastlane
         if upload_status_response.binary_download_uri
           UI.message("🔗 Download the release binary (link expires in 1 hour): #{upload_status_response.binary_download_uri}")
         end
+
+        Actions.lane_context[:FIREBASE_APP_DISTRO_RELEASE] = release
+        release
       end
 
       def self.description

@@ -294,7 +294,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
         end
       end
 
-      it 'updates FIREBASE_APP_DISTRO_LATEST_RELEASE with release returned from upload call' do
+      it 'updates FIREBASE_APP_DISTRO_RELEASE with release returned from upload call' do
         release = {
           name: "release-name"
         }
@@ -320,7 +320,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
         expect(Fastlane::Actions.lane_context[:FIREBASE_APP_DISTRO_RELEASE]).to eq(release)
       end
 
-      it 'updates FIREBASE_APP_DISTRO_LATEST_RELEASE with release returned from update release notes call' do
+      it 'updates FIREBASE_APP_DISTRO_RELEASE with release returned from update release notes call' do
         release = {
           name: "release-name"
         }
