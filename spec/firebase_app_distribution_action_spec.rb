@@ -317,7 +317,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
         })
 
         expect_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient).to_not(receive(:update_release_notes))
-        expect(Fastlane::Actions.lane_context[:FIREBASE_APP_DISTRO_RELEASE]).to eq(release)
+        expect(Fastlane::Actions.lane_context[Fastlane::Actions::SharedValues::FIREBASE_APP_DISTRO_RELEASE]).to eq(release)
       end
 
       it 'updates FIREBASE_APP_DISTRO_RELEASE with release returned from update release notes call' do
@@ -344,7 +344,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
                      release_notes: 'updated'
                    })
 
-        expect(Fastlane::Actions.lane_context[:FIREBASE_APP_DISTRO_RELEASE]).to eq(updated_release)
+        expect(Fastlane::Actions.lane_context[Fastlane::Actions::SharedValues::FIREBASE_APP_DISTRO_RELEASE]).to eq(updated_release)
       end
     end
   end
