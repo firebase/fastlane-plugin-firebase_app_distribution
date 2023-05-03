@@ -1,5 +1,5 @@
 module ErrorMessage
-  MISSING_CREDENTIALS = "Missing authentication credentials. Check that your Firebase refresh token is set or that your service account file path is correct and try again."
+  MISSING_CREDENTIALS = "Missing authentication credentials. Set up Application Default Credentials, your Firebase refresh token, or sign in with the Firebase CLI, and try again."
   MISSING_APP_ID = "Missing app id. Please check that the app parameter is set and try again"
   SERVICE_CREDENTIALS_NOT_FOUND = "Service credentials file does not exist. Please check the service credentials path and try again"
   PARSE_SERVICE_CREDENTIALS_ERROR = "Failed to extract service account information from the service credentials file"

@@ -251,27 +251,6 @@ module Fastlane
         UI.user_error!(ErrorMessage::INVALID_PROJECT)
       end
 
-      # List releases
-      #
-      # args
-      #   app_name - Firebase App resource name
-      #   page_size - The number of releases to return in the page
-      #   page_token - A page token, received from a previous call
-      #
-      # Returns the response body. Throws a user_error if the app hasn't been onboarded to App Distribution.
-      def list_releases(app_name, page_size = 100, page_token = nil)
-        begin
-          response = connection.get(list_releases_url(app_name), { pageSize: page_size.to_s, pageToken: page_token }) do |request|
-            request.headers[AUTHORIZATION] = "Bearer " + @auth_token
-            request.headers[CLIENT_VERSION] = client_version_header_value
-          end
-        rescue Faraday::ResourceNotFound
-          UI.user_error!("#{ErrorMessage::INVALID_APP_ID}: #{app_name}")
-        end
-
-        return response.body
-      end
-
       private
 
       def client_version_header_value
