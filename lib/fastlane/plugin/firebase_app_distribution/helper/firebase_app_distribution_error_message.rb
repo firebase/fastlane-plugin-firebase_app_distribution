@@ -13,6 +13,8 @@ module ErrorMessage
   INVALID_PROJECT = "App Distribution could not find your Firebase project. Make sure to onboard an app in your project by pressing the \"Get started\" button on the App Distribution page in the Firebase console: https://console.firebase.google.com/project/_/appdistribution."
   INVALID_PATH = "Could not read content from"
   INVALID_TESTERS = "Could not enable access for testers. Check that the tester emails are formatted correctly, the groups exist and you are using group aliases (not group names) for specifying groups."
+  INVALID_TESTER_GROUP = "App Distribution could not find your tester group. Make sure that it exists before trying to add testers, and that the group alias is specified correctly."
+  INVALID_TESTER_GROUP_NAME = "The tester name group should be 4-63 characters, and valid characters are /[a-z][0-9]-/."
   INVALID_RELEASE_NOTES = "Failed to add release notes"
   SERVICE_CREDENTIALS_ERROR = "App Distribution could not generate credentials from the service credentials file specified"
   PLAY_ACCOUNT_NOT_LINKED = "This project is not linked to a Google Play account."
@@ -21,7 +23,6 @@ module ErrorMessage
   PLAY_IAS_TERMS_NOT_ACCEPTED = "You must accept the Play Internal App Sharing (IAS) terms to upload AABs."
   INVALID_EMAIL_ADDRESS = "You passed an invalid email address."
   TESTER_LIMIT_VIOLATION = "Creating testers would exceed tester limit"
-  INVALID_TESTER_GROUP_NAME = "The tester name group should be 4-63 characters, and valid characters are /[a-z][0-9]-/."
   EMPTY_TOKENS_FIELD = "Unable to find \"tokens\" field in the firebase-tools.json file. Ensure that the file has a tokens field and try again"
 
   def self.aab_upload_error(aab_state)

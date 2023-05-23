@@ -255,13 +255,14 @@ module Fastlane
       #
       # args
       #   project_number - Firebase project number
-      #   group_alias - Name of the tester group
+      #   group_alias - Alias of the tester group
       #   display_name - Display name of the tester group
       #
-      def add_tester_group(project_number, group_alias, display_name)
-        payload = { name: group_alias,
+      def create_group(project_number, group_alias, display_name)
+        payload = { name: "projects/#{project_number}/groups/#{group_alias}",
                     displayName: display_name }
         connection.post(add_tester_group_url(project_number), payload.to_json) do |request|
+          request.params["groupId"] = group_alias
           request.headers[AUTHORIZATION] = "Bearer " + @auth_token
           request.headers[CONTENT_TYPE] = APPLICATION_JSON
           request.headers[CLIENT_VERSION] = client_version_header_value
@@ -270,6 +271,8 @@ module Fastlane
         UI.user_error!(ErrorMessage::INVALID_TESTER_GROUP_NAME)
       rescue Faraday::ResourceNotFound
         UI.user_error!(ErrorMessage::INVALID_PROJECT)
+      rescue Faraday::ConflictError
+        UI.important("Tester group #{group_alias} already exists.")
       rescue Faraday::ClientError => e
         raise e
       end
@@ -278,7 +281,7 @@ module Fastlane
       #
       # args
       #   project_number - Firebase project number
-      #   group_alias - Name of the tester group
+      #   group_alias - Alias of the tester group
       #   emails - An array of emails to be added to the group.
       #            A maximum of 1000 testers can be added at a time, if creating missing testers is enabled.
       #   create_missing_testers - If true, missing testers will be created and added to the group.
@@ -286,6 +289,7 @@ module Fastlane
       def add_testers_to_group(project_number, group_alias, emails, create_missing_testers = true)
         payload = { emails: emails,
                     createMissingTesters: create_missing_testers }
+        UI.message("Adding testers to group URL: #{add_testers_to_group_url(project_number, group_alias)}")
         connection.post(add_testers_to_group_url(project_number, group_alias), payload.to_json) do |request|
           request.headers[AUTHORIZATION] = "Bearer " + @auth_token
           request.headers[CONTENT_TYPE] = APPLICATION_JSON
@@ -294,7 +298,7 @@ module Fastlane
       rescue Faraday::BadRequestError
         UI.user_error!(ErrorMessage::INVALID_EMAIL_ADDRESS)
       rescue Faraday::ResourceNotFound
-        UI.user_error!(ErrorMessage::INVALID_PROJECT)
+        UI.user_error!(ErrorMessage::INVALID_TESTER_GROUP)
       rescue Faraday::ClientError => e
         raise e
       end
@@ -303,7 +307,7 @@ module Fastlane
       #
       # args
       #   project_number - Firebase project number
-      #   group_alias - Name of the tester group
+      #   group_alias - Alias of the tester group
       #   emails - An array of emails to be removed from the group.
       #
       def remove_testers_from_group(project_number, group_alias, emails)
@@ -325,10 +329,10 @@ module Fastlane
       #
       # args
       #   project_number - Firebase project number
-      #   name - Name of the tester group
+      #   group_alias - Alias of the tester group
       #
-      def delete_tester_group(project_number, name)
-        connection.delete(delete_tester_group_url(project_number, name)) do |request|
+      def delete_group(project_number, group_alias)
+        connection.delete(delete_tester_group_url(project_number, group_alias)) do |request|
           request.headers[AUTHORIZATION] = "Bearer " + @auth_token
           request.headers[CONTENT_TYPE] = APPLICATION_JSON
           request.headers[CLIENT_VERSION] = client_version_header_value
@@ -412,16 +416,16 @@ module Fastlane
         "/v1/projects/#{project_number}/groups"
       end
 
-      def delete_tester_group_url(project_number, group_name)
-        "/v1/projects/#{project_number}/groups/#{group_name}"
+      def delete_tester_group_url(project_number, group_alias)
+        "/v1/projects/#{project_number}/groups/#{group_alias}"
       end
 
-      def add_testers_to_group_url(project_number, group_name)
-        "/v1/projects/#{project_number}/groups/#{group_name}:batchJoin"
+      def add_testers_to_group_url(project_number, group_alias)
+        "/v1/projects/#{project_number}/groups/#{group_alias}:batchJoin"
       end
 
-      def remove_testers_from_group_url(project_number, group_name)
-        "/v1/projects/#{project_number}/groups/#{group_name}:batchLeave"
+      def remove_testers_from_group_url(project_number, group_alias)
+        "/v1/projects/#{project_number}/groups/#{group_alias}:batchLeave"
       end
 
       def connection
