@@ -21,6 +21,7 @@ module ErrorMessage
   PLAY_IAS_TERMS_NOT_ACCEPTED = "You must accept the Play Internal App Sharing (IAS) terms to upload AABs."
   INVALID_EMAIL_ADDRESS = "You passed an invalid email address."
   TESTER_LIMIT_VIOLATION = "Creating testers would exceed tester limit"
+  INVALID_TESTER_GROUP_NAME = "The tester name group should be 4-63 characters, and valid characters are /[a-z][0-9]-/."
   EMPTY_TOKENS_FIELD = "Unable to find \"tokens\" field in the firebase-tools.json file. Ensure that the file has a tokens field and try again"
 
   def self.aab_upload_error(aab_state)
