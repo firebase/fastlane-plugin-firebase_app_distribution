@@ -1,14 +1,12 @@
 require 'fastlane/action'
 require 'fastlane_core/ui/ui'
-require 'json'
-require 'json-schema'
 
 require_relative '../helper/firebase_app_distribution_helper'
 require_relative '../helper/firebase_app_distribution_auth_client'
 
 module Fastlane
   module Actions
-    class FirebaseAppDistributionAddTesterGroupsAction < Action
+    class FirebaseAppDistributionDeleteGroupAction < Action
       extend Auth::FirebaseAppDistributionAuthClient
       extend Helper::FirebaseAppDistributionHelper
 
@@ -16,48 +14,22 @@ module Fastlane
         auth_token = fetch_auth_token(params[:service_credentials_file], params[:firebase_cli_token])
         fad_api_client = Client::FirebaseAppDistributionApiClient.new(auth_token, params[:debug])
 
-        if blank?(params[:file])
-          UI.user_error!("Must specify `file`.")
+        if blank?(params[:alias])
+          UI.user_error!("Must specify `alias`.")
         end
 
-        json_file = params[:file]
+        project_number = params[:project_number]
+        group_alias = params[:alias]
 
-        # Read the JSON file
-        begin
-          json_data = File.open(json_file).read
-        rescue Errno::ENOENT => _
-          UI.user_error!("JSON file not found: #{json_file}")
-          return
-        end
+        UI.message("⏳ Deleting tester group '#{group_alias}' in project #{project_number}...")
 
-        tester_group_data = JSON.parse(json_data)
+        fad_api_client.delete_group(project_number, group_alias)
 
-        begin
-          JSON::Validator.validate!(GROUPS_JSON_SCHEMA, tester_group_data)
-        rescue JSON::Schema::ValidationError => e
-          UI.user_error!("Invalid JSON file content. #{e.message}")
-        end
-
-        groups = tester_group_data["groups"]
-        groups.each do |group|
-          group_alias = group['alias']
-          group_display_name = group["displayName"]
-          UI.message("⏳ Creating tester group '#{group_alias}' testers in project #{params[:project_number]}...")
-
-          fad_api_client.create_group(params[:project_number], group_alias, group_display_name)
-
-          testers = group["testers"]
-          UI.message("⏳ Adding #{testers.count} testers to group #{group_alias}...")
-
-          fad_api_client.add_testers_to_group(params[:project_number], group_alias, testers)
-          UI.message("Testers successfully added to group(s).")
-        end
-
-        UI.success("✅ Tester group(s) successfully added.")
+        UI.success("✅ Group deleted successfully.")
       end
 
       def self.description
-        "Create tester groups and testers in bulk from a JSON file"
+        "Delete a tester group"
       end
 
       def self.authors
@@ -66,7 +38,7 @@ module Fastlane
 
       # supports markdown.
       def self.details
-        "Create tester groups and testers in bulk from a JSON file"
+        "Delete a tester group"
       end
 
       def self.available_options
@@ -76,10 +48,10 @@ module Fastlane
                                        description: "Your Firebase project number. You can find the project number in the Firebase console, on the General Settings page",
                                        type: Integer,
                                        optional: false),
-          FastlaneCore::ConfigItem.new(key: :file,
-                                       env_name: "FIREBASEAPPDISTRO_ADD_TESTER_GROUPS_FILE",
-                                       description: "Path to a JSON file containing tester groups and tester emails to be created. A maximum of 1000 testers can be created at a time",
-                                       optional: true,
+          FastlaneCore::ConfigItem.new(key: :alias,
+                                       env_name: "FIREBASEAPPDISTRO_DELETE_GROUP_ALIAS",
+                                       description: "Alias for the group to be deleted",
+                                       optional: false,
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :service_credentials_file,
                                        description: "Path to Google service credentials file",

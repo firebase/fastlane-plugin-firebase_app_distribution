@@ -639,7 +639,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
     end
   end
 
-  describe '#add_tester_group' do
+  describe '#create_group' do
     let(:headers) do
       {
         'Authorization' => 'Bearer auth_token',
@@ -660,16 +660,18 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         [
           200,
           {}, # response headers
-          {} # response body
+          {
+            name: "projects/#{project_number}/groups/#{group_alias}",
+            displayName: display_name
+          }
         ]
       end
 
       result = api_client.create_group(project_number, group_alias, display_name)
-
-      expect(result.success?).to eq(true)
+      expect(result[:name]).to eq("projects/#{project_number}/groups/#{group_alias}")
     end
 
-    it 'is successful when the group already exists' do
+    it 'is successful if the group already exists' do
       payload = {
         name: "projects/#{project_number}/groups/#{group_alias}",
         displayName: display_name
@@ -678,13 +680,15 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         [
           409,
           {}, # response headers
-          {} # response body
+          {
+            name: "projects/#{project_number}/groups/#{group_alias}",
+            displayName: display_name
+          }
         ]
       end
 
       result = api_client.create_group(project_number, group_alias, display_name)
-
-      expect(result).to eq(true)
+      expect(result[:name]).to eq("projects/#{project_number}/groups/#{group_alias}")
     end
 
     it 'fails and prints correct error message for a 400' do
@@ -719,7 +723,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
     end
   end
 
-  describe '#remove_tester_group' do
+  describe '#delete_group' do
     let(:headers) do
       {
         'Authorization' => 'Bearer auth_token',
@@ -740,8 +744,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       end
 
       result = api_client.delete_group(project_number, group_alias)
-
-      expect(result.success?).to eq(true)
+      expect(result).to eq({})
     end
 
     it 'fails and prints correct error message for a 404' do
@@ -754,7 +757,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         ]
       end
       expect { api_client.delete_group(bad_project_number, group_alias) }
-        .to raise_error(ErrorMessage::INVALID_PROJECT)
+        .to raise_error(ErrorMessage::INVALID_TESTER_GROUP)
     end
   end
 
@@ -783,16 +786,34 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         ]
       end
 
-      result = api_client.add_testers_to_group(project_number, group_alias, emails)
+      result = api_client.add_testers_to_group(project_number, group_alias, emails, true)
 
-      expect(result.success?).to eq(true)
+      expect(result).to eq({})
+    end
+
+    it 'sets createMissingTesters to false by default' do
+      emails = %w[tester1@test.com tester2@test.com]
+      payload = {
+        emails: emails,
+        createMissingTesters: false
+      }
+      stubs.post("/v1/projects/#{project_number}/groups/#{group_alias}:batchJoin", payload.to_json, headers) do |env|
+        [
+          200,
+          {}, # response headers
+          {} # response body
+        ]
+      end
+
+      api_client.add_testers_to_group(project_number, group_alias, emails)
+      stubs.verify_stubbed_calls
     end
 
     it 'fails and prints correct error message for a 400' do
       emails = %w[tester1@test.com invalid_email_address]
       payload = {
         emails: emails,
-        createMissingTesters: true
+        createMissingTesters: false
       }
       stubs.post("/v1/projects/#{project_number}/groups/#{group_alias}:batchJoin", payload.to_json, headers) do |env|
         [
@@ -810,7 +831,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       emails = %w[tester1@test.com tester2@test.com]
       payload = {
         emails: emails,
-        createMissingTesters: true
+        createMissingTesters: false
       }
       bad_project_number = "bad_project_number"
       stubs.post("/v1/projects/#{bad_project_number}/groups/#{group_alias}:batchJoin", payload.to_json, headers) do |env|
@@ -849,7 +870,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
 
       result = api_client.remove_testers_from_group(project_number, group_alias, emails)
 
-      expect(result.success?).to eq(true)
+      expect(result).to eq({})
     end
 
     it 'fails and prints correct error message for a 400' do
@@ -879,7 +900,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         ]
       end
       expect { api_client.remove_testers_from_group(bad_project_number, group_alias, emails) }
-        .to raise_error(ErrorMessage::INVALID_PROJECT)
+        .to raise_error(ErrorMessage::INVALID_TESTER_GROUP)
     end
   end
 end

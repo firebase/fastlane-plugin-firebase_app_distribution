@@ -261,18 +261,22 @@ module Fastlane
       def create_group(project_number, group_alias, display_name)
         payload = { name: "projects/#{project_number}/groups/#{group_alias}",
                     displayName: display_name }
-        connection.post(add_tester_group_url(project_number), payload.to_json) do |request|
+        response = connection.post(add_tester_group_url(project_number), payload.to_json) do |request|
           request.params["groupId"] = group_alias
           request.headers[AUTHORIZATION] = "Bearer " + @auth_token
           request.headers[CONTENT_TYPE] = APPLICATION_JSON
           request.headers[CLIENT_VERSION] = client_version_header_value
         end
+        response.body
       rescue Faraday::BadRequestError
         UI.user_error!(ErrorMessage::INVALID_TESTER_GROUP_NAME)
       rescue Faraday::ResourceNotFound
         UI.user_error!(ErrorMessage::INVALID_PROJECT)
       rescue Faraday::ConflictError
         UI.important("Tester group #{group_alias} already exists.")
+        return {
+          name: "projects/#{project_number}/groups/#{group_alias}"
+        }
       rescue Faraday::ClientError => e
         raise e
       end
@@ -286,15 +290,15 @@ module Fastlane
       #            A maximum of 1000 testers can be added at a time, if creating missing testers is enabled.
       #   create_missing_testers - If true, missing testers will be created and added to the group.
       #
-      def add_testers_to_group(project_number, group_alias, emails, create_missing_testers = true)
+      def add_testers_to_group(project_number, group_alias, emails, create_missing_testers = false)
         payload = { emails: emails,
                     createMissingTesters: create_missing_testers }
-        UI.message("Adding testers to group URL: #{add_testers_to_group_url(project_number, group_alias)}")
-        connection.post(add_testers_to_group_url(project_number, group_alias), payload.to_json) do |request|
+        response = connection.post(add_testers_to_group_url(project_number, group_alias), payload.to_json) do |request|
           request.headers[AUTHORIZATION] = "Bearer " + @auth_token
           request.headers[CONTENT_TYPE] = APPLICATION_JSON
           request.headers[CLIENT_VERSION] = client_version_header_value
         end
+        response.body
       rescue Faraday::BadRequestError
         UI.user_error!(ErrorMessage::INVALID_EMAIL_ADDRESS)
       rescue Faraday::ResourceNotFound
@@ -312,15 +316,16 @@ module Fastlane
       #
       def remove_testers_from_group(project_number, group_alias, emails)
         payload = { emails: emails }
-        connection.post(remove_testers_from_group_url(project_number, group_alias), payload.to_json) do |request|
+        response = connection.post(remove_testers_from_group_url(project_number, group_alias), payload.to_json) do |request|
           request.headers[AUTHORIZATION] = "Bearer " + @auth_token
           request.headers[CONTENT_TYPE] = APPLICATION_JSON
           request.headers[CLIENT_VERSION] = client_version_header_value
         end
+        response.body
       rescue Faraday::BadRequestError
         UI.user_error!(ErrorMessage::INVALID_EMAIL_ADDRESS)
       rescue Faraday::ResourceNotFound
-        UI.user_error!(ErrorMessage::INVALID_PROJECT)
+        UI.user_error!(ErrorMessage::INVALID_TESTER_GROUP)
       rescue Faraday::ClientError => e
         raise e
       end
@@ -332,13 +337,14 @@ module Fastlane
       #   group_alias - Alias of the tester group
       #
       def delete_group(project_number, group_alias)
-        connection.delete(delete_tester_group_url(project_number, group_alias)) do |request|
+        response = connection.delete(delete_tester_group_url(project_number, group_alias)) do |request|
           request.headers[AUTHORIZATION] = "Bearer " + @auth_token
           request.headers[CONTENT_TYPE] = APPLICATION_JSON
           request.headers[CLIENT_VERSION] = client_version_header_value
         end
+        response.body
       rescue Faraday::ResourceNotFound
-        UI.user_error!(ErrorMessage::INVALID_PROJECT)
+        UI.user_error!(ErrorMessage::INVALID_TESTER_GROUP)
       end
 
       # List releases
@@ -359,7 +365,7 @@ module Fastlane
           UI.user_error!("#{ErrorMessage::INVALID_APP_ID}: #{app_name}")
         end
 
-        return response.body
+        response.body
       end
 
       private
