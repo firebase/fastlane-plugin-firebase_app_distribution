@@ -50,7 +50,7 @@ module Fastlane
                                        optional: false),
           FastlaneCore::ConfigItem.new(key: :alias,
                                        env_name: "FIREBASEAPPDISTRO_DELETE_GROUP_ALIAS",
-                                       description: "Alias for the group to be deleted",
+                                       description: "Alias of the group to be deleted",
                                        optional: false,
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :service_credentials_file,

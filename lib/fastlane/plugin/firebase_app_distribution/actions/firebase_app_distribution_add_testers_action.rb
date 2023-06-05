@@ -73,7 +73,7 @@ module Fastlane
                                       type: String),
           FastlaneCore::ConfigItem.new(key: :group_alias,
                                        env_name: "FIREBASEAPPDISTRO_ADD_TESTERS_GROUP_ALIAS",
-                                       description: "Alias for the group to add the specified testers to. The group must already exist. If not specified, testers will not be added to a group",
+                                       description: "Alias of the group to add the specified testers to. The group must already exist. If not specified, testers will not be added to a group",
                                        optional: true,
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :service_credentials_file,

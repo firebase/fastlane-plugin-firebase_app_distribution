@@ -55,7 +55,7 @@ module Fastlane
                                        optional: false),
           FastlaneCore::ConfigItem.new(key: :alias,
                                        env_name: "FIREBASEAPPDISTRO_CREATE_GROUP_ALIAS",
-                                       description: "Alias for the group to be created",
+                                       description: "Alias of the group to be created",
                                        optional: false,
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :display_name,
