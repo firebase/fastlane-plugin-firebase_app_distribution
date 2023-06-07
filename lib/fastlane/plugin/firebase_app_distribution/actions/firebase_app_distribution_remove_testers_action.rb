@@ -26,11 +26,15 @@ module Fastlane
           UI.user_error!("A maximum of 1000 testers can be removed at a time.")
         end
 
-        UI.message("⏳ Removing #{emails.count} testers from project #{params[:project_number]}...")
-
-        count = fad_api_client.remove_testers(params[:project_number], emails)
-
-        UI.success("✅ #{count} tester(s) removed successfully.")
+        if blank?(params[:group_alias])
+          UI.message("⏳ Removing #{emails.count} testers from project #{params[:project_number]}...")
+          count = fad_api_client.remove_testers(params[:project_number], emails)
+          UI.success("✅ #{count} tester(s) removed successfully.")
+        else
+          UI.message("⏳ Removing #{emails.count} testers from group #{params[:group_alias]}...")
+          fad_api_client.remove_testers_from_group(params[:project_number], params[:group_alias], emails)
+          UI.success("✅ Tester(s) removed successfully.")
+        end
       end
 
       def self.description
@@ -55,14 +59,19 @@ module Fastlane
                                        optional: false),
           FastlaneCore::ConfigItem.new(key: :emails,
                                       env_name: "FIREBASEAPPDISTRO_REMOVE_TESTERS_EMAILS",
-                                      description: "Comma separated list of tester emails to be deleted. A maximum of 1000 testers can be deleted at a time",
+                                      description: "Comma separated list of tester emails to be deleted (or removed from a group if a group alias is specified). A maximum of 1000 testers can be deleted/removed at a time",
                                       optional: true,
                                       type: String),
           FastlaneCore::ConfigItem.new(key: :file,
                                       env_name: "FIREBASEAPPDISTRO_REMOVE_TESTERS_FILE",
-                                      description: "Path to a file containing a comma separated list of tester emails to be deleted. A maximum of 1000 testers can be deleted at a time",
+                                      description: "Path to a file containing a comma separated list of tester emails to be deleted (or removed from a group if a group alias is specified). A maximum of 1000 testers can be deleted/removed at a time",
                                       optional: true,
                                       type: String),
+          FastlaneCore::ConfigItem.new(key: :group_alias,
+                                       env_name: "FIREBASEAPPDISTRO_REMOVE_TESTERS_GROUP_ALIAS",
+                                       description: "Alias of the group to remove the specified testers from. Testers will not be deleted from the project",
+                                       optional: true,
+                                       type: String),
           FastlaneCore::ConfigItem.new(key: :service_credentials_file,
                                       description: "Path to Google service credentials file",
                                       optional: true,

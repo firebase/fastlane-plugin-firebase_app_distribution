@@ -53,5 +53,34 @@ describe Fastlane::Actions::FirebaseAppDistributionRemoveTestersAction do
 
       action.run({ project_number: project_number, file: path })
     end
+
+    it 'removes testers only from the specified group when group_alias is specified' do
+      project_number = 1
+      emails = '1@e.mail,2@e.mail'
+      path = 'path/to/file'
+      fake_file = double('file')
+      group_alias = 'group_alias'
+      allow(File).to receive(:open)
+        .with(path)
+        .and_return(fake_file)
+      allow(fake_file).to receive(:read).and_return(emails)
+      expect_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient).not_to(receive(:remove_testers))
+      expect_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient).to receive(:remove_testers_from_group).with(project_number, group_alias, emails.split(','))
+      action.run({ project_number: project_number, file: path, group_alias: group_alias })
+    end
+
+    it 'does not makes any remove_testers_from_group calls when group_alias is not specified' do
+      project_number = 1
+      emails = '1@e.mail,2@e.mail'
+      path = 'path/to/file'
+      fake_file = double('file')
+      allow(File).to receive(:open)
+        .with(path)
+        .and_return(fake_file)
+      allow(fake_file).to receive(:read).and_return(emails)
+      expect_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient).to receive(:remove_testers).with(project_number, emails.split(','))
+      expect_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient).not_to(receive(:remove_testers_from_group))
+      action.run({ project_number: project_number, file: path })
+    end
   end
 end
