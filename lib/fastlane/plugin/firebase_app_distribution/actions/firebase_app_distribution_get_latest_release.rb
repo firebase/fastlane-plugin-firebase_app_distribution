@@ -17,7 +17,7 @@ module Fastlane
       def self.run(params)
         client = FirebaseAppDistribution::FirebaseAppDistributionService.new
         client.authorization =
-            get_authorization(params[:service_credentials_file], params[:firebase_cli_token])
+          get_authorization(params[:service_credentials_file], params[:firebase_cli_token])
 
         UI.message("⏳ Fetching latest release for app #{params[:app]}...")
 
@@ -26,7 +26,7 @@ module Fastlane
         begin
           releases = client.list_project_app_releases(parent, page_size: 1).releases
         rescue Google::Apis::Error => err
-          if (err.status_code.to_i == 404) 
+          if err.status_code.to_i == 404
             UI.user_error!("#{ErrorMessage::INVALID_APP_ID}: #{params[:app]}")
           else
             UI.crash!(err)
@@ -49,14 +49,14 @@ module Fastlane
         {
           name: release.name,
           releaseNotes: {
-            text: release.release_notes.text,
+            text: release.release_notes.text
           },
           displayVersion: release.display_version,
           buildVersion: release.build_version,
           binaryDownloadUri: release.binary_download_uri,
           firebaseConsoleUri: release.firebase_console_uri,
           testingUri: release.testing_uri,
-          createTime: release.create_time,
+          createTime: release.create_time
         }
       end
 

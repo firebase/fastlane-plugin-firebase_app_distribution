@@ -36,7 +36,7 @@ describe Fastlane::Actions::FirebaseAppDistributionGetLatestReleaseAction do
             testing_uri: "testing-uri",
             create_time: "2021-10-06T15:01:23Z"
           )
-        ],
+        ]
       )
       allow_any_instance_of(FirebaseAppDistribution::FirebaseAppDistributionService)
         .to receive(:list_project_app_releases)
@@ -53,7 +53,7 @@ describe Fastlane::Actions::FirebaseAppDistributionGetLatestReleaseAction do
         binaryDownloadUri: "binary-download-uri",
         firebaseConsoleUri: "firebase-console-uri",
         testingUri: "testing-uri",
-        createTime: "2021-10-06T15:01:23Z",
+        createTime: "2021-10-06T15:01:23Z"
       }
       expect(action.run({ app: '1:1234567890:ios:321abc456def7890' })).to eq(expected_hash)
       expect(Fastlane::Actions.lane_context[Fastlane::Actions::SharedValues::FIREBASE_APP_DISTRO_LATEST_RELEASE])

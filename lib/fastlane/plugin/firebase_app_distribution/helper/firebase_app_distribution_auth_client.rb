@@ -105,7 +105,7 @@ module Fastlane
           json_key_io: File.open(google_service_path),
           scope: SCOPE
         )
-        service_account_credentials.fetch_access_token!["access_token"]
+        service_account_credentials.fetch_access_token!
         service_account_credentials
       rescue Errno::ENOENT
         UI.user_error!("#{ErrorMessage::SERVICE_CREDENTIALS_NOT_FOUND}: #{google_service_path}")
