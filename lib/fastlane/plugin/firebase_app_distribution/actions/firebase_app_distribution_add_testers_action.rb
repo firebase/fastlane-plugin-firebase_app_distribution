@@ -30,6 +30,11 @@ module Fastlane
 
         fad_api_client.add_testers(params[:project_number], emails)
 
+        unless blank?(params[:group_alias])
+          UI.message("⏳ Adding testers to group #{params[:group_alias]}...")
+          fad_api_client.add_testers_to_group(params[:project_number], params[:group_alias], emails)
+        end
+
         # The add_testers response lists all the testers from the request
         # regardless of whether or not they were created or if they already
         # exists so can't get an accurate count of the number of newly created testers
@@ -66,6 +71,11 @@ module Fastlane
                                       description: "Path to a file containing a comma separated list of tester emails to be created. A maximum of 1000 testers can be deleted at a time",
                                       optional: true,
                                       type: String),
+          FastlaneCore::ConfigItem.new(key: :group_alias,
+                                       env_name: "FIREBASEAPPDISTRO_ADD_TESTERS_GROUP_ALIAS",
+                                       description: "Alias of the group to add the specified testers to. The group must already exist. If not specified, testers will not be added to a group",
+                                       optional: true,
+                                       type: String),
           FastlaneCore::ConfigItem.new(key: :service_credentials_file,
                                       description: "Path to Google service credentials file",
                                       optional: true,

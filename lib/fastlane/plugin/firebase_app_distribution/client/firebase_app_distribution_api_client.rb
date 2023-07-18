@@ -251,6 +251,123 @@ module Fastlane
         UI.user_error!(ErrorMessage::INVALID_PROJECT)
       end
 
+      # Create tester group
+      #
+      # args
+      #   project_number - Firebase project number
+      #   group_alias - Alias of the tester group
+      #   display_name - Display name of the tester group
+      #
+      def create_group(project_number, group_alias, display_name)
+        payload = { name: "projects/#{project_number}/groups/#{group_alias}",
+                    displayName: display_name }
+        response = connection.post(add_tester_group_url(project_number), payload.to_json) do |request|
+          request.params["groupId"] = group_alias
+          request.headers[AUTHORIZATION] = "Bearer " + @auth_token
+          request.headers[CONTENT_TYPE] = APPLICATION_JSON
+          request.headers[CLIENT_VERSION] = client_version_header_value
+        end
+        response.body
+      rescue Faraday::BadRequestError
+        UI.user_error!(ErrorMessage::INVALID_TESTER_GROUP_NAME)
+      rescue Faraday::ResourceNotFound
+        UI.user_error!(ErrorMessage::INVALID_PROJECT)
+      rescue Faraday::ConflictError
+        UI.important("Tester group #{group_alias} already exists.")
+        return {
+          name: "projects/#{project_number}/groups/#{group_alias}"
+        }
+      rescue Faraday::ClientError => e
+        raise e
+      end
+
+      # Add testers to group
+      #
+      # args
+      #   project_number - Firebase project number
+      #   group_alias - Alias of the tester group
+      #   emails - An array of emails to be added to the group.
+      #            A maximum of 1000 testers can be added at a time, if creating missing testers is enabled.
+      #   create_missing_testers - If true, missing testers will be created and added to the group.
+      #
+      def add_testers_to_group(project_number, group_alias, emails, create_missing_testers = false)
+        payload = { emails: emails,
+                    createMissingTesters: create_missing_testers }
+        response = connection.post(add_testers_to_group_url(project_number, group_alias), payload.to_json) do |request|
+          request.headers[AUTHORIZATION] = "Bearer " + @auth_token
+          request.headers[CONTENT_TYPE] = APPLICATION_JSON
+          request.headers[CLIENT_VERSION] = client_version_header_value
+        end
+        response.body
+      rescue Faraday::BadRequestError
+        UI.user_error!(ErrorMessage::INVALID_EMAIL_ADDRESS)
+      rescue Faraday::ResourceNotFound
+        UI.user_error!(ErrorMessage::INVALID_TESTER_GROUP)
+      rescue Faraday::ClientError => e
+        raise e
+      end
+
+      # Remove testers from group
+      #
+      # args
+      #   project_number - Firebase project number
+      #   group_alias - Alias of the tester group
+      #   emails - An array of emails to be removed from the group.
+      #
+      def remove_testers_from_group(project_number, group_alias, emails)
+        payload = { emails: emails }
+        response = connection.post(remove_testers_from_group_url(project_number, group_alias), payload.to_json) do |request|
+          request.headers[AUTHORIZATION] = "Bearer " + @auth_token
+          request.headers[CONTENT_TYPE] = APPLICATION_JSON
+          request.headers[CLIENT_VERSION] = client_version_header_value
+        end
+        response.body
+      rescue Faraday::BadRequestError
+        UI.user_error!(ErrorMessage::INVALID_EMAIL_ADDRESS)
+      rescue Faraday::ResourceNotFound
+        UI.user_error!(ErrorMessage::INVALID_TESTER_GROUP)
+      rescue Faraday::ClientError => e
+        raise e
+      end
+
+      # Delete tester group
+      #
+      # args
+      #   project_number - Firebase project number
+      #   group_alias - Alias of the tester group
+      #
+      def delete_group(project_number, group_alias)
+        response = connection.delete(delete_tester_group_url(project_number, group_alias)) do |request|
+          request.headers[AUTHORIZATION] = "Bearer " + @auth_token
+          request.headers[CONTENT_TYPE] = APPLICATION_JSON
+          request.headers[CLIENT_VERSION] = client_version_header_value
+        end
+        response.body
+      rescue Faraday::ResourceNotFound
+        UI.user_error!(ErrorMessage::INVALID_TESTER_GROUP)
+      end
+
+      # List releases
+      #
+      # args
+      #   app_name - Firebase App resource name
+      #   page_size - The number of releases to return in the page
+      #   page_token - A page token, received from a previous call
+      #
+      # Returns the response body. Throws a user_error if the app hasn't been onboarded to App Distribution.
+      def list_releases(app_name, page_size = 100, page_token = nil)
+        begin
+          response = connection.get(list_releases_url(app_name), { pageSize: page_size.to_s, pageToken: page_token }) do |request|
+            request.headers[AUTHORIZATION] = "Bearer " + @auth_token
+            request.headers[CLIENT_VERSION] = client_version_header_value
+          end
+        rescue Faraday::ResourceNotFound
+          UI.user_error!("#{ErrorMessage::INVALID_APP_ID}: #{app_name}")
+        end
+
+        response.body
+      end
+
       private
 
       def client_version_header_value
@@ -299,6 +416,22 @@ module Fastlane
 
       def remove_testers_url(project_number)
         "/v1/projects/#{project_number}/testers:batchRemove"
+      end
+
+      def add_tester_group_url(project_number)
+        "/v1/projects/#{project_number}/groups"
+      end
+
+      def delete_tester_group_url(project_number, group_alias)
+        "/v1/projects/#{project_number}/groups/#{group_alias}"
+      end
+
+      def add_testers_to_group_url(project_number, group_alias)
+        "/v1/projects/#{project_number}/groups/#{group_alias}:batchJoin"
+      end
+
+      def remove_testers_from_group_url(project_number, group_alias)
+        "/v1/projects/#{project_number}/groups/#{group_alias}:batchLeave"
       end
 
       def connection

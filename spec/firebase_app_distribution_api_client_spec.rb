@@ -92,9 +92,9 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
   describe '#upload_binary' do
     let(:upload_headers) do
       { 'Authorization' => 'Bearer auth_token',
-      'X-Client-Version' => "fastlane/#{Fastlane::FirebaseAppDistribution::VERSION}",
-      'X-Goog-Upload-File-Name' => File.basename(fake_binary_path),
-      'X-Goog-Upload-Protocol' => 'raw' }
+        'X-Client-Version' => "fastlane/#{Fastlane::FirebaseAppDistribution::VERSION}",
+        'X-Goog-Upload-File-Name' => File.basename(fake_binary_path),
+        'X-Goog-Upload-Protocol' => 'raw' }
     end
     it 'uploads the binary successfuly when the input is valid' do
       stubs.post("/upload/v1/#{app_name}/releases:upload", fake_binary_contents, upload_headers) do |env|
@@ -383,7 +383,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         [
           200,
           {}, # response headers
-          {}  # response body
+          {} # response body
         ]
       end
       result = api_client.get_udids(app_id)
@@ -398,7 +398,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         [
           202,
           {}, # response headers
-          {}  # response body
+          {} # response body
         ]
       end
       api_client.distribute(release_name, ["testers"], ["groups"])
@@ -410,7 +410,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         [
           202,
           {}, # response headers
-          {}  # response body
+          {} # response body
         ]
       end
       api_client.distribute(release_name, nil, ["groups"])
@@ -422,7 +422,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         [
           202,
           {}, # response headers
-          {}  # response body
+          {} # response body
         ]
       end
       api_client.distribute(release_name, ["testers"], nil)
@@ -438,7 +438,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
       api_client.distribute(release_name, [], [])
     end
 
-    it 'raises a user eror when a client error is returned' do
+    it 'raises a user error when a client error is returned' do
       emails = ["invalid_tester_email"]
       group_ids = ["invalid_group_id"]
       payload = { testerEmails: emails, groupAliases: group_ids }
@@ -446,7 +446,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         [
           400,
           {}, # response headers
-          {}  # response body
+          {} # response body
         ]
       end
       expect { api_client.distribute(release_name, emails, group_ids) }
@@ -469,7 +469,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         [
           200,
           {}, # response headers
-          {}  # response body
+          {} # response body
         ]
       end
 
@@ -484,7 +484,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         [
           400,
           {}, # response headers
-          {}  # response body
+          {} # response body
         ]
       end
 
@@ -498,7 +498,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         [
           404,
           {}, # response headers
-          {}  # response body
+          {} # response body
         ]
       end
       expect { api_client.add_testers("bad_project_number", emails) }
@@ -511,7 +511,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         [
           429,
           {}, # response headers
-          {}  # response body
+          {} # response body
         ]
       end
       expect { api_client.add_testers("project_number", emails) }
@@ -549,7 +549,7 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         [
           200,
           {}, # response headers
-          {}  # response body
+          {} # response body
         ]
       end
 
@@ -564,11 +564,276 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
         [
           404,
           {}, # response headers
-          {}  # response body
+          {} # response body
         ]
       end
       expect { api_client.remove_testers("bad_project_number", emails) }
         .to raise_error(ErrorMessage::INVALID_PROJECT)
+    end
+  end
+
+  describe '#create_group' do
+    let(:headers) do
+      {
+        'Authorization' => 'Bearer auth_token',
+        'Content-Type' => 'application/json',
+        'X-Client-Version' => "fastlane/#{Fastlane::FirebaseAppDistribution::VERSION}"
+      }
+    end
+    let(:project_number) { "project_number" }
+    let(:group_alias) { "group_alias" }
+    let(:display_name) { "Display name" }
+
+    it 'is successful' do
+      payload = {
+        name: "projects/#{project_number}/groups/#{group_alias}",
+        displayName: display_name
+      }
+      stubs.post("/v1/projects/#{project_number}/groups?groupId=#{group_alias}", payload.to_json, headers) do |env|
+        [
+          200,
+          {}, # response headers
+          {
+            name: "projects/#{project_number}/groups/#{group_alias}",
+            displayName: display_name
+          }
+        ]
+      end
+
+      result = api_client.create_group(project_number, group_alias, display_name)
+      expect(result[:name]).to eq("projects/#{project_number}/groups/#{group_alias}")
+    end
+
+    it 'is successful if the group already exists' do
+      payload = {
+        name: "projects/#{project_number}/groups/#{group_alias}",
+        displayName: display_name
+      }
+      stubs.post("/v1/projects/#{project_number}/groups?groupId=#{group_alias}", payload.to_json, headers) do |env|
+        [
+          409,
+          {}, # response headers
+          {
+            name: "projects/#{project_number}/groups/#{group_alias}",
+            displayName: display_name
+          }
+        ]
+      end
+
+      result = api_client.create_group(project_number, group_alias, display_name)
+      expect(result[:name]).to eq("projects/#{project_number}/groups/#{group_alias}")
+    end
+
+    it 'fails and prints correct error message for a 400' do
+      display_name = "Group display name that is longer than the maximum allowed length for a group name"
+      payload = { name: "projects/#{project_number}/groups/#{group_alias}",
+                  displayName: display_name }
+      stubs.post("/v1/projects/#{project_number}/groups?groupId=#{group_alias}", payload.to_json, headers) do |env|
+        [
+          400,
+          {}, # response headers
+          {} # response body
+        ]
+      end
+
+      expect { api_client.create_group(project_number, group_alias, display_name) }
+        .to raise_error(ErrorMessage::INVALID_TESTER_GROUP_NAME)
+    end
+
+    it 'fails and prints correct error message for a 404' do
+      bad_project_number = "bad_project_number"
+      payload = { name: "projects/#{bad_project_number}/groups/#{group_alias}",
+                  displayName: display_name }
+      stubs.post("/v1/projects/#{bad_project_number}/groups?groupId=#{group_alias}", payload.to_json, headers) do |env|
+        [
+          404,
+          {}, # response headers
+          {} # response body
+        ]
+      end
+      expect { api_client.create_group(bad_project_number, group_alias, display_name) }
+        .to raise_error(ErrorMessage::INVALID_PROJECT)
+    end
+  end
+
+  describe '#delete_group' do
+    let(:headers) do
+      {
+        'Authorization' => 'Bearer auth_token',
+        'Content-Type' => 'application/json',
+        'X-Client-Version' => "fastlane/#{Fastlane::FirebaseAppDistribution::VERSION}"
+      }
+    end
+    let(:project_number) { "project_number" }
+    let(:group_alias) { "group_alias" }
+
+    it 'is successful' do
+      stubs.delete("/v1/projects/#{project_number}/groups/#{group_alias}", headers) do |env|
+        [
+          200,
+          {}, # response headers
+          {} # response body
+        ]
+      end
+
+      result = api_client.delete_group(project_number, group_alias)
+      expect(result).to eq({})
+    end
+
+    it 'fails and prints correct error message for a 404' do
+      bad_project_number = "bad_project_number"
+      stubs.delete("/v1/projects/#{bad_project_number}/groups/#{group_alias}", headers) do |env|
+        [
+          404,
+          {}, # response headers
+          {} # response body
+        ]
+      end
+      expect { api_client.delete_group(bad_project_number, group_alias) }
+        .to raise_error(ErrorMessage::INVALID_TESTER_GROUP)
+    end
+  end
+
+  describe '#add_testers_to_group' do
+    let(:headers) do
+      {
+        'Authorization' => 'Bearer auth_token',
+        'Content-Type' => 'application/json',
+        'X-Client-Version' => "fastlane/#{Fastlane::FirebaseAppDistribution::VERSION}"
+      }
+    end
+    let(:project_number) { "project_number" }
+    let(:group_alias) { "group_alias" }
+
+    it 'is successful' do
+      emails = %w[tester1@test.com tester2@test.com]
+      payload = {
+        emails: emails,
+        createMissingTesters: true
+      }
+      stubs.post("/v1/projects/#{project_number}/groups/#{group_alias}:batchJoin", payload.to_json, headers) do |env|
+        [
+          200,
+          {}, # response headers
+          {} # response body
+        ]
+      end
+
+      result = api_client.add_testers_to_group(project_number, group_alias, emails, true)
+
+      expect(result).to eq({})
+    end
+
+    it 'sets createMissingTesters to false by default' do
+      emails = %w[tester1@test.com tester2@test.com]
+      payload = {
+        emails: emails,
+        createMissingTesters: false
+      }
+      stubs.post("/v1/projects/#{project_number}/groups/#{group_alias}:batchJoin", payload.to_json, headers) do |env|
+        [
+          200,
+          {}, # response headers
+          {} # response body
+        ]
+      end
+
+      api_client.add_testers_to_group(project_number, group_alias, emails)
+      stubs.verify_stubbed_calls
+    end
+
+    it 'fails and prints correct error message for a 400' do
+      emails = %w[tester1@test.com invalid_email_address]
+      payload = {
+        emails: emails,
+        createMissingTesters: false
+      }
+      stubs.post("/v1/projects/#{project_number}/groups/#{group_alias}:batchJoin", payload.to_json, headers) do |env|
+        [
+          400,
+          {}, # response headers
+          {} # response body
+        ]
+      end
+
+      expect { api_client.add_testers_to_group(project_number, group_alias, emails) }
+        .to raise_error(ErrorMessage::INVALID_EMAIL_ADDRESS)
+    end
+
+    it 'fails and prints correct error message for a 404' do
+      emails = %w[tester1@test.com tester2@test.com]
+      payload = {
+        emails: emails,
+        createMissingTesters: false
+      }
+      bad_project_number = "bad_project_number"
+      stubs.post("/v1/projects/#{bad_project_number}/groups/#{group_alias}:batchJoin", payload.to_json, headers) do |env|
+        [
+          404,
+          {}, # response headers
+          {} # response body
+        ]
+      end
+      expect { api_client.add_testers_to_group(bad_project_number, group_alias, emails) }
+        .to raise_error(ErrorMessage::INVALID_TESTER_GROUP)
+    end
+  end
+
+  describe '#remove_testers_from_group' do
+    let(:headers) do
+      {
+        'Authorization' => 'Bearer auth_token',
+        'Content-Type' => 'application/json',
+        'X-Client-Version' => "fastlane/#{Fastlane::FirebaseAppDistribution::VERSION}"
+      }
+    end
+    let(:project_number) { "project_number" }
+    let(:group_alias) { "group_alias" }
+
+    it 'is successful' do
+      emails = %w[tester1@test.com tester2@test.com]
+      payload = { emails: emails }
+      stubs.post("/v1/projects/#{project_number}/groups/#{group_alias}:batchLeave", payload.to_json, headers) do |env|
+        [
+          200,
+          {}, # response headers
+          {} # response body
+        ]
+      end
+
+      result = api_client.remove_testers_from_group(project_number, group_alias, emails)
+
+      expect(result).to eq({})
+    end
+
+    it 'fails and prints correct error message for a 400' do
+      emails = %w[tester1@test.com invalid_email_address]
+      payload = { emails: emails }
+      stubs.post("/v1/projects/#{project_number}/groups/#{group_alias}:batchLeave", payload.to_json, headers) do |env|
+        [
+          400,
+          {}, # response headers
+          {} # response body
+        ]
+      end
+
+      expect { api_client.remove_testers_from_group(project_number, group_alias, emails) }
+        .to raise_error(ErrorMessage::INVALID_EMAIL_ADDRESS)
+    end
+
+    it 'fails and prints correct error message for a 404' do
+      bad_project_number = "bad_project_number"
+      emails = %w[tester1@test.com tester2@test.com]
+      payload = { emails: emails }
+      stubs.post("/v1/projects/#{bad_project_number}/groups/#{group_alias}:batchLeave", payload.to_json, headers) do |env|
+        [
+          404,
+          {}, # response headers
+          {} # response body
+        ]
+      end
+      expect { api_client.remove_testers_from_group(bad_project_number, group_alias, emails) }
+        .to raise_error(ErrorMessage::INVALID_TESTER_GROUP)
     end
   end
 end
