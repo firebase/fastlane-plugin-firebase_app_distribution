@@ -7,7 +7,7 @@ describe Fastlane::Actions::FirebaseAppDistributionGetLatestReleaseAction do
   let(:action) { Fastlane::Actions::FirebaseAppDistributionGetLatestReleaseAction }
   describe '#run' do
     before(:each) do
-      allow(action).to receive(:fetch_auth_token).and_return('fake-auth-token')
+      allow(action).to receive(:get_authorization).and_return(double("creds"))
     end
 
     it 'returns nil if the app does not have any releases' do
