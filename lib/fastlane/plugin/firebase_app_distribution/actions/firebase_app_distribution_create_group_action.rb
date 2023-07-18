@@ -1,5 +1,6 @@
 require 'fastlane/action'
 require 'fastlane_core/ui/ui'
+require 'google/apis/firebaseappdistribution_v1'
 
 require_relative '../helper/firebase_app_distribution_helper'
 require_relative '../helper/firebase_app_distribution_auth_client'
@@ -10,10 +11,9 @@ module Fastlane
       extend Auth::FirebaseAppDistributionAuthClient
       extend Helper::FirebaseAppDistributionHelper
 
-      def self.run(params)
-        auth_token = fetch_auth_token(params[:service_credentials_file], params[:firebase_cli_token])
-        fad_api_client = Client::FirebaseAppDistributionApiClient.new(auth_token, params[:debug])
+      FirebaseAppDistributionV1 = Google::Apis::FirebaseappdistributionV1
 
+      def self.run(params)
         if blank?(params[:alias])
           UI.user_error!("Must specify `alias`.")
         end
@@ -22,13 +22,22 @@ module Fastlane
           UI.user_error!("Must specify `display_name`.")
         end
 
+        client = FirebaseAppDistributionV1::FirebaseAppDistributionService.new
+        client.authorization =
+          get_authorization(params[:service_credentials_file], params[:firebase_cli_token])
+
         project_number = params[:project_number]
         group_alias = params[:alias]
         display_name = params[:display_name]
 
         UI.message("⏳ Creating tester group '#{group_alias} (#{display_name})' in project #{project_number}...")
 
-        fad_api_client.create_group(project_number, group_alias, display_name)
+        parent = project_name(project_number)
+        group = FirebaseAppDistributionV1::GoogleFirebaseAppdistroV1Group.new(
+          name: group_name(project_number, group_alias),
+          display_name: display_name
+        )
+        client.create_project_group(parent, group, group_id: group_alias)
 
         UI.success("✅ Group created successfully.")
       end

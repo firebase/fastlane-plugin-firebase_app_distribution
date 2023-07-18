@@ -251,36 +251,6 @@ module Fastlane
         UI.user_error!(ErrorMessage::INVALID_PROJECT)
       end
 
-      # Create tester group
-      #
-      # args
-      #   project_number - Firebase project number
-      #   group_alias - Alias of the tester group
-      #   display_name - Display name of the tester group
-      #
-      def create_group(project_number, group_alias, display_name)
-        payload = { name: "projects/#{project_number}/groups/#{group_alias}",
-                    displayName: display_name }
-        response = connection.post(add_tester_group_url(project_number), payload.to_json) do |request|
-          request.params["groupId"] = group_alias
-          request.headers[AUTHORIZATION] = "Bearer " + @auth_token
-          request.headers[CONTENT_TYPE] = APPLICATION_JSON
-          request.headers[CLIENT_VERSION] = client_version_header_value
-        end
-        response.body
-      rescue Faraday::BadRequestError
-        UI.user_error!(ErrorMessage::INVALID_TESTER_GROUP_NAME)
-      rescue Faraday::ResourceNotFound
-        UI.user_error!(ErrorMessage::INVALID_PROJECT)
-      rescue Faraday::ConflictError
-        UI.important("Tester group #{group_alias} already exists.")
-        return {
-          name: "projects/#{project_number}/groups/#{group_alias}"
-        }
-      rescue Faraday::ClientError => e
-        raise e
-      end
-
       # Add testers to group
       #
       # args
@@ -328,23 +298,6 @@ module Fastlane
         UI.user_error!(ErrorMessage::INVALID_TESTER_GROUP)
       rescue Faraday::ClientError => e
         raise e
-      end
-
-      # Delete tester group
-      #
-      # args
-      #   project_number - Firebase project number
-      #   group_alias - Alias of the tester group
-      #
-      def delete_group(project_number, group_alias)
-        response = connection.delete(delete_tester_group_url(project_number, group_alias)) do |request|
-          request.headers[AUTHORIZATION] = "Bearer " + @auth_token
-          request.headers[CONTENT_TYPE] = APPLICATION_JSON
-          request.headers[CLIENT_VERSION] = client_version_header_value
-        end
-        response.body
-      rescue Faraday::ResourceNotFound
-        UI.user_error!(ErrorMessage::INVALID_TESTER_GROUP)
       end
 
       # List releases

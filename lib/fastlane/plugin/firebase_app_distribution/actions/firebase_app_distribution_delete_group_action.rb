@@ -10,9 +10,12 @@ module Fastlane
       extend Auth::FirebaseAppDistributionAuthClient
       extend Helper::FirebaseAppDistributionHelper
 
+      FirebaseAppDistributionV1 = Google::Apis::FirebaseappdistributionV1
+
       def self.run(params)
-        auth_token = fetch_auth_token(params[:service_credentials_file], params[:firebase_cli_token])
-        fad_api_client = Client::FirebaseAppDistributionApiClient.new(auth_token, params[:debug])
+        client = FirebaseAppDistributionV1::FirebaseAppDistributionService.new
+        client.authorization =
+          get_authorization(params[:service_credentials_file], params[:firebase_cli_token])
 
         if blank?(params[:alias])
           UI.user_error!("Must specify `alias`.")
@@ -23,7 +26,7 @@ module Fastlane
 
         UI.message("⏳ Deleting tester group '#{group_alias}' in project #{project_number}...")
 
-        fad_api_client.delete_group(project_number, group_alias)
+        client.delete_project_group(group_name(project_number, group_alias))
 
         UI.success("✅ Group deleted successfully.")
       end
