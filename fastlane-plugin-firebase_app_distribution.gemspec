@@ -18,6 +18,9 @@ Gem::Specification.new do |spec|
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ['lib']
 
+  spec.add_dependency('google-api-client', '~> 0.38')
+  spec.add_dependency('google-apis-firebaseappdistribution_v1', '~> 0.3.0')
+
   spec.add_development_dependency('pry')
   spec.add_development_dependency('bundler')
   spec.add_development_dependency('rspec')

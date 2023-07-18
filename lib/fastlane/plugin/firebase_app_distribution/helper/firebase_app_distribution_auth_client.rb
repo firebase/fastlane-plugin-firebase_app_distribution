@@ -1,4 +1,6 @@
+require 'googleauth'
 require 'fastlane_core/ui/ui'
+
 module Fastlane
   UI = FastlaneCore::UI unless Fastlane.const_defined?("UI")
   module Auth
@@ -13,8 +15,8 @@ module Fastlane
       CLIENT_ID = "563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"
       CLIENT_SECRET = "j9iVZfS8kkCEFUPaAeJV0sAi"
 
-      # Returns the auth token for any of the auth methods (Firebase CLI token,
-      # Google service account, firebase-tools). To ensure that a specific
+      # Returns an authorization object for any of the auth methods (Firebase CLI token,
+      # Application Default Credentials, firebase-tools). To ensure that a specific
       # auth method is used, unset all other auth variables/parameters to nil/empty
       #
       # args
@@ -23,43 +25,45 @@ module Fastlane
       #   debug - Whether to enable debug-level logging
       #
       # env variables
-      #   GOOGLE_APPLICATION_CREDENTIALS - see google_service_path
       #   FIREBASE_TOKEN - see firebase_cli_token
       #
       # Crashes if given invalid or missing credentials
-      def fetch_auth_token(google_service_path, firebase_cli_token, debug = false)
+      def get_authorization(google_service_path, firebase_cli_token, debug = false)
         if !google_service_path.nil? && !google_service_path.empty?
           UI.message("🔐 Authenticating with --service_credentials_file path parameter: #{google_service_path}")
-          token = service_account(google_service_path, debug)
+          service_account(google_service_path, debug)
         elsif !firebase_cli_token.nil? && !firebase_cli_token.empty?
           UI.message("🔐 Authenticating with --firebase_cli_token parameter")
-          token = firebase_token(firebase_cli_token, debug)
+          firebase_token(firebase_cli_token, debug)
         elsif !ENV["FIREBASE_TOKEN"].nil? && !ENV["FIREBASE_TOKEN"].empty?
           UI.message("🔐 Authenticating with FIREBASE_TOKEN environment variable")
-          token = firebase_token(ENV["FIREBASE_TOKEN"], debug)
-        elsif !ENV["GOOGLE_APPLICATION_CREDENTIALS"].nil? && !ENV["GOOGLE_APPLICATION_CREDENTIALS"].empty?
-          UI.message("🔐 Authenticating with GOOGLE_APPLICATION_CREDENTIALS environment variable: #{ENV['GOOGLE_APPLICATION_CREDENTIALS']}")
-          token = service_account(ENV["GOOGLE_APPLICATION_CREDENTIALS"], debug)
+          firebase_token(ENV["FIREBASE_TOKEN"], debug)
+        elsif !application_default_creds.nil?
+          UI.message("🔐 Authenticating with Application Default Credentials")
+          application_default_creds
         elsif (refresh_token = refresh_token_from_firebase_tools)
-          UI.message("🔐 No authentication method specified. Using cached Firebase CLI credentials.")
-          token = firebase_token(refresh_token, debug)
+          UI.message("🔐 No authentication method found. Using cached Firebase CLI credentials.")
+          firebase_token(refresh_token, debug)
         else
           UI.user_error!(ErrorMessage::MISSING_CREDENTIALS)
+          nil
         end
-        token
       end
 
       private
+
+      def application_default_creds
+        Google::Auth.get_application_default([SCOPE])
+      rescue
+        nil
+      end
 
       def refresh_token_from_firebase_tools
         config_path = format_config_path
         if File.exist?(config_path)
           begin
             firebase_tools_tokens = JSON.parse(File.read(config_path))['tokens']
-            if firebase_tools_tokens.nil?
-              UI.user_error!(ErrorMessage::EMPTY_TOKENS_FIELD)
-              return
-            end
+            return if firebase_tools_tokens.nil?
             refresh_token = firebase_tools_tokens['refresh_token']
           rescue JSON::ParserError
             UI.user_error!(ErrorMessage::PARSE_FIREBASE_TOOLS_JSON_ERROR)
@@ -84,7 +88,7 @@ module Fastlane
           refresh_token: refresh_token
         )
         client.fetch_access_token!
-        client.access_token
+        client
       rescue Signet::AuthorizationError => error
         error_message = ErrorMessage::REFRESH_TOKEN_ERROR
         if debug
@@ -101,7 +105,8 @@ module Fastlane
           json_key_io: File.open(google_service_path),
           scope: SCOPE
         )
-        service_account_credentials.fetch_access_token!["access_token"]
+        service_account_credentials.fetch_access_token!
+        service_account_credentials
       rescue Errno::ENOENT
         UI.user_error!("#{ErrorMessage::SERVICE_CREDENTIALS_NOT_FOUND}: #{google_service_path}")
       rescue Signet::AuthorizationError => error

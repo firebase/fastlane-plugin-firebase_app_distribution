@@ -1,5 +1,5 @@
 module ErrorMessage
-  MISSING_CREDENTIALS = "Missing authentication credentials. Check that your Firebase refresh token is set or that your service account file path is correct and try again."
+  MISSING_CREDENTIALS = "Missing authentication credentials. Set up Application Default Credentials, your Firebase refresh token, or sign in with the Firebase CLI, and try again."
   MISSING_APP_ID = "Missing app id. Please check that the app parameter is set and try again"
   SERVICE_CREDENTIALS_NOT_FOUND = "Service credentials file does not exist. Please check the service credentials path and try again"
   PARSE_SERVICE_CREDENTIALS_ERROR = "Failed to extract service account information from the service credentials file"
@@ -23,7 +23,6 @@ module ErrorMessage
   PLAY_IAS_TERMS_NOT_ACCEPTED = "You must accept the Play Internal App Sharing (IAS) terms to upload AABs."
   INVALID_EMAIL_ADDRESS = "You passed an invalid email address."
   TESTER_LIMIT_VIOLATION = "Creating testers would exceed tester limit"
-  EMPTY_TOKENS_FIELD = "Unable to find \"tokens\" field in the firebase-tools.json file. Ensure that the file has a tokens field and try again"
 
   def self.aab_upload_error(aab_state)
     "Failed to process the AAB: #{aab_state}"

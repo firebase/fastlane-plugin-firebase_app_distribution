@@ -1,5 +1,5 @@
 require 'fastlane/action'
-require_relative '../client/firebase_app_distribution_api_client'
+require 'google/apis/firebaseappdistribution_v1'
 require_relative '../helper/firebase_app_distribution_auth_client'
 require_relative '../helper/firebase_app_distribution_helper'
 
@@ -12,22 +12,56 @@ module Fastlane
       extend Auth::FirebaseAppDistributionAuthClient
       extend Helper::FirebaseAppDistributionHelper
 
+      FirebaseAppDistribution = Google::Apis::FirebaseappdistributionV1
+
       def self.run(params)
-        auth_token = fetch_auth_token(params[:service_credentials_file], params[:firebase_cli_token])
-        fad_api_client = Client::FirebaseAppDistributionApiClient.new(auth_token, params[:debug])
+        client = FirebaseAppDistribution::FirebaseAppDistributionService.new
+        client.authorization =
+          get_authorization(params[:service_credentials_file], params[:firebase_cli_token])
 
         UI.message("⏳ Fetching latest release for app #{params[:app]}...")
 
-        releases = fad_api_client.list_releases(app_name_from_app_id(params[:app]), 1)[:releases] || []
-        if releases.empty?
+        parent = app_name_from_app_id(params[:app])
+
+        begin
+          releases = client.list_project_app_releases(parent, page_size: 1).releases
+        rescue Google::Apis::Error => err
+          if err.status_code.to_i == 404
+            UI.user_error!("#{ErrorMessage::INVALID_APP_ID}: #{params[:app]}")
+          else
+            UI.crash!(err)
+          end
+        end
+
+        if releases.nil? || releases.empty?
           latest_release = nil
           UI.important("No releases for app #{params[:app]} found in App Distribution. Returning nil and setting Actions.lane_context[SharedValues::FIREBASE_APP_DISTRO_LATEST_RELEASE].")
         else
-          latest_release = releases[0]
+          # latest_release = append_json_style_fields(response.releases[0].to_h)
+          latest_release = map_release_hash(releases[0])
           UI.success("✅ Latest release fetched successfully. Returning release and setting Actions.lane_context[SharedValues::FIREBASE_APP_DISTRO_LATEST_RELEASE].")
         end
         Actions.lane_context[SharedValues::FIREBASE_APP_DISTRO_LATEST_RELEASE] = latest_release
         return latest_release
+      end
+
+      def self.map_release_hash(release)
+        {
+          name: release.name,
+          releaseNotes: map_release_notes_hash(release.release_notes),
+          displayVersion: release.display_version,
+          buildVersion: release.build_version,
+          binaryDownloadUri: release.binary_download_uri,
+          firebaseConsoleUri: release.firebase_console_uri,
+          testingUri: release.testing_uri,
+          createTime: release.create_time
+        }
+      end
+
+      def self.map_release_notes_hash(release_notes)
+        return nil if release_notes.nil?
+
+        { text: release_notes.text }
       end
 
       #####################################################
@@ -106,6 +140,9 @@ module Fastlane
           },
           displayVersion: "1.2.3",
           buildVersion: "10",
+          binaryDownloadUri: "<URI>",
+          firebaseConsoleUri: "<URI>",
+          testingUri: "<URI>",
           createTime: "2021-10-06T15:01:23Z"
         }
       end
