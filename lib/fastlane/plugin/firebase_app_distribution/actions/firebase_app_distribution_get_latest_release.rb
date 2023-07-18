@@ -48,9 +48,7 @@ module Fastlane
       def self.map_release_hash(release)
         {
           name: release.name,
-          releaseNotes: {
-            text: release.release_notes.text
-          },
+          releaseNotes: map_release_notes_hash(release.release_notes),
           displayVersion: release.display_version,
           buildVersion: release.build_version,
           binaryDownloadUri: release.binary_download_uri,
@@ -58,6 +56,12 @@ module Fastlane
           testingUri: release.testing_uri,
           createTime: release.create_time
         }
+      end
+
+      def self.map_release_notes_hash(release_notes)
+        return nil if release_notes.nil?
+
+        { text: release_notes.text }
       end
 
       #####################################################
