@@ -11,14 +11,15 @@ module Fastlane
       extend Helper::FirebaseAppDistributionHelper
 
       def self.run(params)
-        auth_token = fetch_auth_token(params[:service_credentials_file], params[:firebase_cli_token])
-        fad_api_client = Client::FirebaseAppDistributionApiClient.new(auth_token, params[:debug])
+        client = init_client(params[:service_credentials_file], params[:firebase_cli_token], params[:debug])
 
         if blank?(params[:emails]) && blank?(params[:file])
           UI.user_error!("Must specify `emails` or `file`.")
         end
 
         emails = string_to_array(get_value_from_value_or_file(params[:emails], params[:file]))
+        project_number = params[:project_number]
+        group_alias = params[:group_alias]
 
         UI.user_error!("Must pass at least one email") if blank?(emails)
 
@@ -26,13 +27,19 @@ module Fastlane
           UI.user_error!("A maximum of 1000 testers can be added at a time.")
         end
 
-        UI.message("⏳ Adding #{emails.count} testers to project #{params[:project_number]}...")
-
-        fad_api_client.add_testers(params[:project_number], emails)
-
-        unless blank?(params[:group_alias])
-          UI.message("⏳ Adding testers to group #{params[:group_alias]}...")
-          fad_api_client.add_testers_to_group(params[:project_number], params[:group_alias], emails)
+        if present?(group_alias)
+          UI.message("⏳ Adding testers to group #{group_alias}...")
+          request = Google::Apis::FirebaseappdistributionV1::GoogleFirebaseAppdistroV1BatchJoinGroupRequest.new(
+            emails: emails,
+            create_missing_testers: true
+          )
+          client.batch_project_group_join(group_name(project_number, group_alias), request)
+        else
+          UI.message("⏳ Adding #{emails.count} testers to project #{project_number}...")
+          request = Google::Apis::FirebaseappdistributionV1::GoogleFirebaseAppdistroV1BatchAddTestersRequest.new(
+            emails: emails
+          )
+          client.batch_project_tester_add(project_name(project_number), request)
         end
 
         # The add_testers response lists all the testers from the request
