@@ -24,6 +24,10 @@ module Fastlane
       def self.run(params)
         params.values # to validate all inputs before looking for the ipa/apk/aab
 
+        if params[:debug]
+          UI.important("Warning: Debug logging enabled. Output may include sensitive information.")
+        end
+
         app_id = app_id_from_params(params)
         app_name = app_name_from_app_id(app_id)
         platform = lane_platform || platform_from_app_id(app_id)
@@ -33,13 +37,14 @@ module Fastlane
         UI.user_error!("Couldn't find binary at path #{binary_path}") unless File.exist?(binary_path)
         binary_type = binary_type_from_path(binary_path)
 
-        client = init_client(params[:service_credentials_file], params[:firebase_cli_token], params[:debug])
-        # TODO(tundeagboola) delete when all instances are replaced with generated client
-        fad_api_client = Client::FirebaseAppDistributionApiClient.new(client.authorization.access_token, params[:debug])
+        auth_token = fetch_auth_token(
+          params[:service_credentials_file], params[:firebase_cli_token], params[:debug]
+        )
+        fad_api_client = Client::FirebaseAppDistributionApiClient.new(auth_token, params[:debug])
 
         # If binary is an AAB, get the AAB info for this app, which includes the integration state and certificate data
         if binary_type == :AAB
-          aab_info = client.get_project_app_aab_info(aab_info_name(app_name))
+          aab_info = fad_api_client.get_aab_info(app_name)
           validate_aab_setup!(aab_info)
         end
 
@@ -49,16 +54,16 @@ module Fastlane
         release_name = upload_status_response.release_name
         release = upload_status_response.release
 
-        if binary_type == :AAB && aab_info && !aab_certs_included?(aab_info)
-          updated_aab_info = client.get_project_app_aab_info(aab_info_name(app_name))
-          if aab_certs_included?(updated_aab_info)
+        if binary_type == :AAB && aab_info && !aab_info.certs_provided?
+          updated_aab_info = fad_api_client.get_aab_info(app_name)
+          if updated_aab_info.certs_provided?
             UI.message("After you upload an AAB for the first time, App Distribution " \
               "generates a new test certificate. All AAB uploads are re-signed with this test " \
               "certificate. Use the certificate fingerprints below to register your app " \
               "signing key with API providers, such as Google Sign-In and Google Maps.\n" \
-              "MD-1 certificate fingerprint: #{updated_aab_info.hash_md5}\n" \
-              "SHA-1 certificate fingerprint: #{updated_aab_info.hash_sha1}\n" \
-              "SHA-256 certificate fingerprint: #{updated_aab_info.hash_sha256}")
+              "MD-1 certificate fingerprint: #{updated_aab_info.md5_certificate_hash}\n" \
+              "SHA-1 certificate fingerprint: #{updated_aab_info.sha1_certificate_hash}\n" \
+              "SHA-256 certificate fingerprint: #{updated_aab_info.sha256_certificate_hash}")
           end
         end
 
@@ -169,29 +174,20 @@ module Fastlane
       end
 
       def self.validate_aab_setup!(aab_info)
-        if aab_info && aab_info.integration_state != 'INTEGRATED' && aab_info.integration_state != 'AAB_STATE_UNAVAILABLE'
+        if aab_info && aab_info.integration_state != AabInfo::AabState::INTEGRATED && aab_info.integration_state != AabInfo::AabState::UNAVAILABLE
           case aab_info.integration_state
-          when 'PLAY_ACCOUNT_NOT_LINKED'
+          when AabInfo::AabState::PLAY_ACCOUNT_NOT_LINKED
             UI.user_error!(ErrorMessage::PLAY_ACCOUNT_NOT_LINKED)
-          when 'APP_NOT_PUBLISHED'
+          when AabInfo::AabState::APP_NOT_PUBLISHED
             UI.user_error!(ErrorMessage::APP_NOT_PUBLISHED)
-          when 'NO_APP_WITH_GIVEN_BUNDLE_ID_IN_PLAY_ACCOUNT'
+          when AabInfo::AabState::NO_APP_WITH_GIVEN_BUNDLE_ID_IN_PLAY_ACCOUNT
             UI.user_error!(ErrorMessage::NO_APP_WITH_GIVEN_BUNDLE_ID_IN_PLAY_ACCOUNT)
-          when 'PLAY_IAS_TERMS_NOT_ACCEPTED'
+          when AabInfo::AabState::PLAY_IAS_TERMS_NOT_ACCEPTED
             UI.user_error!(ErrorMessage::PLAY_IAS_TERMS_NOT_ACCEPTED)
           else
             UI.user_error!(ErrorMessage.aab_upload_error(aab_info.integration_state))
           end
         end
-      end
-
-      def self.aab_certs_included?(aab_info)
-        present?(aab_info.hash_md5) && present?(aab_info.hash_sha1) &&
-          present?(aab_info.hash_sha256)
-      end
-
-      def self.aab_info_name(app_name)
-        "#{app_name}/aabInfo"
       end
 
       def self.release_notes(params)

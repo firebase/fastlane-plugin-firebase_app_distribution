@@ -1,5 +1,6 @@
 require 'fastlane_core/ui/ui'
 require_relative '../client/error_response'
+require_relative '../client/aab_info'
 require_relative '../helper/firebase_app_distribution_helper'
 
 module Fastlane
@@ -77,6 +78,25 @@ module Fastlane
       rescue Faraday::ClientError => e
         error = ErrorResponse.new(e.response)
         UI.user_error!("#{ErrorMessage::INVALID_RELEASE_NOTES}: #{error.message}")
+      end
+
+      # Get AAB info (Android apps only)
+      #
+      # args
+      #   app_name - Firebase App resource name
+      #
+      # Throws a user_error if the app hasn't been onboarded to App Distribution
+      def get_aab_info(app_name)
+        begin
+          response = connection.get(aab_info_url(app_name)) do |request|
+            request.headers[AUTHORIZATION] = "Bearer " + @auth_token
+            request.headers[CLIENT_VERSION] = client_version_header_value
+          end
+        rescue Faraday::ResourceNotFound
+          UI.user_error!("#{ErrorMessage::INVALID_APP_ID}: #{app_name}")
+        end
+
+        AabInfo.new(response.body)
       end
 
       # Uploads the app binary to the Firebase API
@@ -197,6 +217,10 @@ module Fastlane
 
       def v1_apps_url(app_name)
         "/v1/#{app_name}"
+      end
+
+      def aab_info_url(app_name)
+        "#{v1_apps_url(app_name)}/aabInfo"
       end
 
       def update_release_notes_url(release_name)
