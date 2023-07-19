@@ -67,6 +67,11 @@ module Fastlane
 
       def init_client(service_credentials_file, firebase_cli_token, debug = false)
         Google::Apis::ClientOptions.default.log_http_requests = debug
+
+        if debug
+          UI.important("Warning: Debug logging enabled. Output may include sensitive information.")
+        end
+
         Google::Apis::ClientOptions.default.application_name = "fastlane"
         Google::Apis::ClientOptions.default.application_version = Fastlane::FirebaseAppDistribution::VERSION
         client = Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService.new
