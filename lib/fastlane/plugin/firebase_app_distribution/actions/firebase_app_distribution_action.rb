@@ -50,9 +50,9 @@ module Fastlane
               "generates a new test certificate. All AAB uploads are re-signed with this test " \
               "certificate. Use the certificate fingerprints below to register your app " \
               "signing key with API providers, such as Google Sign-In and Google Maps.\n" \
-              "MD-1 certificate fingerprint: #{updated_aab_info.hash_md5}\n" \
-              "SHA-1 certificate fingerprint: #{updated_aab_info.hash_sha1}\n" \
-              "SHA-256 certificate fingerprint: #{updated_aab_info.hash_sha256}")
+              "MD-1 certificate fingerprint: #{updated_aab_info.test_certificate.hash_md5}\n" \
+              "SHA-1 certificate fingerprint: #{updated_aab_info.test_certificate.hash_sha1}\n" \
+              "SHA-256 certificate fingerprint: #{updated_aab_info.test_certificate.hash_sha256}")
           end
         end
 
