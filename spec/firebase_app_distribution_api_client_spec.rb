@@ -42,53 +42,6 @@ describe Fastlane::Client::FirebaseAppDistributionApiClient do
     Faraday.default_connection = nil
   end
 
-  describe '#get_aab_info' do
-    it 'returns aab info with no certs' do
-      response = {
-        name: "#{app_name}/aabInfo",
-        integrationState: "ACTIVE"
-      }
-      stubs.get("/v1/#{app_name}/aabInfo", headers) do |env|
-        [
-          200,
-          {}, # response headers
-          response
-        ]
-      end
-      aab_info = api_client.get_aab_info(app_name)
-      expect(aab_info.certs_provided?).to eq(false)
-      expect(aab_info.integration_state).to eq("ACTIVE")
-      expect(aab_info.md5_certificate_hash).to eq(nil)
-      expect(aab_info.sha1_certificate_hash).to eq(nil)
-      expect(aab_info.sha256_certificate_hash).to eq(nil)
-    end
-
-    it 'returns aab info with certs' do
-      response = {
-        name: "#{app_name}/aabInfo",
-        integrationState: "ACTIVE",
-        testCertificate: {
-          hashMd5: "md5-cert-hash",
-          hashSha1: "sha1-cert-hash",
-          hashSha256: "sha256-cert-hash"
-        }
-      }
-      stubs.get("/v1/#{app_name}/aabInfo", headers) do |env|
-        [
-          200,
-          {}, # response headers
-          response
-        ]
-      end
-      aab_info = api_client.get_aab_info(app_name)
-      expect(aab_info.certs_provided?).to eq(true)
-      expect(aab_info.integration_state).to eq("ACTIVE")
-      expect(aab_info.md5_certificate_hash).to eq("md5-cert-hash")
-      expect(aab_info.sha1_certificate_hash).to eq("sha1-cert-hash")
-      expect(aab_info.sha256_certificate_hash).to eq("sha256-cert-hash")
-    end
-  end
-
   describe '#upload_binary' do
     let(:upload_headers) do
       { 'Authorization' => 'Bearer auth_token',
