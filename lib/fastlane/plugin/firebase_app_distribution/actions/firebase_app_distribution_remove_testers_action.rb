@@ -11,14 +11,15 @@ module Fastlane
       extend Helper::FirebaseAppDistributionHelper
 
       def self.run(params)
-        auth_token = fetch_auth_token(params[:service_credentials_file], params[:firebase_cli_token])
-        fad_api_client = Client::FirebaseAppDistributionApiClient.new(auth_token, params[:debug])
+        client = init_client(params[:service_credentials_file], params[:firebase_cli_token], params[:debug])
 
         if blank?(params[:emails]) && blank?(params[:file])
           UI.user_error!("Must specify `emails` or `file`.")
         end
 
         emails = string_to_array(get_value_from_value_or_file(params[:emails], params[:file]))
+        project_number = params[:project_number]
+        group_alias = params[:group_alias]
 
         UI.user_error!("Must pass at least one email") if blank?(emails)
 
@@ -26,14 +27,20 @@ module Fastlane
           UI.user_error!("A maximum of 1000 testers can be removed at a time.")
         end
 
-        if blank?(params[:group_alias])
-          UI.message("⏳ Removing #{emails.count} testers from project #{params[:project_number]}...")
-          count = fad_api_client.remove_testers(params[:project_number], emails)
-          UI.success("✅ #{count} tester(s) removed successfully.")
-        else
-          UI.message("⏳ Removing #{emails.count} testers from group #{params[:group_alias]}...")
-          fad_api_client.remove_testers_from_group(params[:project_number], params[:group_alias], emails)
+        if present?(group_alias)
+          UI.message("⏳ Removing #{emails.count} testers from group #group_alias}...")
+          request = Google::Apis::FirebaseappdistributionV1::GoogleFirebaseAppdistroV1BatchLeaveGroupRequest.new(
+            emails: emails
+          )
+          client.batch_project_group_leave(group_name(project_number, group_alias), request)
           UI.success("✅ Tester(s) removed successfully.")
+        else
+          UI.message("⏳ Removing #{emails.count} testers from project #{project_number}...")
+          request = Google::Apis::FirebaseappdistributionV1::GoogleFirebaseAppdistroV1BatchRemoveTestersRequest.new(
+            emails: emails
+          )
+          response = client.batch_project_tester_remove(project_name(project_number), request)
+          UI.success("✅ #{response.emails.count} tester(s) removed successfully.")
         end
       end
 
