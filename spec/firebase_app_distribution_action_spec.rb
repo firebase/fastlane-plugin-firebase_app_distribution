@@ -220,7 +220,6 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
 
     before(:each) do
       allow(File).to receive(:exist?).and_call_original
-      allow(action).to receive(:fetch_auth_token).and_return('fake-auth-token')
       allow(action).to receive(:get_authorization).and_return(double('authorization', access_token: 'access-token'))
     end
 
@@ -247,15 +246,15 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
 
         before { allow(File).to receive(:exist?).with('debug.aab').and_return(true) }
 
-        def stub_get_aab_info(params = {})
+        def stub_get_aab_info(integration_state = 'INTEGRATED')
           allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
             .to receive(:get_project_app_aab_info)
             .with("#{android_app_name}/aabInfo")
-            .and_return(Google::Apis::FirebaseappdistributionV1::GoogleFirebaseAppdistroV1AabInfo.new({ integration_state: "INTEGRATED" }.merge(params)))
+            .and_return(Google::Apis::FirebaseappdistributionV1::GoogleFirebaseAppdistroV1AabInfo.new(integration_state: integration_state))
         end
 
         it 'raises error if play account is not linked' do
-          stub_get_aab_info(integration_state: "PLAY_ACCOUNT_NOT_LINKED")
+          stub_get_aab_info('PLAY_ACCOUNT_NOT_LINKED')
 
           expect do
             action.run(params)
@@ -263,7 +262,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
         end
 
         it 'raises error if app not published' do
-          stub_get_aab_info(integration_state: "APP_NOT_PUBLISHED")
+          stub_get_aab_info('APP_NOT_PUBLISHED')
 
           expect do
             action.run(params)
@@ -271,7 +270,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
         end
 
         it 'raises error if no matching app in play account' do
-          stub_get_aab_info(integration_state: 'NO_APP_WITH_GIVEN_BUNDLE_ID_IN_PLAY_ACCOUNT')
+          stub_get_aab_info('NO_APP_WITH_GIVEN_BUNDLE_ID_IN_PLAY_ACCOUNT')
 
           expect do
             action.run(params)
@@ -279,7 +278,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
         end
 
         it 'raises error if terms have not been accepted' do
-          stub_get_aab_info(integration_state: 'PLAY_IAS_TERMS_NOT_ACCEPTED')
+          stub_get_aab_info('PLAY_IAS_TERMS_NOT_ACCEPTED')
 
           expect do
             action.run(params)
@@ -287,7 +286,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
         end
 
         it 'raises error if aab state is unrecognized' do
-          stub_get_aab_info(integration_state: 'UNKNOWN')
+          stub_get_aab_info('UNKNOWN')
 
           expect do
             action.run(params)
