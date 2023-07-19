@@ -54,7 +54,15 @@ module Fastlane
       end
 
       def app_name_from_app_id(app_id)
-        "projects/#{app_id.split(':')[1]}/apps/#{app_id}"
+        "#{project_name(app_id.split(':')[1])}/apps/#{app_id}"
+      end
+
+      def project_name(project_number)
+        "projects/#{project_number}"
+      end
+
+      def group_name(project_number, group_alias)
+        "#{project_name(project_number)}/groups/#{group_alias}"
       end
     end
   end
