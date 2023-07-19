@@ -64,6 +64,15 @@ module Fastlane
       def group_name(project_number, group_alias)
         "#{project_name(project_number)}/groups/#{group_alias}"
       end
+
+      def init_client(service_credentials_file, firebase_cli_token, debug = false)
+        Google::Apis::ClientOptions.default.log_http_requests = debug
+        Google::Apis::ClientOptions.default.application_name = "fastlane"
+        Google::Apis::ClientOptions.default.application_version = Fastlane::FirebaseAppDistribution::VERSION
+        client = Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService.new
+        client.authorization = get_authorization(service_credentials_file, firebase_cli_token)
+        client
+      end
     end
   end
 end

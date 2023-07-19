@@ -22,9 +22,7 @@ module Fastlane
           UI.user_error!("Must specify `display_name`.")
         end
 
-        client = FirebaseAppDistributionV1::FirebaseAppDistributionService.new
-        client.authorization =
-          get_authorization(params[:service_credentials_file], params[:firebase_cli_token])
+        client = init_client(params[:service_credentials_file], params[:firebase_cli_token], params[:debug])
 
         project_number = params[:project_number]
         group_alias = params[:alias]
