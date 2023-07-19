@@ -43,6 +43,12 @@ module Fastlane
           validate_aab_setup!(aab_info)
         end
 
+        upload_timeout = get_upload_timeout(params)
+
+        upload_status_response = fad_api_client.upload(app_name, binary_path, platform.to_s, upload_timeout)
+        release_name = upload_status_response.release_name
+        release = upload_status_response.release
+
         if binary_type == :AAB && aab_info && !aab_certs_included?(aab_info.test_certificate)
           updated_aab_info = client.get_project_app_aab_info(aab_info_name(app_name))
           if aab_certs_included?(updated_aab_info.test_certificate)

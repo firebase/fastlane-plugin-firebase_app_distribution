@@ -246,7 +246,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
 
         before { allow(File).to receive(:exist?).with('debug.aab').and_return(true) }
 
-        def stub_get_aab_info(params)
+        def stub_get_aab_info(params = {})
           allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
             .to receive(:get_project_app_aab_info)
             .with("#{android_app_name}/aabInfo")
