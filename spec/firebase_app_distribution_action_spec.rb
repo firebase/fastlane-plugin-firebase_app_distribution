@@ -221,6 +221,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
     before(:each) do
       allow(File).to receive(:exist?).and_call_original
       allow(action).to receive(:fetch_auth_token).and_return('fake-auth-token')
+      allow(action).to receive(:get_authorization).and_return(double('authorization', access_token: 'access-token'))
     end
 
     it 'raises error if it cannot find a valid binary path' do
