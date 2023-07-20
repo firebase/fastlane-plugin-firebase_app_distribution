@@ -329,7 +329,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
             android_artifact_path: 'path/to.apk'
           })
 
-          expect_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient).to_not(receive(:update_release_notes))
+          expect_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService).to_not(receive(:patch_project_app_release))
           expect(Fastlane::Actions.lane_context[Fastlane::Actions::SharedValues::FIREBASE_APP_DISTRO_RELEASE]).to eq(release)
         end
 
