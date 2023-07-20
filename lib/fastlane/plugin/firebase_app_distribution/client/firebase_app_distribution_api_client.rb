@@ -79,94 +79,6 @@ module Fastlane
         UI.user_error!("#{ErrorMessage::INVALID_RELEASE_NOTES}: #{error.message}")
       end
 
-      # Uploads the app binary to the Firebase API
-      #
-      # args
-      #   app_name - Firebase App resource name
-      #   binary_path - Absolute path to your app's aab/apk/ipa file
-      #   platform - 'android' or 'ios'
-      #   timeout - The amount of seconds before the upload will timeout, if not completed
-      #
-      # Throws a user_error if the binary file does not exist
-      def upload_binary(app_name, binary_path, platform, timeout)
-        response = connection.post(binary_upload_url(app_name), read_binary(binary_path)) do |request|
-          request.options.timeout = timeout # seconds
-          request.headers[AUTHORIZATION] = "Bearer " + @auth_token
-          request.headers[CONTENT_TYPE] = APPLICATION_OCTET_STREAM
-          request.headers[CLIENT_VERSION] = client_version_header_value
-          request.headers["X-Goog-Upload-File-Name"] = File.basename(binary_path)
-          request.headers["X-Goog-Upload-Protocol"] = "raw"
-        end
-
-        response.body[:name] || ''
-      rescue Errno::ENOENT # Raised when binary_path file does not exist
-        binary_type = binary_type_from_path(binary_path)
-        UI.user_error!("#{ErrorMessage.binary_not_found(binary_type)}: #{binary_path}")
-      end
-
-      # Uploads the binary file if it has not already been uploaded
-      # Takes at least POLLING_INTERVAL_SECONDS between polling get_upload_status
-      #
-      # args
-      #   app_name - Firebase App resource name
-      #   binary_path - Absolute path to your app's aab/apk/ipa file
-      #   timeout - The amount of seconds before the upload will timeout, if not completed
-      #
-      # Returns a `UploadStatusResponse` with the upload is complete.
-      #
-      # Crashes if the number of polling retries exceeds MAX_POLLING_RETRIES or if the binary cannot
-      # be uploaded.
-      def upload(app_name, binary_path, platform, timeout)
-        binary_type = binary_type_from_path(binary_path)
-
-        UI.message("⌛ Uploading the #{binary_type}.")
-        operation_name = upload_binary(app_name, binary_path, platform, timeout)
-
-        upload_status_response = get_upload_status(operation_name)
-        MAX_POLLING_RETRIES.times do
-          if upload_status_response.success?
-            if upload_status_response.release_updated?
-              UI.success("✅ Uploaded #{binary_type} successfully; updated provisioning profile of existing release #{upload_status_response.release_version}.")
-              break
-            elsif upload_status_response.release_unmodified?
-              UI.success("✅ The same #{binary_type} was found in release #{upload_status_response.release_version} with no changes, skipping.")
-              break
-            else
-              UI.success("✅ Uploaded #{binary_type} successfully and created release #{upload_status_response.release_version}.")
-            end
-            break
-          elsif upload_status_response.in_progress?
-            sleep(POLLING_INTERVAL_SECONDS)
-            upload_status_response = get_upload_status(operation_name)
-          else
-            if !upload_status_response.error_message.nil?
-              UI.user_error!("#{ErrorMessage.upload_binary_error(binary_type)}: #{upload_status_response.error_message}")
-            else
-              UI.user_error!(ErrorMessage.upload_binary_error(binary_type))
-            end
-          end
-        end
-        unless upload_status_response.success?
-          UI.crash!("It took longer than expected to process your #{binary_type}, please try again.")
-        end
-
-        upload_status_response
-      end
-
-      # Fetches the status of an uploaded binary
-      #
-      # args
-      #   operation_name - Upload operation name (with binary hash)
-      #
-      # Returns the `done` status, as well as a release, error, or nil
-      def get_upload_status(operation_name)
-        response = connection.get(upload_status_url(operation_name)) do |request|
-          request.headers[AUTHORIZATION] = "Bearer " + @auth_token
-          request.headers[CLIENT_VERSION] = client_version_header_value
-        end
-        UploadStatusResponse.new(response.body)
-      end
-
       # Get tester UDIDs
       #
       # args
@@ -199,20 +111,8 @@ module Fastlane
         "/v1/#{app_name}"
       end
 
-      def update_release_notes_url(release_name)
-        "/v1/#{release_name}?updateMask=release_notes.text"
-      end
-
       def distribute_url(release_name)
         "/v1/#{release_name}:distribute"
-      end
-
-      def binary_upload_url(app_name)
-        "/upload#{v1_apps_url(app_name)}/releases:upload"
-      end
-
-      def upload_status_url(operation_name)
-        "/v1/#{operation_name}"
       end
 
       def get_udids_url(app_id)

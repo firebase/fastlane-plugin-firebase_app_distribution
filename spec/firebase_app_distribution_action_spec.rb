@@ -293,58 +293,77 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
           end.to raise_error(ErrorMessage.aab_upload_error('UNKNOWN'))
         end
       end
+      describe 'when successfully uploading' do
+        let(:fake_binary_contents) { "Hello World" }
+        let(:fake_binary) { double("Binary") }
 
-      it 'updates FIREBASE_APP_DISTRO_RELEASE with release returned from upload call' do
-        release = {
-          name: "release-name"
-        }
-        upload_response = UploadStatusResponse.new({
-         response: {
-         release: release
-        }
+        before do
+          allow(File).to receive(:exist?).and_return(true)
+          allow(File).to receive(:open)
+            .and_return(fake_binary)
+          allow(fake_binary).to receive(:read)
+            .and_return(fake_binary_contents)
+        end
 
-        })
-        allow(File).to receive(:exist?).with('path/to.apk').and_return(true)
-        allow_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient)
-          .to receive(:upload)
-          .and_return(upload_response)
-        allow_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient)
-          .to receive(:distribute)
+        it 'updates FIREBASE_APP_DISTRO_RELEASE with release returned from upload call' do
+          release = {
+            name: "release-name",
+            displayVersion: 'display-version'
+          }
+          allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
+            .to receive(:http)
+            .and_return({ name: 'operation-name', result: release }.to_json)
+          allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
+            .to receive(:get_project_app_release_operation)
+            .and_return(Google::Apis::FirebaseappdistributionV1::GoogleLongrunningOperation.new(
+                          done: true,
+                          response: {
+                            'release' => release
+                          }
+            ))
+          allow_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient)
+            .to receive(:distribute)
 
-        action.run({
-          app: android_app_id,
-          android_artifact_path: 'path/to.apk'
-        })
+          action.run({
+            app: android_app_id,
+            android_artifact_path: 'path/to.apk'
+          })
 
-        expect_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient).to_not(receive(:update_release_notes))
-        expect(Fastlane::Actions.lane_context[Fastlane::Actions::SharedValues::FIREBASE_APP_DISTRO_RELEASE]).to eq(release)
-      end
+          expect_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient).to_not(receive(:update_release_notes))
+          expect(Fastlane::Actions.lane_context[Fastlane::Actions::SharedValues::FIREBASE_APP_DISTRO_RELEASE]).to eq(release)
+        end
 
-      it 'updates FIREBASE_APP_DISTRO_RELEASE with release returned from update release notes call' do
-        release = {
-          name: "release-name"
-        }
-        updated_release = release.merge({ releaseNotes: 'updated' })
-        upload_response = UploadStatusResponse.new({
-                                                     release: release
-                                                   })
-        allow(File).to receive(:exist?).with('path/to.apk').and_return(true)
-        allow_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient)
-          .to receive(:upload)
-          .and_return(upload_response)
-        allow_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient)
-          .to receive(:update_release_notes)
-          .and_return(updated_release)
-        allow_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient)
-          .to receive(:distribute)
+        it 'updates FIREBASE_APP_DISTRO_RELEASE with release returned from update release notes call' do
+          release = {
+            name: "release-name",
+            displayVersion: 'display-version'
+          }
+          updated_release = release.merge({ releaseNotes: { text: 'updated' } })
+          allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
+            .to receive(:http)
+            .and_return({ name: 'operation-name', result: release }.to_json)
+          allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
+            .to receive(:get_project_app_release_operation)
+            .and_return(Google::Apis::FirebaseappdistributionV1::GoogleLongrunningOperation.new(
+                          done: true,
+                          response: {
+                            'release' => release
+                          }
+            ))
+          allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
+            .to receive(:patch_project_app_release)
+            .and_return(Google::Apis::FirebaseappdistributionV1::GoogleFirebaseAppdistroV1Release.from_json(updated_release.to_json))
+          allow_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient)
+            .to receive(:distribute)
 
-        action.run({
-                     app: android_app_id,
-                     android_artifact_path: 'path/to.apk',
-                     release_notes: 'updated'
-                   })
+          action.run({
+             app: android_app_id,
+             android_artifact_path: 'path/to.apk',
+             release_notes: 'updated'
+           })
 
-        expect(Fastlane::Actions.lane_context[Fastlane::Actions::SharedValues::FIREBASE_APP_DISTRO_RELEASE]).to eq(updated_release)
+          expect(Fastlane::Actions.lane_context[Fastlane::Actions::SharedValues::FIREBASE_APP_DISTRO_RELEASE]).to eq(updated_release)
+        end
       end
     end
   end
