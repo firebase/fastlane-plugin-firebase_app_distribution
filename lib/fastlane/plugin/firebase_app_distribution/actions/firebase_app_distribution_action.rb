@@ -22,8 +22,6 @@ module Fastlane
       MAX_POLLING_RETRIES = 60
       POLLING_INTERVAL_SECONDS = 5
 
-      FirebaseappdistributionV1 = Google::Apis::FirebaseappdistributionV1
-
       def self.run(params)
         params.values # to validate all inputs before looking for the ipa/apk/aab
 
@@ -256,11 +254,11 @@ module Fastlane
           options: options
         )
 
-        FirebaseappdistributionV1::GoogleLongrunningOperation.from_json(response)
+        Google::Apis::FirebaseappdistributionV1::GoogleLongrunningOperation.from_json(response)
       end
 
       def self.extract_release(operation)
-        FirebaseappdistributionV1::GoogleFirebaseAppdistroV1Release.from_json(operation.response['release'].to_json)
+        Google::Apis::FirebaseappdistributionV1::GoogleFirebaseAppdistroV1Release.from_json(operation.response['release'].to_json)
       end
 
       def self.release_version(release)
