@@ -4,7 +4,6 @@ require 'shellwords'
 require 'googleauth'
 require_relative '../helper/firebase_app_distribution_helper'
 require_relative '../helper/firebase_app_distribution_error_message'
-require_relative '../client/firebase_app_distribution_api_client'
 require_relative '../helper/firebase_app_distribution_auth_client'
 
 ## How should we document the usage of release notes?
@@ -35,8 +34,6 @@ module Fastlane
         binary_type = binary_type_from_path(binary_path)
 
         client = init_client(params[:service_credentials_file], params[:firebase_cli_token], params[:debug])
-        # TODO(tundeagboola) delete when all instances are replaced with generated client
-        fad_api_client = Client::FirebaseAppDistributionApiClient.new(client.authorization.access_token, params[:debug])
 
         # If binary is an AAB, get the AAB info for this app, which includes the integration state and certificate data
         if binary_type == :AAB
@@ -78,7 +75,11 @@ module Fastlane
         groups = get_value_from_value_or_file(params[:groups], params[:groups_file])
         emails = string_to_array(testers)
         group_aliases = string_to_array(groups)
-        fad_api_client.distribute(release.name, emails, group_aliases)
+        request = Google::Apis::FirebaseappdistributionV1::GoogleFirebaseAppdistroV1DistributeReleaseRequest.new(
+          tester_emails: emails,
+          group_aliases: group_aliases
+        )
+        client.distribute_project_app_release(release.name, request)
         UI.success("🎉 App Distribution upload finished successfully. Setting Actions.lane_context[SharedValues::FIREBASE_APP_DISTRO_RELEASE] to the uploaded release.")
 
         if release.firebase_console_uri
