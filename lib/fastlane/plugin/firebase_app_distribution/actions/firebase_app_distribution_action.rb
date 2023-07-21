@@ -2,7 +2,6 @@ require 'fastlane/action'
 require 'open3'
 require 'shellwords'
 require 'googleauth'
-require_relative '../helper/upload_status_response'
 require_relative '../helper/firebase_app_distribution_helper'
 require_relative '../helper/firebase_app_distribution_error_message'
 require_relative '../client/firebase_app_distribution_api_client'
@@ -20,6 +19,8 @@ module Fastlane
       extend Helper::FirebaseAppDistributionHelper
 
       DEFAULT_UPLOAD_TIMEOUT_SECONDS = 300
+      MAX_POLLING_RETRIES = 60
+      POLLING_INTERVAL_SECONDS = 5
 
       def self.run(params)
         params.values # to validate all inputs before looking for the ipa/apk/aab
@@ -43,11 +44,12 @@ module Fastlane
           validate_aab_setup!(aab_info)
         end
 
-        upload_timeout = get_upload_timeout(params)
+        binary_type = binary_type_from_path(binary_path)
+        UI.message("⌛ Uploading the #{binary_type}.")
 
-        upload_status_response = fad_api_client.upload(app_name, binary_path, platform.to_s, upload_timeout)
-        release_name = upload_status_response.release_name
-        release = upload_status_response.release
+        timeout = get_upload_timeout(params)
+        operation = upload_binary(app_name, binary_path, client, timeout)
+        release = poll_upload_release_operation(client, operation, binary_type)
 
         if binary_type == :AAB && aab_info && !aab_certs_included?(aab_info.test_certificate)
           updated_aab_info = client.get_project_app_aab_info(aab_info_name(app_name))
@@ -66,29 +68,32 @@ module Fastlane
         if release_notes.nil? || release_notes.empty?
           UI.message("⏩ No release notes passed in. Skipping this step.")
         else
-          release = fad_api_client.update_release_notes(release_name, release_notes)
+          release.release_notes = Google::Apis::FirebaseappdistributionV1::GoogleFirebaseAppdistroV1ReleaseNotes.new(
+            text: release_notes
+          )
+          release = client.patch_project_app_release(release.name, release)
         end
 
         testers = get_value_from_value_or_file(params[:testers], params[:testers_file])
         groups = get_value_from_value_or_file(params[:groups], params[:groups_file])
         emails = string_to_array(testers)
         group_aliases = string_to_array(groups)
-        fad_api_client.distribute(release_name, emails, group_aliases)
+        fad_api_client.distribute(release.name, emails, group_aliases)
         UI.success("🎉 App Distribution upload finished successfully. Setting Actions.lane_context[SharedValues::FIREBASE_APP_DISTRO_RELEASE] to the uploaded release.")
 
-        if upload_status_response.firebase_console_uri
-          UI.message("🔗 View this release in the Firebase console: #{upload_status_response.firebase_console_uri}")
+        if release.firebase_console_uri
+          UI.message("🔗 View this release in the Firebase console: #{release.firebase_console_uri}")
         end
 
-        if upload_status_response.testing_uri
-          UI.message("🔗 Share this release with testers who have access: #{upload_status_response.testing_uri}")
+        if release.testing_uri
+          UI.message("🔗 Share this release with testers who have access: #{release.testing_uri}")
         end
 
-        if upload_status_response.binary_download_uri
-          UI.message("🔗 Download the release binary (link expires in 1 hour): #{upload_status_response.binary_download_uri}")
+        if release.binary_download_uri
+          UI.message("🔗 Download the release binary (link expires in 1 hour): #{release.binary_download_uri}")
         end
 
-        Actions.lane_context[SharedValues::FIREBASE_APP_DISTRO_RELEASE] = release
+        Actions.lane_context[SharedValues::FIREBASE_APP_DISTRO_RELEASE] = deep_symbolize_keys(JSON.parse(release.to_json))
         release
       end
 
@@ -198,6 +203,73 @@ module Fastlane
         release_notes_param =
           get_value_from_value_or_file(params[:release_notes], params[:release_notes_file])
         release_notes_param || Actions.lane_context[SharedValues::FL_CHANGELOG]
+      end
+
+      def self.poll_upload_release_operation(client, operation, binary_type)
+        operation = client.get_project_app_release_operation(operation.name)
+        MAX_POLLING_RETRIES.times do
+          if operation.done && operation.response && operation.response['release']
+            release = extract_release(operation)
+            result = operation.response['result']
+            if result == 'RELEASE_UPDATED'
+              UI.success("✅ Uploaded #{binary_type} successfully; updated provisioning profile of existing release #{release_version(release)}.")
+              break
+            elsif result == 'RELEASE_UNMODIFIED'
+              UI.success("✅ The same #{binary_type} was found in release #{release_version(release)} with no changes, skipping.")
+              break
+            else
+              UI.success("✅ Uploaded #{binary_type} successfully and created release #{release_version(release)}.")
+            end
+            break
+          elsif !operation.done
+            sleep(POLLING_INTERVAL_SECONDS)
+            operation = client.get_project_app_release_operation(operation.name)
+          else
+            if operation.error && operation.error.message
+              UI.user_error!("#{ErrorMessage.upload_binary_error(binary_type)}: #{operation.error.message}")
+            else
+              UI.user_error!(ErrorMessage.upload_binary_error(binary_type))
+            end
+          end
+        end
+        extract_release(operation)
+      end
+
+      def self.upload_binary(app_name, binary_path, client, timeout)
+        options = Google::Apis::RequestOptions.new
+        options.max_elapsed_time = timeout
+        options.header = {
+          'Content-Type' => 'application/octet-stream',
+          'X-Goog-Upload-File-Name' => File.basename(binary_path),
+          'X-Goog-Upload-Protocol' => 'raw'
+        }
+        # For some reason calling the client.upload_medium returns nil when
+        # it should return a long running operation object, so we make a
+        # standard http call instead and convert it to a long running object
+        # https://github.com/googleapis/google-api-ruby-client/blob/main/generated/google-apis-firebaseappdistribution_v1/lib/google/apis/firebaseappdistribution_v1/service.rb#L79
+        # TODO(kbolay) Prefer client.upload_medium
+        response = client.http(
+          :post,
+          "https://firebaseappdistribution.googleapis.com/upload/v1/#{app_name}/releases:upload",
+          body: File.open(binary_path, 'rb').read,
+          options: options
+        )
+
+        Google::Apis::FirebaseappdistributionV1::GoogleLongrunningOperation.from_json(response)
+      end
+
+      def self.extract_release(operation)
+        Google::Apis::FirebaseappdistributionV1::GoogleFirebaseAppdistroV1Release.from_json(operation.response['release'].to_json)
+      end
+
+      def self.release_version(release)
+        if release.display_version && release.build_version
+          "#{release.display_version} (#{release.build_version})"
+        elsif release.display_version
+          release.display_version
+        else
+          release.build_version
+        end
       end
 
       def self.available_options

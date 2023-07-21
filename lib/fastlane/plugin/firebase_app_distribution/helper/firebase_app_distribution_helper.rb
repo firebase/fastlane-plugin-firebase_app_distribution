@@ -78,6 +78,14 @@ module Fastlane
         client.authorization = get_authorization(service_credentials_file, firebase_cli_token)
         client
       end
+
+      def deep_symbolize_keys(hash)
+        result = {}
+        hash.each do |key, value|
+          result[key.to_sym] = value.kind_of?(Hash) ? deep_symbolize_keys(value) : value
+        end
+        result
+      end
     end
   end
 end
