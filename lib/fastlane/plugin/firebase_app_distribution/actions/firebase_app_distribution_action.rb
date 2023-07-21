@@ -49,7 +49,7 @@ module Fastlane
 
         timeout = get_upload_timeout(params)
         operation = upload_binary(app_name, binary_path, client, timeout)
-        release = poll_release(client, operation, binary_type)
+        release = poll_upload_release_operation(client, operation, binary_type)
 
         if binary_type == :AAB && aab_info && !aab_certs_included?(aab_info.test_certificate)
           updated_aab_info = client.get_project_app_aab_info(aab_info_name(app_name))
@@ -205,7 +205,7 @@ module Fastlane
         release_notes_param || Actions.lane_context[SharedValues::FL_CHANGELOG]
       end
 
-      def self.poll_release(client, operation, binary_type)
+      def self.poll_upload_release_operation(client, operation, binary_type)
         operation = client.get_project_app_release_operation(operation.name)
         MAX_POLLING_RETRIES.times do
           if operation.done && operation.response && operation.response['release']
@@ -247,6 +247,7 @@ module Fastlane
         # it should return a long running operation object, so we make a
         # standard http call instead and convert it to a long running object
         # https://github.com/googleapis/google-api-ruby-client/blob/main/generated/google-apis-firebaseappdistribution_v1/lib/google/apis/firebaseappdistribution_v1/service.rb#L79
+        # TODO(kbolay) Prefer client.upload_medium
         response = client.http(
           :post,
           "https://firebaseappdistribution.googleapis.com/upload/v1/#{app_name}/releases:upload",
