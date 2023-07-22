@@ -6,10 +6,13 @@ describe Fastlane::Actions::FirebaseAppDistributionGetUdidsAction do
   let(:mock_file) { StringIO.new }
   let(:output_file_path) { '/path/to/output/file.txt' }
 
+  before do
+    allow(action).to receive(:get_authorization).and_return(double('authorization', access_token: 'access-token'))
+  end
+
   describe '#run' do
     describe 'when there are testers with udids' do
       before(:each) do
-        allow(action).to receive(:fetch_auth_token).and_return('fake-auth-token')
         allow_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient)
           .to receive(:get_udids)
           .with(app_id)
@@ -46,7 +49,6 @@ describe Fastlane::Actions::FirebaseAppDistributionGetUdidsAction do
 
   describe 'when there are no testers with udids' do
     before(:each) do
-      allow(action).to receive(:fetch_auth_token).and_return('fake-auth-token')
       allow_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient)
         .to receive(:get_udids)
         .with(app_id)

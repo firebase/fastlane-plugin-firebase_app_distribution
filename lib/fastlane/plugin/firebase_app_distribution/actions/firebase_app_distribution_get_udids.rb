@@ -14,8 +14,8 @@ module Fastlane
       extend Helper::FirebaseAppDistributionHelper
 
       def self.run(params)
-        auth_token = fetch_auth_token(params[:service_credentials_file], params[:firebase_cli_token])
-        fad_api_client = Client::FirebaseAppDistributionApiClient.new(auth_token, params[:debug])
+        client = init_client(params[:service_credentials_file], params[:firebase_cli_token], params[:debug])
+        fad_api_client = Client::FirebaseAppDistributionApiClient.new(client.authorization.access_token, params[:debug])
 
         app_id = params[:app]
         udids = fad_api_client.get_udids(app_id)
