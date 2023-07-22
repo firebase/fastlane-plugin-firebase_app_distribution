@@ -321,8 +321,8 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
                             'release' => release
                           }
             ))
-          allow_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient)
-            .to receive(:distribute)
+          allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
+            .to receive(:distribute_project_app_release)
 
           action.run({
             app: android_app_id,
@@ -353,8 +353,8 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
           allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
             .to receive(:patch_project_app_release)
             .and_return(Google::Apis::FirebaseappdistributionV1::GoogleFirebaseAppdistroV1Release.from_json(updated_release.to_json))
-          allow_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient)
-            .to receive(:distribute)
+          allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
+            .to receive(:distribute_project_app_release)
 
           action.run({
              app: android_app_id,

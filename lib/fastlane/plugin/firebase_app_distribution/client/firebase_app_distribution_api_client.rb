@@ -1,5 +1,4 @@
 require 'fastlane_core/ui/ui'
-require_relative '../client/error_response'
 require_relative '../helper/firebase_app_distribution_helper'
 
 module Fastlane
@@ -8,46 +7,13 @@ module Fastlane
       include Helper::FirebaseAppDistributionHelper
 
       BASE_URL = "https://firebaseappdistribution.googleapis.com"
-      TOKEN_CREDENTIAL_URI = "https://oauth2.googleapis.com/token"
-      MAX_POLLING_RETRIES = 60
-      POLLING_INTERVAL_SECONDS = 5
 
       AUTHORIZATION = "Authorization"
-      CONTENT_TYPE = "Content-Type"
-      APPLICATION_JSON = "application/json"
-      APPLICATION_OCTET_STREAM = "application/octet-stream"
       CLIENT_VERSION = "X-Client-Version"
 
       def initialize(auth_token, debug = false)
         @auth_token = auth_token
         @debug = debug
-      end
-
-      # Enables tester access to the specified app release. Skips this
-      # step if no testers are passed in (emails and group_aliases are nil/empty).
-      #
-      # args
-      #   release_name - App release resource name, returned by upload_status endpoint
-      #   emails - String array of app testers' email addresses
-      #   group_aliases - String array of Firebase tester group aliases
-      #
-      # Throws a user_error if emails or group_aliases are invalid
-      def distribute(release_name, emails, group_aliases)
-        if (emails.nil? || emails.empty?) && (group_aliases.nil? || group_aliases.empty?)
-          UI.success("✅ No testers passed in. Skipping this step.")
-          return
-        end
-        payload = { testerEmails: emails, groupAliases: group_aliases }
-        begin
-          connection.post(distribute_url(release_name), payload.to_json) do |request|
-            request.headers[AUTHORIZATION] = "Bearer " + @auth_token
-            request.headers[CONTENT_TYPE] = APPLICATION_JSON
-            request.headers[CLIENT_VERSION] = client_version_header_value
-          end
-        rescue Faraday::ClientError
-          UI.user_error!("#{ErrorMessage::INVALID_TESTERS} \nEmails: #{emails} \nGroup Aliases: #{group_aliases}")
-        end
-        UI.success("✅ Added testers/groups.")
       end
 
       # Get tester UDIDs
@@ -74,20 +40,8 @@ module Fastlane
         "fastlane/#{Fastlane::FirebaseAppDistribution::VERSION}"
       end
 
-      def v1alpha_apps_url(app_id)
-        "/v1alpha/apps/#{app_id}"
-      end
-
-      def v1_apps_url(app_name)
-        "/v1/#{app_name}"
-      end
-
-      def distribute_url(release_name)
-        "/v1/#{release_name}:distribute"
-      end
-
       def get_udids_url(app_id)
-        "#{v1alpha_apps_url(app_id)}/testers:getTesterUdids"
+        "/v1alpha/apps/#{app_id}/testers:getTesterUdids"
       end
 
       def connection
@@ -97,11 +51,6 @@ module Fastlane
           conn.response(:logger, nil, { headers: false, bodies: { response: true }, log_level: :debug }) if @debug
           conn.adapter(Faraday.default_adapter)
         end
-      end
-
-      def read_binary(path)
-        # File must be read in binary mode to work on Windows
-        File.open(path, 'rb').read
       end
     end
   end
