@@ -131,6 +131,8 @@ module Fastlane
             UI.user_error!(ErrorMessage::INVALID_EMAIL_ADDRESS)
           when 404
             UI.user_error!(ErrorMessage::INVALID_TESTER_GROUP)
+          when 429
+            UI.user_error!(ErrorMessage::TESTER_LIMIT_VIOLATION)
           else
             UI.crash!(err)
           end

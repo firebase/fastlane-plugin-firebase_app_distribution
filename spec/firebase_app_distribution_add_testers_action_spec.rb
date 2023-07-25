@@ -132,6 +132,16 @@ describe Fastlane::Actions::FirebaseAppDistributionAddTestersAction do
         end.to raise_error(ErrorMessage::INVALID_TESTER_GROUP)
       end
 
+      it 'raises a user error if request returns a 429' do
+        allow_any_instance_of(FirebaseAppDistributionService)
+          .to receive(:batch_project_group_join)
+          .and_raise(Google::Apis::Error.new({}, status_code: '429'))
+
+        expect do
+          action.run({ project_number: 1, emails: emails, group_alias: group_alias })
+        end.to raise_error(ErrorMessage::TESTER_LIMIT_VIOLATION)
+      end
+
       it 'crashes for unhandled error' do
         allow_any_instance_of(FirebaseAppDistributionService)
           .to receive(:batch_project_group_join)
