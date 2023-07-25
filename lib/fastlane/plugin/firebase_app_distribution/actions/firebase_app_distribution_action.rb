@@ -75,24 +75,21 @@ module Fastlane
         groups = get_value_from_value_or_file(params[:groups], params[:groups_file])
         emails = string_to_array(testers)
         group_aliases = string_to_array(groups)
-        request = Google::Apis::FirebaseappdistributionV1::GoogleFirebaseAppdistroV1DistributeReleaseRequest.new(
-          tester_emails: emails,
-          group_aliases: group_aliases
-        )
-        client.distribute_project_app_release(release.name, request)
+        if present?(emails) || present?(group_aliases)
+          request = Google::Apis::FirebaseappdistributionV1::GoogleFirebaseAppdistroV1DistributeReleaseRequest.new(
+            tester_emails: emails,
+            group_aliases: group_aliases
+          )
+          client.distribute_project_app_release(release.name, request)
+        else
+          UI.message("⏩ No testers or groups passed in. Skipping this step.")
+        end
+
         UI.success("🎉 App Distribution upload finished successfully. Setting Actions.lane_context[SharedValues::FIREBASE_APP_DISTRO_RELEASE] to the uploaded release.")
 
-        if release.firebase_console_uri
-          UI.message("🔗 View this release in the Firebase console: #{release.firebase_console_uri}")
-        end
-
-        if release.testing_uri
-          UI.message("🔗 Share this release with testers who have access: #{release.testing_uri}")
-        end
-
-        if release.binary_download_uri
-          UI.message("🔗 Download the release binary (link expires in 1 hour): #{release.binary_download_uri}")
-        end
+        UI.message("🔗 View this release in the Firebase console: #{release.firebase_console_uri}") if release.firebase_console_uri
+        UI.message("🔗 Share this release with testers who have access: #{release.testing_uri}") if release.testing_uri
+        UI.message("🔗 Download the release binary (link expires in 1 hour): #{release.binary_download_uri}") if release.binary_download_uri
 
         release_hash = deep_symbolize_keys(JSON.parse(release.to_json))
         Actions.lane_context[SharedValues::FIREBASE_APP_DISTRO_RELEASE] = release_hash

@@ -70,14 +70,14 @@ describe Fastlane::Helper::FirebaseAppDistributionHelper do
       expect(array).to eq(["string1", "str ing2", "str  ing3"])
     end
 
-    it 'returns nil if the string is undefined' do
+    it 'returns empty array if the string is undefined' do
       array = helper.string_to_array(nil)
-      expect(array).to eq(nil)
+      expect(array).to eq([])
     end
 
-    it 'returns nil when the string is empty' do
+    it 'returns empty array when the string is empty' do
       array = helper.string_to_array("")
-      expect(array).to eq(nil)
+      expect(array).to eq([])
     end
 
     it 'returns empty array when the string only contains white spaces' do
