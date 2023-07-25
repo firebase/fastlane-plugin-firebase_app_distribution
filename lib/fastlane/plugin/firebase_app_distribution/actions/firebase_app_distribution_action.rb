@@ -75,11 +75,16 @@ module Fastlane
         groups = get_value_from_value_or_file(params[:groups], params[:groups_file])
         emails = string_to_array(testers)
         group_aliases = string_to_array(groups)
-        request = Google::Apis::FirebaseappdistributionV1::GoogleFirebaseAppdistroV1DistributeReleaseRequest.new(
-          tester_emails: emails,
-          group_aliases: group_aliases
-        )
-        client.distribute_project_app_release(release.name, request)
+        if present?(testers) || present?(emails)
+          request = Google::Apis::FirebaseappdistributionV1::GoogleFirebaseAppdistroV1DistributeReleaseRequest.new(
+            tester_emails: emails,
+            group_aliases: group_aliases
+          )
+          client.distribute_project_app_release(release.name, request)
+        else
+          UI.message("⏩ No testers or groups passed in. Skipping this step.")
+        end
+
         UI.success("🎉 App Distribution upload finished successfully. Setting Actions.lane_context[SharedValues::FIREBASE_APP_DISTRO_RELEASE] to the uploaded release.")
 
         if release.firebase_console_uri

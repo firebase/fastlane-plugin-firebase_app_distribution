@@ -305,7 +305,34 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
             .and_return(fake_binary_contents)
         end
 
-        it 'updates FIREBASE_APP_DISTRO_RELEASE with release returned from upload call' do
+        it 'returns release and updates FIREBASE_APP_DISTRO_RELEASE' do
+          release = {
+            name: "release-name",
+            displayVersion: 'display-version'
+          }
+          allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
+            .to receive(:http)
+            .and_return({ name: 'operation-name', result: release }.to_json)
+          allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
+            .to receive(:get_project_app_release_operation)
+            .and_return(Google::Apis::FirebaseappdistributionV1::GoogleLongrunningOperation.new(
+                          done: true,
+                          response: {
+                            'release' => release
+                          }
+            ))
+          expect_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService).to_not(receive(:distribute_project_app_release))
+          expect_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService).to_not(receive(:patch_project_app_release))
+
+          action.run({
+                       app: android_app_id,
+                       android_artifact_path: 'path/to.apk'
+                     })
+
+          expect(Fastlane::Actions.lane_context[Fastlane::Actions::SharedValues::FIREBASE_APP_DISTRO_RELEASE]).to eq(release)
+        end
+
+        it 'distributes, returns release and updates FIREBASE_APP_DISTRO_RELEASE' do
           release = {
             name: "release-name",
             displayVersion: 'display-version'
@@ -323,14 +350,23 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
             ))
           allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
             .to receive(:distribute_project_app_release)
+          expect_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
+            .to_not(receive(:patch_project_app_release))
+          expect_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
+            .to receive(:distribute_project_app_release) do |_, release_name, request|
+            expect(request.tester_emails).to eq(['user@example.com'])
+            # Response will fail if tester_emails or group_aliases field is nil
+            # it sets absent values to empty arrays
+            expect(request.group_aliases).to eq([])
+          end
 
           returned_release = action.run({
             app: android_app_id,
-            android_artifact_path: 'path/to.apk'
+            android_artifact_path: 'path/to.apk',
+            testers: "user@example.com"
           })
 
           expect(returned_release).to eq(release)
-          expect_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService).to_not(receive(:patch_project_app_release))
           expect(Fastlane::Actions.lane_context[Fastlane::Actions::SharedValues::FIREBASE_APP_DISTRO_RELEASE]).to eq(release)
         end
 
