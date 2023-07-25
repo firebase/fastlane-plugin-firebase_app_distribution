@@ -324,11 +324,12 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
           allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
             .to receive(:distribute_project_app_release)
 
-          action.run({
+          returned_release = action.run({
             app: android_app_id,
             android_artifact_path: 'path/to.apk'
           })
 
+          expect(returned_release).to eq(release)
           expect_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService).to_not(receive(:patch_project_app_release))
           expect(Fastlane::Actions.lane_context[Fastlane::Actions::SharedValues::FIREBASE_APP_DISTRO_RELEASE]).to eq(release)
         end
@@ -356,12 +357,13 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
           allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
             .to receive(:distribute_project_app_release)
 
-          action.run({
+          returned_release = action.run({
              app: android_app_id,
              android_artifact_path: 'path/to.apk',
              release_notes: 'updated'
            })
 
+          expect(returned_release).to eq(updated_release)
           expect(Fastlane::Actions.lane_context[Fastlane::Actions::SharedValues::FIREBASE_APP_DISTRO_RELEASE]).to eq(updated_release)
         end
       end

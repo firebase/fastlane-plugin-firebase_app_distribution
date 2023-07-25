@@ -94,8 +94,9 @@ module Fastlane
           UI.message("🔗 Download the release binary (link expires in 1 hour): #{release.binary_download_uri}")
         end
 
-        Actions.lane_context[SharedValues::FIREBASE_APP_DISTRO_RELEASE] = deep_symbolize_keys(JSON.parse(release.to_json))
-        release
+        release_hash = deep_symbolize_keys(JSON.parse(release.to_json))
+        Actions.lane_context[SharedValues::FIREBASE_APP_DISTRO_RELEASE] = release_hash
+        release_hash
       end
 
       def self.description
