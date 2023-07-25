@@ -38,6 +38,26 @@ describe Fastlane::Actions::FirebaseAppDistributionRemoveTestersAction do
         .to raise_error("Must pass at least one email")
     end
 
+    it 'raises a user error if request returns a 404' do
+      allow_any_instance_of(FirebaseAppDistributionService)
+        .to receive(:batch_project_tester_remove)
+        .and_raise(Google::Apis::Error.new({}, status_code: '404'))
+
+      expect do
+        action.run({ project_number: project_number, emails: emails })
+      end.to raise_error(ErrorMessage::INVALID_PROJECT)
+    end
+
+    it 'crashes if error is unhandled' do
+      allow_any_instance_of(FirebaseAppDistributionService)
+        .to receive(:batch_project_tester_remove)
+        .and_raise(Google::Apis::Error.new({}, status_code: '500'))
+
+      expect do
+        action.run({ project_number: project_number, emails: emails })
+      end.to raise_error(FastlaneCore::Interface::FastlaneCrash)
+    end
+
     it 'succeeds and makes call with value from emails param' do
       expect_any_instance_of(FirebaseAppDistributionService)
         .to receive(:batch_project_tester_remove) { |_, parent, request|
@@ -71,25 +91,57 @@ describe Fastlane::Actions::FirebaseAppDistributionRemoveTestersAction do
       action.run({ project_number: project_number, file: path })
     end
 
-    it 'removes testers only from the specified group when group_alias is specified' do
-      group_alias = 'group_alias'
-
-      expect_any_instance_of(FirebaseAppDistributionService)
-        .to_not(receive(:batch_project_tester_remove))
-      expect_any_instance_of(FirebaseAppDistributionService)
-        .to receive(:batch_project_group_leave) do |_, name, request|
-        expect(name).to eq("projects/#{project_number}/groups/#{group_alias}")
-        expect(request.emails).to eq(emails.split(','))
-      end
-
-      action.run({ project_number: project_number, emails: emails, group_alias: group_alias })
-    end
-
     it 'does not makes any batch_project_group_leave calls when group_alias is not specified' do
       expect_any_instance_of(FirebaseAppDistributionService)
         .to_not(receive(:batch_project_group_leave))
 
       action.run({ project_number: project_number, emails: emails })
+    end
+
+    describe 'when removing testers from group' do
+      let(:group_alias) { 'group-alias' }
+
+      it 'raises a user error if request returns a 400' do
+        allow_any_instance_of(FirebaseAppDistributionService)
+          .to receive(:batch_project_group_leave)
+          .and_raise(Google::Apis::Error.new({}, status_code: '400'))
+
+        expect do
+          action.run({ project_number: project_number, emails: emails, group_alias: group_alias })
+        end.to raise_error(ErrorMessage::INVALID_EMAIL_ADDRESS)
+      end
+
+      it 'raises a user error if request returns a 404' do
+        allow_any_instance_of(FirebaseAppDistributionService)
+          .to receive(:batch_project_group_leave)
+          .and_raise(Google::Apis::Error.new({}, status_code: '404'))
+
+        expect do
+          action.run({ project_number: project_number, emails: emails, group_alias: group_alias })
+        end.to raise_error(ErrorMessage::INVALID_TESTER_GROUP)
+      end
+
+      it 'crashes if error is unhandled' do
+        allow_any_instance_of(FirebaseAppDistributionService)
+          .to receive(:batch_project_group_leave)
+          .and_raise(Google::Apis::Error.new({}, status_code: '500'))
+
+        expect do
+          action.run({ project_number: project_number, emails: emails, group_alias: group_alias })
+        end.to raise_error(FastlaneCore::Interface::FastlaneCrash)
+      end
+
+      it 'removes testers from the specified group' do
+        expect_any_instance_of(FirebaseAppDistributionService)
+          .to_not(receive(:batch_project_tester_remove))
+        expect_any_instance_of(FirebaseAppDistributionService)
+          .to receive(:batch_project_group_leave) do |_, name, request|
+          expect(name).to eq("projects/#{project_number}/groups/#{group_alias}")
+          expect(request.emails).to eq(emails.split(','))
+        end
+
+        action.run({ project_number: project_number, emails: emails, group_alias: group_alias })
+      end
     end
   end
 end

@@ -35,7 +35,21 @@ module Fastlane
           name: group_name(project_number, group_alias),
           display_name: display_name
         )
-        client.create_project_group(parent, group, group_id: group_alias)
+
+        begin
+          client.create_project_group(parent, group, group_id: group_alias)
+        rescue Google::Apis::Error => err
+          case err.status_code.to_i
+          when 400
+            UI.user_error!(ErrorMessage::INVALID_TESTER_GROUP_NAME)
+          when 404
+            UI.user_error!(ErrorMessage::INVALID_PROJECT)
+          when 409
+            UI.important("Tester group #{group_alias} already exists.")
+          else
+            UI.crash!(err)
+          end
+        end
 
         UI.success("✅ Group created successfully.")
       end

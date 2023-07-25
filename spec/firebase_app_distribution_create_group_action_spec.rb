@@ -5,6 +5,10 @@ describe Fastlane::Actions::FirebaseAppDistributionCreateGroupAction do
   let(:action) { Fastlane::Actions::FirebaseAppDistributionCreateGroupAction }
 
   describe '#run' do
+    let(:project_number) { 1 }
+    let(:group_alias)  { 'group_alias' }
+    let(:display_name) { 'Display name' }
+
     before(:each) do
       allow(action).to receive(:get_authorization).and_return(double("creds"))
     end
@@ -19,11 +23,37 @@ describe Fastlane::Actions::FirebaseAppDistributionCreateGroupAction do
         .to raise_error("Must specify `display_name`.")
     end
 
-    it 'succeeds and makes calls with the correct values' do
-      project_number = 1
-      group_alias = "group_alias"
-      display_name = "Display name"
+    it 'raises a user error if request returns a 400' do
+      allow_any_instance_of(FirebaseAppDistributionService)
+        .to receive(:create_project_group)
+        .and_raise(Google::Apis::Error.new({}, status_code: '400'))
 
+      expect do
+        action.run({ project_number: project_number, alias: group_alias, display_name: display_name })
+      end.to raise_error(ErrorMessage::INVALID_TESTER_GROUP_NAME)
+    end
+
+    it 'raises a user error if request returns a 404' do
+      allow_any_instance_of(FirebaseAppDistributionService)
+        .to receive(:create_project_group)
+        .and_raise(Google::Apis::Error.new({}, status_code: '404'))
+
+      expect do
+        action.run({ project_number: project_number, alias: group_alias, display_name: display_name })
+      end.to raise_error(ErrorMessage::INVALID_PROJECT)
+    end
+
+    it 'crashes if error is unhandled' do
+      allow_any_instance_of(FirebaseAppDistributionService)
+        .to receive(:create_project_group)
+        .and_raise(Google::Apis::Error.new({}, status_code: '500'))
+
+      expect do
+        action.run({ project_number: project_number, alias: group_alias, display_name: display_name })
+      end.to raise_error(FastlaneCore::Interface::FastlaneCrash)
+    end
+
+    it 'succeeds and makes calls with the correct values' do
       group = Google::Apis::FirebaseappdistributionV1::GoogleFirebaseAppdistroV1Group.new(
         name: "projects/#{project_number}/groups/#{group_alias}",
         display_name: display_name

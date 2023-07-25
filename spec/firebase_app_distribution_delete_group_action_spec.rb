@@ -3,6 +3,9 @@ require 'fastlane/action'
 describe Fastlane::Actions::FirebaseAppDistributionDeleteGroupAction do
   let(:action) { Fastlane::Actions::FirebaseAppDistributionDeleteGroupAction }
   describe '#run' do
+    let(:project_number) { 1 }
+    let(:group_alias) { 'group-alias' }
+
     before(:each) do
       allow(action).to receive(:get_authorization).and_return('fake-auth-token')
     end
@@ -12,10 +15,27 @@ describe Fastlane::Actions::FirebaseAppDistributionDeleteGroupAction do
         .to raise_error("Must specify `alias`.")
     end
 
-    it 'succeeds and makes calls with the correct values' do
-      project_number = 1
-      group_alias = "group_alias"
+    it 'raises a user error if request returns a 404' do
+      allow_any_instance_of(FirebaseAppDistributionService)
+        .to receive(:delete_project_group)
+        .and_raise(Google::Apis::Error.new({}, status_code: '404'))
 
+      expect do
+        action.run({ project_number: project_number, alias: group_alias })
+      end.to raise_error(ErrorMessage::INVALID_TESTER_GROUP)
+    end
+
+    it 'crashes if error is unhandled' do
+      allow_any_instance_of(FirebaseAppDistributionService)
+        .to receive(:delete_project_group)
+        .and_raise(Google::Apis::Error.new({}, status_code: '500'))
+
+      expect do
+        action.run({ project_number: project_number, alias: group_alias })
+      end.to raise_error(FastlaneCore::Interface::FastlaneCrash)
+    end
+
+    it 'succeeds and makes calls with the correct values' do
       allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
         .to receive(:delete_project_group)
       expect_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
