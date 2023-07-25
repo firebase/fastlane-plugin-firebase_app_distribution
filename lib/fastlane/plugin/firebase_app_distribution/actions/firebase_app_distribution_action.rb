@@ -87,17 +87,9 @@ module Fastlane
 
         UI.success("🎉 App Distribution upload finished successfully. Setting Actions.lane_context[SharedValues::FIREBASE_APP_DISTRO_RELEASE] to the uploaded release.")
 
-        if release.firebase_console_uri
-          UI.message("🔗 View this release in the Firebase console: #{release.firebase_console_uri}")
-        end
-
-        if release.testing_uri
-          UI.message("🔗 Share this release with testers who have access: #{release.testing_uri}")
-        end
-
-        if release.binary_download_uri
-          UI.message("🔗 Download the release binary (link expires in 1 hour): #{release.binary_download_uri}")
-        end
+        UI.message("🔗 View this release in the Firebase console: #{release.firebase_console_uri}") if release.firebase_console_uri
+        UI.message("🔗 Share this release with testers who have access: #{release.testing_uri}") if release.testing_uri
+        UI.message("🔗 Download the release binary (link expires in 1 hour): #{release.binary_download_uri}") if release.binary_download_uri
 
         release_hash = deep_symbolize_keys(JSON.parse(release.to_json))
         Actions.lane_context[SharedValues::FIREBASE_APP_DISTRO_RELEASE] = release_hash
