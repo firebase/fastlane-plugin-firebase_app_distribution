@@ -303,6 +303,9 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
           end.to raise_error(ErrorMessage.aab_upload_error('UNKNOWN'))
         end
       end
+
+      it 'crashes exceeds polling threshold'
+
       describe 'when successfully uploading' do
         let(:fake_binary_contents) { "Hello World" }
         let(:fake_binary) { double("Binary") }
