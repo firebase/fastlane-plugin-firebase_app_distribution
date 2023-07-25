@@ -15,7 +15,7 @@ module ErrorMessage
   INVALID_TESTERS = "Could not enable access for testers. Check that the tester emails are formatted correctly, the groups exist and you are using group aliases (not group names) for specifying groups."
   INVALID_TESTER_GROUP = "App Distribution could not find your tester group. Make sure that it exists before trying to add testers, and that the group alias is specified correctly."
   INVALID_TESTER_GROUP_NAME = "The tester group name should be 4-63 characters, and valid characters are /[a-z][0-9]-/."
-  INVALID_RELEASE_NOTES = "Failed to update release notes"
+  INVALID_RELEASE_NOTES = "Failed to set release notes"
   SERVICE_CREDENTIALS_ERROR = "App Distribution could not generate credentials from the service credentials file specified"
   PLAY_ACCOUNT_NOT_LINKED = "This project is not linked to a Google Play account."
   APP_NOT_PUBLISHED = "This app is not published in the Google Play console."
