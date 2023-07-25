@@ -28,19 +28,9 @@ module Fastlane
         end
 
         if present?(group_alias)
-          UI.message("⏳ Removing #{emails.count} testers from group #group_alias}...")
-          request = Google::Apis::FirebaseappdistributionV1::GoogleFirebaseAppdistroV1BatchLeaveGroupRequest.new(
-            emails: emails
-          )
-          client.batch_project_group_leave(group_name(project_number, group_alias), request)
-          UI.success("✅ Tester(s) removed successfully.")
+          remove_testers_from_group(client, project_number, group_alias, emails)
         else
-          UI.message("⏳ Removing #{emails.count} testers from project #{project_number}...")
-          request = Google::Apis::FirebaseappdistributionV1::GoogleFirebaseAppdistroV1BatchRemoveTestersRequest.new(
-            emails: emails
-          )
-          response = client.batch_project_tester_remove(project_name(project_number), request)
-          UI.success("✅ #{response.emails.count} tester(s) removed successfully.")
+          remove_testers_from_project(client, project_number, emails)
         end
       end
 
@@ -98,6 +88,48 @@ module Fastlane
 
       def self.is_supported?(platform)
         true
+      end
+
+      def self.remove_testers_from_project(client, project_number, emails)
+        UI.message("⏳ Removing #{emails.count} testers from project #{project_number}...")
+        request = Google::Apis::FirebaseappdistributionV1::GoogleFirebaseAppdistroV1BatchRemoveTestersRequest.new(
+          emails: emails
+        )
+
+        begin
+          response = client.batch_project_tester_remove(project_name(project_number), request)
+        rescue Google::Apis::Error => err
+          case err.status_code.to_i
+          when 404
+            UI.user_error!(ErrorMessage::INVALID_PROJECT)
+          else
+            UI.crash!(err)
+          end
+        end
+
+        UI.success("✅ #{response.emails.count} tester(s) removed successfully.")
+      end
+
+      def self.remove_testers_from_group(client, project_number, group_alias, emails)
+        UI.message("⏳ Removing #{emails.count} testers from group #group_alias}...")
+        request = Google::Apis::FirebaseappdistributionV1::GoogleFirebaseAppdistroV1BatchLeaveGroupRequest.new(
+          emails: emails
+        )
+
+        begin
+          client.batch_project_group_leave(group_name(project_number, group_alias), request)
+        rescue Google::Apis::Error => err
+          case err.status_code.to_i
+          when 400
+            UI.user_error!(ErrorMessage::INVALID_EMAIL_ADDRESS)
+          when 404
+            UI.user_error!(ErrorMessage::INVALID_TESTER_GROUP)
+          else
+            UI.crash!(err)
+          end
+        end
+
+        UI.success("✅ Tester(s) removed successfully.")
       end
     end
   end

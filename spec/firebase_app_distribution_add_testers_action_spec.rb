@@ -33,6 +33,46 @@ describe Fastlane::Actions::FirebaseAppDistributionAddTestersAction do
         .to raise_error("A maximum of 1000 testers can be added at a time.")
     end
 
+    it 'raises a user error if request returns a 400' do
+      allow_any_instance_of(FirebaseAppDistributionService)
+        .to receive(:batch_project_tester_add)
+        .and_raise(Google::Apis::Error.new({}, status_code: '400'))
+
+      expect do
+        action.run({ project_number: 1, emails: emails })
+      end.to raise_error(ErrorMessage::INVALID_EMAIL_ADDRESS)
+    end
+
+    it 'raises a user error if request returns a 404' do
+      allow_any_instance_of(FirebaseAppDistributionService)
+        .to receive(:batch_project_tester_add)
+        .and_raise(Google::Apis::Error.new({}, status_code: '404'))
+
+      expect do
+        action.run({ project_number: 1, emails: emails })
+      end.to raise_error(ErrorMessage::INVALID_PROJECT)
+    end
+
+    it 'raises a user error if request returns a 429' do
+      allow_any_instance_of(FirebaseAppDistributionService)
+        .to receive(:batch_project_tester_add)
+        .and_raise(Google::Apis::Error.new({}, status_code: '429'))
+
+      expect do
+        action.run({ project_number: 1, emails: emails })
+      end.to raise_error(ErrorMessage::TESTER_LIMIT_VIOLATION)
+    end
+
+    it 'crashes for unhandled error' do
+      allow_any_instance_of(FirebaseAppDistributionService)
+        .to receive(:batch_project_tester_add)
+        .and_raise(Google::Apis::Error.new({}, status_code: '500'))
+
+      expect do
+        action.run({ project_number: 1, emails: emails })
+      end.to raise_error(FastlaneCore::Interface::FastlaneCrash)
+    end
+
     it 'succeeds and makes call with value from emails param' do
       path = 'path/to/file'
 
@@ -62,23 +102,55 @@ describe Fastlane::Actions::FirebaseAppDistributionAddTestersAction do
       action.run({ project_number: project_number, file: path })
     end
 
-    it 'adds testers to the specified group when group_alias is specified' do
-      group_alias = 'group_alias'
-
-      expect_any_instance_of(FirebaseAppDistributionService)
-        .to receive(:batch_project_group_join) do |_, name, request|
-        expect(name).to eq("projects/#{project_number}/groups/#{group_alias}")
-        expect(request.emails).to eq(emails.split(','))
-      end
-
-      action.run({ project_number: project_number, emails: emails, group_alias: group_alias })
-    end
-
     it 'does not makes any batch_project_group_join calls when group_alias is not specified' do
       expect_any_instance_of(FirebaseAppDistributionService)
         .not_to(receive(:batch_project_group_join))
 
       action.run({ project_number: project_number, emails: emails })
+    end
+
+    describe 'when adding testers to groups' do
+      let(:group_alias) { 'group-alias' }
+
+      it 'raises a user error if request returns a 400' do
+        allow_any_instance_of(FirebaseAppDistributionService)
+          .to receive(:batch_project_group_join)
+          .and_raise(Google::Apis::Error.new({}, status_code: '400'))
+
+        expect do
+          action.run({ project_number: 1, emails: emails, group_alias: group_alias })
+        end.to raise_error(ErrorMessage::INVALID_EMAIL_ADDRESS)
+      end
+
+      it 'raises a user error if request returns a 404' do
+        allow_any_instance_of(FirebaseAppDistributionService)
+          .to receive(:batch_project_group_join)
+          .and_raise(Google::Apis::Error.new({}, status_code: '404'))
+
+        expect do
+          action.run({ project_number: 1, emails: emails, group_alias: group_alias })
+        end.to raise_error(ErrorMessage::INVALID_TESTER_GROUP)
+      end
+
+      it 'crashes for unhandled error' do
+        allow_any_instance_of(FirebaseAppDistributionService)
+          .to receive(:batch_project_group_join)
+          .and_raise(Google::Apis::Error.new({}, status_code: '500'))
+
+        expect do
+          action.run({ project_number: 1, emails: emails, group_alias: group_alias })
+        end.to raise_error(FastlaneCore::Interface::FastlaneCrash)
+      end
+
+      it 'adds testers to the specified group' do
+        expect_any_instance_of(FirebaseAppDistributionService)
+          .to receive(:batch_project_group_join) do |_, name, request|
+          expect(name).to eq("projects/#{project_number}/groups/#{group_alias}")
+          expect(request.emails).to eq(emails.split(','))
+        end
+
+        action.run({ project_number: project_number, emails: emails, group_alias: group_alias })
+      end
     end
   end
 end

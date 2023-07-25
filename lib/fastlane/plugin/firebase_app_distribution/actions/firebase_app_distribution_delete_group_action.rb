@@ -22,7 +22,16 @@ module Fastlane
 
         UI.message("⏳ Deleting tester group '#{group_alias}' in project #{project_number}...")
 
-        client.delete_project_group(group_name(project_number, group_alias))
+        begin
+          client.delete_project_group(group_name(project_number, group_alias))
+        rescue Google::Apis::Error => err
+          case err.status_code.to_i
+          when 404
+            UI.user_error!(ErrorMessage::INVALID_TESTER_GROUP)
+          else
+            UI.crash!(err)
+          end
+        end
 
         UI.success("✅ Group deleted successfully.")
       end

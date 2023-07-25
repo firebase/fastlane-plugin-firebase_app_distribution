@@ -28,18 +28,9 @@ module Fastlane
         end
 
         if present?(group_alias)
-          UI.message("⏳ Adding testers to group #{group_alias}...")
-          request = Google::Apis::FirebaseappdistributionV1::GoogleFirebaseAppdistroV1BatchJoinGroupRequest.new(
-            emails: emails,
-            create_missing_testers: true
-          )
-          client.batch_project_group_join(group_name(project_number, group_alias), request)
+          add_testers_to_group(client, project_number, emails, group_alias)
         else
-          UI.message("⏳ Adding #{emails.count} testers to project #{project_number}...")
-          request = Google::Apis::FirebaseappdistributionV1::GoogleFirebaseAppdistroV1BatchAddTestersRequest.new(
-            emails: emails
-          )
-          client.batch_project_tester_add(project_name(project_number), request)
+          add_testers_to_project(client, emails, project_number)
         end
 
         # The add_testers response lists all the testers from the request
@@ -101,6 +92,49 @@ module Fastlane
 
       def self.is_supported?(platform)
         true
+      end
+
+      def self.add_testers_to_project(client, emails, project_number)
+        UI.message("⏳ Adding #{emails.count} testers to project #{project_number}...")
+        request = Google::Apis::FirebaseappdistributionV1::GoogleFirebaseAppdistroV1BatchAddTestersRequest.new(
+          emails: emails
+        )
+
+        begin
+          client.batch_project_tester_add(project_name(project_number), request)
+        rescue Google::Apis::Error => err
+          case err.status_code.to_i
+          when 400
+            UI.user_error!(ErrorMessage::INVALID_EMAIL_ADDRESS)
+          when 404
+            UI.user_error!(ErrorMessage::INVALID_PROJECT)
+          when 429
+            UI.user_error!(ErrorMessage::TESTER_LIMIT_VIOLATION)
+          else
+            UI.crash!(err)
+          end
+        end
+      end
+
+      def self.add_testers_to_group(client, project_number, emails, group_alias)
+        UI.message("⏳ Adding testers to group #{group_alias}...")
+        request = Google::Apis::FirebaseappdistributionV1::GoogleFirebaseAppdistroV1BatchJoinGroupRequest.new(
+          emails: emails,
+          create_missing_testers: true
+        )
+
+        begin
+          client.batch_project_group_join(group_name(project_number, group_alias), request)
+        rescue Google::Apis::Error => err
+          case err.status_code.to_i
+          when 400
+            UI.user_error!(ErrorMessage::INVALID_EMAIL_ADDRESS)
+          when 404
+            UI.user_error!(ErrorMessage::INVALID_TESTER_GROUP)
+          else
+            UI.crash!(err)
+          end
+        end
       end
     end
   end
