@@ -13,6 +13,7 @@ module Fastlane
       FIREBASE_APP_DISTRO_RELEASE ||= :FIREBASE_APP_DISTRO_RELEASE
     end
 
+    # rubocop:disable Metrics/ClassLength
     class FirebaseAppDistributionAction < Action
       extend Auth::FirebaseAppDistributionAuthClient
       extend Helper::FirebaseAppDistributionHelper
@@ -37,7 +38,7 @@ module Fastlane
 
         # If binary is an AAB, get the AAB info for this app, which includes the integration state and certificate data
         if binary_type == :AAB
-          aab_info = client.get_project_app_aab_info(aab_info_name(app_name))
+          aab_info = get_aab_info(client, app_name)
           validate_aab_setup!(aab_info)
         end
 
@@ -49,7 +50,7 @@ module Fastlane
         release = poll_upload_release_operation(client, operation, binary_type)
 
         if binary_type == :AAB && aab_info && !aab_certs_included?(aab_info.test_certificate)
-          updated_aab_info = client.get_project_app_aab_info(aab_info_name(app_name))
+          updated_aab_info = get_aab_info(client, app_name)
           if aab_certs_included?(updated_aab_info.test_certificate)
             UI.message("After you upload an AAB for the first time, App Distribution " \
               "generates a new test certificate. All AAB uploads are re-signed with this test " \
@@ -68,7 +69,7 @@ module Fastlane
           release.release_notes = Google::Apis::FirebaseappdistributionV1::GoogleFirebaseAppdistroV1ReleaseNotes.new(
             text: release_notes
           )
-          release = client.patch_project_app_release(release.name, release)
+          release = update_release(client, release)
         end
 
         testers = get_value_from_value_or_file(params[:testers], params[:testers_file])
@@ -80,7 +81,7 @@ module Fastlane
             tester_emails: emails,
             group_aliases: group_aliases
           )
-          client.distribute_project_app_release(release.name, request)
+          distribute_release(client, release, request)
         else
           UI.message("⏩ No testers or groups passed in. Skipping this step.")
         end
@@ -271,6 +272,39 @@ module Fastlane
         end
       end
 
+      def self.get_aab_info(client, app_name)
+        client.get_project_app_aab_info(aab_info_name(app_name))
+      rescue Google::Apis::Error => err
+        case err.status_code.to_i
+        when 404
+          UI.user_error!(ErrorMessage::INVALID_APP_ID)
+        else
+          UI.crash!(err)
+        end
+      end
+
+      def self.update_release(client, release)
+        client.patch_project_app_release(release.name, release)
+      rescue Google::Apis::Error => err
+        case err.status_code.to_i
+        when 400
+          UI.user_error!("#{ErrorMessage::INVALID_RELEASE_NOTES}: #{err.body}")
+        else
+          UI.crash!(err)
+        end
+      end
+
+      def self.distribute_release(client, release, request)
+        client.distribute_project_app_release(release.name, request)
+      rescue Google::Apis::Error => err
+        case err.status_code.to_i
+        when 400
+          UI.user_error!("#{ErrorMessage::INVALID_TESTERS}\nEmails: #{request.tester_emails} \nGroup Aliases: #{request.group_aliases}")
+        else
+          UI.crash!(err)
+        end
+      end
+
       def self.available_options
         [
           # iOS Specific
@@ -389,5 +423,6 @@ module Fastlane
         ]
       end
     end
+    # rubocop:enable Metrics/ClassLength
   end
 end
