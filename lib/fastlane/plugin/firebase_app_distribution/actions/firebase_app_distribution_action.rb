@@ -75,7 +75,7 @@ module Fastlane
         groups = get_value_from_value_or_file(params[:groups], params[:groups_file])
         emails = string_to_array(testers)
         group_aliases = string_to_array(groups)
-        if present?(testers) || present?(emails)
+        if present?(emails) || present?(group_aliases)
           request = Google::Apis::FirebaseappdistributionV1::GoogleFirebaseAppdistroV1DistributeReleaseRequest.new(
             tester_emails: emails,
             group_aliases: group_aliases
