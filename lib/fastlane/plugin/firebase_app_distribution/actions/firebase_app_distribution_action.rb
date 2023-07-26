@@ -232,6 +232,11 @@ module Fastlane
             end
           end
         end
+
+        unless operation.done && operation.response && operation.response['release']
+          UI.crash!("It took longer than expected to process your #{binary_type}, please try again.")
+        end
+
         extract_release(operation)
       end
 
