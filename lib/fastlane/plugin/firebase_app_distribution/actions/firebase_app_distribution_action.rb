@@ -28,15 +28,22 @@ module Fastlane
         app_id = app_id_from_params(params)
         app_name = app_name_from_app_id(app_id)
         platform = lane_platform || platform_from_app_id(app_id)
+        timeout = get_upload_timeout(params)
 
         binary_path = get_binary_path(platform, params)
         UI.user_error!("Couldn't find binary") if binary_path.nil?
         UI.user_error!("Couldn't find binary at path #{binary_path}") unless File.exist?(binary_path)
         binary_type = binary_type_from_path(binary_path)
 
-        client = init_client(params[:service_credentials_file], params[:firebase_cli_token], params[:debug])
+        # TODO(lkellogg): This sets the send timeout for all POST requests made by the client, but
+        # ideally the timeout should only apply to the binary upload
+        client = init_client(params[:service_credentials_file],
+                             params[:firebase_cli_token],
+                             params[:debug],
+                             timeout)
 
-        # If binary is an AAB, get the AAB info for this app, which includes the integration state and certificate data
+        # If binary is an AAB, get the AAB info for this app, which includes the integration state
+        # and certificate data
         if binary_type == :AAB
           aab_info = get_aab_info(client, app_name)
           validate_aab_setup!(aab_info)
@@ -44,8 +51,6 @@ module Fastlane
 
         binary_type = binary_type_from_path(binary_path)
         UI.message("⌛ Uploading the #{binary_type}.")
-
-        timeout = get_upload_timeout(params)
         operation = upload_binary(app_name, binary_path, client, timeout)
         release = poll_upload_release_operation(client, operation, binary_type)
 
@@ -242,12 +247,13 @@ module Fastlane
 
       def self.upload_binary(app_name, binary_path, client, timeout)
         options = Google::Apis::RequestOptions.new
-        options.max_elapsed_time = timeout
+        options.max_elapsed_time = timeout # includes retries (default = no retries)
         options.header = {
           'Content-Type' => 'application/octet-stream',
           'X-Goog-Upload-File-Name' => File.basename(binary_path),
           'X-Goog-Upload-Protocol' => 'raw'
         }
+
         # For some reason calling the client.upload_medium returns nil when
         # it should return a long running operation object, so we make a
         # standard http call instead and convert it to a long running object
