@@ -65,7 +65,7 @@ module Fastlane
         "#{project_name(project_number)}/groups/#{group_alias}"
       end
 
-      def init_client(service_credentials_file, firebase_cli_token, debug = false)
+      def init_client(service_credentials_file, firebase_cli_token, debug, timeout = nil)
         if debug
           UI.important("Warning: Debug logging enabled. Output may include sensitive information.")
           Google::Apis.logger.level = Logger::DEBUG
@@ -73,6 +73,10 @@ module Fastlane
 
         Google::Apis::ClientOptions.default.application_name = "fastlane"
         Google::Apis::ClientOptions.default.application_version = Fastlane::FirebaseAppDistribution::VERSION
+        unless timeout.nil?
+          Google::Apis::ClientOptions.default.send_timeout_sec = timeout
+        end
+
         client = Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService.new
         client.authorization = get_authorization(service_credentials_file, firebase_cli_token)
         client
