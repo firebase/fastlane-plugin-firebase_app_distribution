@@ -38,6 +38,9 @@ module Fastlane
         elsif !ENV["FIREBASE_TOKEN"].nil? && !ENV["FIREBASE_TOKEN"].empty?
           UI.message("🔐 Authenticating with FIREBASE_TOKEN environment variable")
           firebase_token(ENV["FIREBASE_TOKEN"], debug)
+        elsif !ENV["GOOGLE_APPLICATION_CREDENTIALS"].nil? && !ENV["GOOGLE_APPLICATION_CREDENTIALS"].empty?
+          UI.message("🔐 Authenticating with GOOGLE_APPLICATION_CREDENTIALS environment variable: #{ENV['GOOGLE_APPLICATION_CREDENTIALS']}")
+          service_account(ENV["GOOGLE_APPLICATION_CREDENTIALS"], debug)
         elsif !application_default_creds.nil?
           UI.message("🔐 Authenticating with Application Default Credentials")
           application_default_creds
@@ -53,8 +56,9 @@ module Fastlane
       private
 
       def application_default_creds
-        Google::Auth.get_application_default([SCOPE])
-      rescue
+        # TOOD(lkellogg): Disabling ADC for now while we are still using the old client for
+        # uploads. ADC also does not work for the get_udids action:
+        # https://cloud.google.com/docs/authentication/troubleshoot-adc#user-creds-client-based
         nil
       end
 

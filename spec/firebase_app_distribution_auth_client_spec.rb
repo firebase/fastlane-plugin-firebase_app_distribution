@@ -4,14 +4,12 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
   let(:fake_binary_contents) { double("Contents") }
   let(:firebase_auth) { Signet::OAuth2::Client }
   let(:service_auth) { Google::Auth::ServiceAccountCredentials }
-  let(:application_default_auth) { Google::Auth }
   let(:fake_firebase_tools_contents) { "{\"tokens\": {\"refresh_token\": \"refresh_token\"} }" }
   let(:fake_firebase_tools_contents_no_tokens_field) { "{}" }
   let(:fake_firebase_tools_contents_no_refresh_field) { "{\"tokens\": \"empty\"}" }
   let(:fake_firebase_tools_contents_invalid_json) { "\"tokens\": \"empty\"}" }
   let(:fake_service_creds) { double("service_account_creds") }
   let(:fake_oauth_client) { double("oauth_client") }
-  let(:fake_application_default_creds) { double("application_default_creds") }
   let(:payload) { { "access_token" => "service_fake_auth_token" } }
   let(:fake_error_response) { double("error_response") }
 
@@ -59,9 +57,11 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
         end
 
         it 'auths with service credentials environment variable' do
-          allow(application_default_auth).to receive(:get_application_default).and_return(fake_application_default_creds)
+          allow(ENV).to receive(:[])
+            .with("GOOGLE_APPLICATION_CREDENTIALS")
+            .and_return("google_service_path")
           expect(auth_client.get_authorization(empty_val, empty_val))
-            .to eq(fake_application_default_creds)
+            .to eq(fake_service_creds)
         end
 
         it 'auths with firebase token parameter' do
@@ -121,8 +121,6 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
         end
 
         describe 'when using cached firebase tools json file' do
-          before { allow(application_default_auth).to receive(:get_application_default).and_return(nil) }
-
           it 'authenticates' do
             allow(File).to receive(:read)
               .and_return(fake_firebase_tools_contents)
