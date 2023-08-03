@@ -318,9 +318,9 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
 
         it 'crashes if it exceeds polling threshold' do
           stub_const('Fastlane::Actions::FirebaseAppDistributionAction::MAX_POLLING_RETRIES', 0)
-          allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
-            .to receive(:http)
-            .and_return({ name: 'operation-name' }.to_json)
+          allow_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient)
+            .to receive(:upload_binary)
+            .and_return('operation-name')
           allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
             .to receive(:get_project_app_release_operation)
             .with('operation-name')
@@ -340,9 +340,9 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
           let(:release) { { name: "release-name", displayVersion: 'display-version' } }
 
           before do
-            allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
-              .to receive(:http)
-              .and_return({ name: 'operation-name', result: release }.to_json)
+            allow_any_instance_of(Fastlane::Client::FirebaseAppDistributionApiClient)
+              .to receive(:upload_binary)
+              .and_return('operation-name')
             allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
               .to receive(:get_project_app_release_operation)
               .and_return(Google::Apis::FirebaseappdistributionV1::GoogleLongrunningOperation.new(
