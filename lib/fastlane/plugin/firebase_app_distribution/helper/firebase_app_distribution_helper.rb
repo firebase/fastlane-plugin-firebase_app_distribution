@@ -78,7 +78,7 @@ module Fastlane
         end
 
         client = Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService.new
-        client.authorization = get_authorization(service_credentials_file, firebase_cli_token)
+        client.authorization = get_authorization(service_credentials_file, firebase_cli_token, debug)
         client
       end
 
