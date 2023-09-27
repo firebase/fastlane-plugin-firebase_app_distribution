@@ -37,7 +37,7 @@ module Fastlane
           request.headers[AUTHORIZATION] = "Bearer " + @auth_token
           request.headers[CONTENT_TYPE] = APPLICATION_OCTET_STREAM
           request.headers[CLIENT_VERSION] = client_version_header_value
-          request.headers["X-Goog-Upload-File-Name"] = File.basename(binary_path)
+          request.headers["X-Goog-Upload-File-Name"] = CGI.escape(File.basename(binary_path))
           request.headers["X-Goog-Upload-Protocol"] = "raw"
         end
 
