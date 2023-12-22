@@ -3,7 +3,10 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
   let(:fake_binary) { double("Binary") }
   let(:fake_binary_contents) { double("Contents") }
   let(:firebase_auth) { Signet::OAuth2::Client }
-  let(:service_auth) { Google::Auth::ServiceAccountCredentials }
+  let(:service_account_auth) { Google::Auth::ServiceAccountCredentials }
+  let(:fake_service_account_contents_json) { "{\"type\": \"service_account\"}" }
+  let(:external_account_auth) { Google::Auth::ExternalAccount::Credentials }
+  let(:fake_external_account_contents_json) { "{\"type\": \"external_account\"}" }
   let(:fake_firebase_tools_contents) { "{\"tokens\": {\"refresh_token\": \"refresh_token\"} }" }
   let(:fake_firebase_tools_contents_no_tokens_field) { "{}" }
   let(:fake_firebase_tools_contents_no_refresh_field) { "{\"tokens\": \"empty\"}" }
@@ -20,7 +23,9 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
     allow(fake_oauth_client).to receive(:access_token)
       .and_return("fake_auth_token")
 
-    allow(service_auth).to receive(:make_creds)
+    allow(service_account_auth).to receive(:make_creds)
+      .and_return(fake_service_creds)
+    allow(external_account_auth).to receive(:make_creds)
       .and_return(fake_service_creds)
     allow(fake_service_creds).to receive(:fetch_access_token!)
       .and_return(payload)
@@ -28,6 +33,8 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
     allow(File).to receive(:open).and_call_original
     allow(File).to receive(:open)
       .and_return(fake_binary)
+    allow(File).to receive(:read)
+      .and_return(fake_service_account_contents_json)
     allow(fake_binary).to receive(:read)
       .and_return(fake_binary_contents)
     allow(fake_binary_contents).to receive(:key)
@@ -56,10 +63,20 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
             .to eq(fake_service_creds)
         end
 
-        it 'auths with service credentials environment variable' do
+        it 'auths with service account credentials environment variable' do
           allow(ENV).to receive(:[])
             .with("GOOGLE_APPLICATION_CREDENTIALS")
             .and_return("google_service_path")
+          expect(auth_client.get_authorization(empty_val, empty_val))
+            .to eq(fake_service_creds)
+        end
+
+        it 'auths with external account credentials environment variable' do
+          allow(ENV).to receive(:[])
+            .with("GOOGLE_APPLICATION_CREDENTIALS")
+            .and_return("google_service_path")
+          allow(File).to receive(:read)
+            .and_return(fake_external_account_contents_json)
           expect(auth_client.get_authorization(empty_val, empty_val))
             .to eq(fake_service_creds)
         end
