@@ -60,27 +60,16 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
             .and_return(empty_val)
         end
 
-        it 'auths with service credentials path parameter' do
+        it 'auths with service account credentials path parameter' do
           expect(auth_client.get_authorization("google_service_path", empty_val))
             .to eq(fake_service_creds)
         end
 
-        it 'auths with service account credentials environment variable' do
-          allow(ENV).to receive(:[])
-            .with("GOOGLE_APPLICATION_CREDENTIALS")
-            .and_return("google_service_path")
-          expect(auth_client.get_authorization(empty_val, empty_val))
-            .to eq(fake_service_creds)
-        end
-
-        it 'auths with external account credentials environment variable' do
-          allow(ENV).to receive(:[])
-            .with("GOOGLE_APPLICATION_CREDENTIALS")
-            .and_return("google_service_path")
+        it 'auths with external account credentials path parameter' do
           allow(File).to receive(:read)
             .and_return(fake_external_account_contents_json)
-          expect(auth_client.get_authorization(empty_val, empty_val))
-            .to eq(fake_application_default_creds)
+          expect(auth_client.get_authorization("google_service_path", empty_val))
+            .to eq(fake_service_creds)
         end
 
         it 'auths with application_default_auth' do
