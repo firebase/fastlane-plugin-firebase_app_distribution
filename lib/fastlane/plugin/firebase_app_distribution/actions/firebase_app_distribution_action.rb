@@ -52,6 +52,7 @@ module Fastlane
         binary_type = binary_type_from_path(binary_path)
         UI.message("⌛ Uploading the #{binary_type}.")
         operation = upload_binary(app_name, binary_path, client, timeout)
+        UI.message("🕵️ Validating upload.")
         release = poll_upload_release_operation(client, operation, binary_type)
 
         if binary_type == :AAB && aab_info && !aab_certs_included?(aab_info.test_certificate)
@@ -262,7 +263,7 @@ module Fastlane
         response = client.http(
           :post,
           "https://firebaseappdistribution.googleapis.com/upload/v1/#{app_name}/releases:upload",
-          body: File.open(binary_path, 'rb').read,
+          body: File.open(binary_path, 'rb'),
           options: options
         )
 
