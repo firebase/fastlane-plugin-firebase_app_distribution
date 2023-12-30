@@ -38,13 +38,9 @@ module Fastlane
         elsif !ENV["FIREBASE_TOKEN"].nil? && !ENV["FIREBASE_TOKEN"].empty?
           UI.message("🔐 Authenticating with FIREBASE_TOKEN environment variable")
           firebase_token(ENV["FIREBASE_TOKEN"], debug)
-        # TODO(lkellogg): Not using Google::Auth.get_application_default yet while we are still
-        # using the old client for uploads. ADC also does not work for the get_udids action:
-        # https://cloud.google.com/docs/authentication/troubleshoot-adc#user-creds-client-based
-        # For now go back to just using the environment variable:
-        elsif !ENV["GOOGLE_APPLICATION_CREDENTIALS"].nil? && !ENV["GOOGLE_APPLICATION_CREDENTIALS"].empty?
-          UI.message("🔐 Authenticating with GOOGLE_APPLICATION_CREDENTIALS environment variable: #{ENV['GOOGLE_APPLICATION_CREDENTIALS']}")
-          service_account(ENV["GOOGLE_APPLICATION_CREDENTIALS"], debug)
+        elsif !application_default_creds.nil?
+          UI.message("🔐 Authenticating with Application Default Credentials")
+          application_default_creds
         elsif (refresh_token = refresh_token_from_firebase_tools)
           UI.message("🔐 No authentication method found. Using cached Firebase CLI credentials.")
           firebase_token(refresh_token, debug)
@@ -55,6 +51,12 @@ module Fastlane
       end
 
       private
+
+      def application_default_creds
+        Google::Auth.get_application_default([SCOPE])
+      rescue
+        nil
+      end
 
       def refresh_token_from_firebase_tools
         config_path = format_config_path
