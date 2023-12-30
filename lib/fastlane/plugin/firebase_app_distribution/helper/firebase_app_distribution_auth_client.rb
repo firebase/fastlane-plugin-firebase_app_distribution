@@ -38,12 +38,12 @@ module Fastlane
         elsif !ENV["FIREBASE_TOKEN"].nil? && !ENV["FIREBASE_TOKEN"].empty?
           UI.message("🔐 Authenticating with FIREBASE_TOKEN environment variable")
           firebase_token(ENV["FIREBASE_TOKEN"], debug)
+        elsif (refresh_token = refresh_token_from_firebase_tools)
+          UI.message("🔐 Authenticating with cached Firebase CLI credentials")
+          firebase_token(refresh_token, debug)
         elsif !application_default_creds.nil?
           UI.message("🔐 Authenticating with Application Default Credentials")
           application_default_creds
-        elsif (refresh_token = refresh_token_from_firebase_tools)
-          UI.message("🔐 No authentication method found. Using cached Firebase CLI credentials.")
-          firebase_token(refresh_token, debug)
         else
           UI.user_error!(ErrorMessage::MISSING_CREDENTIALS)
           nil
