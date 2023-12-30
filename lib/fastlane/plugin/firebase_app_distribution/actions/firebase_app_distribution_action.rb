@@ -75,6 +75,7 @@ module Fastlane
           release.release_notes = Google::Apis::FirebaseappdistributionV1::GoogleFirebaseAppdistroV1ReleaseNotes.new(
             text: release_notes
           )
+          UI.message("📜 Setting release notes.")
           release = update_release(client, release)
         end
 
@@ -87,6 +88,7 @@ module Fastlane
             tester_emails: emails,
             group_aliases: group_aliases
           )
+          UI.message("📦 Distributing release.")
           distribute_release(client, release, request)
         else
           UI.message("⏩ No testers or groups passed in. Skipping this step.")
