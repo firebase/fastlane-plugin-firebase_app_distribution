@@ -11,8 +11,6 @@ module Fastlane
       extend Auth::FirebaseAppDistributionAuthClient
       extend Helper::FirebaseAppDistributionHelper
 
-      FirebaseAppDistributionV1 = Google::Apis::FirebaseappdistributionV1
-
       def self.run(params)
         if blank?(params[:alias])
           UI.user_error!("Must specify `alias`.")
@@ -31,7 +29,7 @@ module Fastlane
         UI.message("⏳ Creating tester group '#{group_alias} (#{display_name})' in project #{project_number}...")
 
         parent = project_name(project_number)
-        group = FirebaseAppDistributionV1::GoogleFirebaseAppdistroV1Group.new(
+        group = Google::Apis::FirebaseappdistributionV1::GoogleFirebaseAppdistroV1Group.new(
           name: group_name(project_number, group_alias),
           display_name: display_name
         )

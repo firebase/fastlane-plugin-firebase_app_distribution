@@ -1,18 +1,18 @@
 require 'fastlane/action'
 require 'google/apis/firebaseappdistribution_v1'
 
-FirebaseAppDistributionV1 = Google::Apis::FirebaseappdistributionV1
-
 describe Fastlane::Actions::FirebaseAppDistributionGetLatestReleaseAction do
   let(:action) { Fastlane::Actions::FirebaseAppDistributionGetLatestReleaseAction }
   describe '#run' do
+    V1Api = Google::Apis::FirebaseappdistributionV1
+
     before(:each) do
       allow(action).to receive(:get_authorization).and_return(double("creds"))
     end
 
     it 'returns nil if the app does not have any releases' do
-      response = FirebaseAppDistributionV1::GoogleFirebaseAppdistroV1ListReleasesResponse.new
-      allow_any_instance_of(FirebaseAppDistributionV1::FirebaseAppDistributionService)
+      response = V1Api::GoogleFirebaseAppdistroV1ListReleasesResponse.new
+      allow_any_instance_of(V1Api::FirebaseAppDistributionService)
         .to receive(:list_project_app_releases)
         .with('projects/1234567890/apps/1:1234567890:ios:321abc456def7890', page_size: 1)
         .and_return(response)
@@ -22,11 +22,11 @@ describe Fastlane::Actions::FirebaseAppDistributionGetLatestReleaseAction do
     end
 
     it 'returns the release if the app has at least one release' do
-      response = FirebaseAppDistributionV1::GoogleFirebaseAppdistroV1ListReleasesResponse.new(
+      response = V1Api::GoogleFirebaseAppdistroV1ListReleasesResponse.new(
         releases: [
-          FirebaseAppDistributionV1::GoogleFirebaseAppdistroV1Release.new(
+          V1Api::GoogleFirebaseAppdistroV1Release.new(
             name: "projects/1234567890/apps/1:1234567890:ios:321abc456def7890/releases/0a1b2c3d4",
-            release_notes: FirebaseAppDistributionV1::GoogleFirebaseAppdistroV1ReleaseNotes.new(
+            release_notes: V1Api::GoogleFirebaseAppdistroV1ReleaseNotes.new(
               text: "Here are some release notes!"
             ),
             display_version: "1.2.3",
@@ -38,7 +38,7 @@ describe Fastlane::Actions::FirebaseAppDistributionGetLatestReleaseAction do
           )
         ]
       )
-      allow_any_instance_of(FirebaseAppDistributionV1::FirebaseAppDistributionService)
+      allow_any_instance_of(V1Api::FirebaseAppDistributionService)
         .to receive(:list_project_app_releases)
         .with('projects/1234567890/apps/1:1234567890:ios:321abc456def7890', page_size: 1)
         .and_return(response)
@@ -61,9 +61,9 @@ describe Fastlane::Actions::FirebaseAppDistributionGetLatestReleaseAction do
     end
 
     it 'returns the release with release notes set to nil' do
-      response = FirebaseAppDistributionV1::GoogleFirebaseAppdistroV1ListReleasesResponse.new(
+      response = V1Api::GoogleFirebaseAppdistroV1ListReleasesResponse.new(
         releases: [
-          FirebaseAppDistributionV1::GoogleFirebaseAppdistroV1Release.new(
+          V1Api::GoogleFirebaseAppdistroV1Release.new(
             name: "projects/1234567890/apps/1:1234567890:ios:321abc456def7890/releases/0a1b2c3d4",
             display_version: "1.2.3",
             build_version: "10",
@@ -74,7 +74,7 @@ describe Fastlane::Actions::FirebaseAppDistributionGetLatestReleaseAction do
           )
         ]
       )
-      allow_any_instance_of(FirebaseAppDistributionV1::FirebaseAppDistributionService)
+      allow_any_instance_of(V1Api::FirebaseAppDistributionService)
         .to receive(:list_project_app_releases)
         .with('projects/1234567890/apps/1:1234567890:ios:321abc456def7890', page_size: 1)
         .and_return(response)

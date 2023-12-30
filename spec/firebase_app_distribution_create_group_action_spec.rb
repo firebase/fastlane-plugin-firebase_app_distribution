@@ -5,7 +5,7 @@ describe Fastlane::Actions::FirebaseAppDistributionCreateGroupAction do
   let(:action) { Fastlane::Actions::FirebaseAppDistributionCreateGroupAction }
 
   describe '#run' do
-    FirebaseAppDistributionV1Service = Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService
+    V1ApiService = Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService
 
     let(:project_number) { 1 }
     let(:group_alias)  { 'group_alias' }
@@ -26,7 +26,7 @@ describe Fastlane::Actions::FirebaseAppDistributionCreateGroupAction do
     end
 
     it 'raises a user error if request returns a 400' do
-      allow_any_instance_of(FirebaseAppDistributionV1Service)
+      allow_any_instance_of(V1ApiService)
         .to receive(:create_project_group)
         .and_raise(Google::Apis::Error.new({}, status_code: '400'))
 
@@ -36,7 +36,7 @@ describe Fastlane::Actions::FirebaseAppDistributionCreateGroupAction do
     end
 
     it 'raises a user error if request returns a 404' do
-      allow_any_instance_of(FirebaseAppDistributionV1Service)
+      allow_any_instance_of(V1ApiService)
         .to receive(:create_project_group)
         .and_raise(Google::Apis::Error.new({}, status_code: '404'))
 
@@ -46,7 +46,7 @@ describe Fastlane::Actions::FirebaseAppDistributionCreateGroupAction do
     end
 
     it 'crashes if error is unhandled' do
-      allow_any_instance_of(FirebaseAppDistributionV1Service)
+      allow_any_instance_of(V1ApiService)
         .to receive(:create_project_group)
         .and_raise(Google::Apis::Error.new({}, status_code: '500'))
 
@@ -60,9 +60,9 @@ describe Fastlane::Actions::FirebaseAppDistributionCreateGroupAction do
         name: "projects/#{project_number}/groups/#{group_alias}",
         display_name: display_name
       )
-      allow_any_instance_of(FirebaseAppDistributionV1Service)
+      allow_any_instance_of(V1ApiService)
         .to receive(:create_project_group)
-      expect_any_instance_of(FirebaseAppDistributionV1Service)
+      expect_any_instance_of(V1ApiService)
         .to receive(:create_project_group) do |_, parent, expected_group, args|
           expect(parent).to eq("projects/#{project_number}")
           expect(expected_group.name).to eq(group.name)

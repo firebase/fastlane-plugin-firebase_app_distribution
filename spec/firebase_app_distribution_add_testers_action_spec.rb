@@ -3,16 +3,16 @@ require 'fastlane/action'
 describe Fastlane::Actions::FirebaseAppDistributionAddTestersAction do
   let(:action) { Fastlane::Actions::FirebaseAppDistributionAddTestersAction }
   describe '#run' do
-    FirebaseAppDistributionV1Service = Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService
+    V1ApiService = Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService
 
     let(:project_number) { 1 }
     let(:emails) { '1@e.mail,2@e.mail' }
 
     before(:each) do
       allow(action).to receive(:get_authorization).and_return('fake-auth-token')
-      allow_any_instance_of(FirebaseAppDistributionV1Service)
+      allow_any_instance_of(V1ApiService)
         .to receive(:batch_project_tester_add)
-      allow_any_instance_of(FirebaseAppDistributionV1Service)
+      allow_any_instance_of(V1ApiService)
         .to receive(:batch_project_group_join)
     end
 
@@ -34,7 +34,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAddTestersAction do
     end
 
     it 'raises a user error if request returns a 400' do
-      allow_any_instance_of(FirebaseAppDistributionV1Service)
+      allow_any_instance_of(V1ApiService)
         .to receive(:batch_project_tester_add)
         .and_raise(Google::Apis::Error.new({}, status_code: '400'))
 
@@ -44,7 +44,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAddTestersAction do
     end
 
     it 'raises a user error if request returns a 404' do
-      allow_any_instance_of(FirebaseAppDistributionV1Service)
+      allow_any_instance_of(V1ApiService)
         .to receive(:batch_project_tester_add)
         .and_raise(Google::Apis::Error.new({}, status_code: '404'))
 
@@ -54,7 +54,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAddTestersAction do
     end
 
     it 'raises a user error if request returns a 429' do
-      allow_any_instance_of(FirebaseAppDistributionV1Service)
+      allow_any_instance_of(V1ApiService)
         .to receive(:batch_project_tester_add)
         .and_raise(Google::Apis::Error.new({}, status_code: '429'))
 
@@ -64,7 +64,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAddTestersAction do
     end
 
     it 'crashes for unhandled error' do
-      allow_any_instance_of(FirebaseAppDistributionV1Service)
+      allow_any_instance_of(V1ApiService)
         .to receive(:batch_project_tester_add)
         .and_raise(Google::Apis::Error.new({}, status_code: '500'))
 
@@ -76,7 +76,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAddTestersAction do
     it 'succeeds and makes call with value from emails param' do
       path = 'path/to/file'
 
-      expect_any_instance_of(FirebaseAppDistributionV1Service)
+      expect_any_instance_of(V1ApiService)
         .to receive(:batch_project_tester_add) do |_, parent, request|
         expect(parent).to eq("projects/#{project_number}")
         expect(request.emails).to eq(emails.split(','))
@@ -93,7 +93,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAddTestersAction do
         .and_return(fake_file)
       allow(fake_file).to receive(:read).and_return(emails)
 
-      expect_any_instance_of(FirebaseAppDistributionV1Service)
+      expect_any_instance_of(V1ApiService)
         .to receive(:batch_project_tester_add) do |_, parent, request|
         expect(parent).to eq("projects/#{project_number}")
         expect(request.emails).to eq(emails.split(','))
@@ -103,7 +103,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAddTestersAction do
     end
 
     it 'does not makes any batch_project_group_join calls when group_alias is not specified' do
-      expect_any_instance_of(FirebaseAppDistributionV1Service)
+      expect_any_instance_of(V1ApiService)
         .not_to(receive(:batch_project_group_join))
 
       action.run({ project_number: project_number, emails: emails })
@@ -113,7 +113,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAddTestersAction do
       let(:group_alias) { 'group-alias' }
 
       it 'raises a user error if request returns a 400' do
-        allow_any_instance_of(FirebaseAppDistributionV1Service)
+        allow_any_instance_of(V1ApiService)
           .to receive(:batch_project_group_join)
           .and_raise(Google::Apis::Error.new({}, status_code: '400'))
 
@@ -123,7 +123,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAddTestersAction do
       end
 
       it 'raises a user error if request returns a 404' do
-        allow_any_instance_of(FirebaseAppDistributionV1Service)
+        allow_any_instance_of(V1ApiService)
           .to receive(:batch_project_group_join)
           .and_raise(Google::Apis::Error.new({}, status_code: '404'))
 
@@ -133,7 +133,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAddTestersAction do
       end
 
       it 'raises a user error if request returns a 429' do
-        allow_any_instance_of(FirebaseAppDistributionV1Service)
+        allow_any_instance_of(V1ApiService)
           .to receive(:batch_project_group_join)
           .and_raise(Google::Apis::Error.new({}, status_code: '429'))
 
@@ -143,7 +143,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAddTestersAction do
       end
 
       it 'crashes for unhandled error' do
-        allow_any_instance_of(FirebaseAppDistributionV1Service)
+        allow_any_instance_of(V1ApiService)
           .to receive(:batch_project_group_join)
           .and_raise(Google::Apis::Error.new({}, status_code: '500'))
 
@@ -153,7 +153,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAddTestersAction do
       end
 
       it 'adds testers to the specified group' do
-        expect_any_instance_of(FirebaseAppDistributionV1Service)
+        expect_any_instance_of(V1ApiService)
           .to receive(:batch_project_group_join) do |_, name, request|
           expect(name).to eq("projects/#{project_number}/groups/#{group_alias}")
           expect(request.emails).to eq(emails.split(','))

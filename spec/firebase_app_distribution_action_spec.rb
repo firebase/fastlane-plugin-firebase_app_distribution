@@ -211,6 +211,8 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
   end
 
   describe '#run' do
+    V1Api = Google::Apis::FirebaseappdistributionV1
+
     let(:params) do
       {
         app: ios_app_id,
@@ -247,7 +249,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
         before { allow(File).to receive(:exist?).with('debug.aab').and_return(true) }
 
         it 'raises user error if request returns a 404' do
-          allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
+          allow_any_instance_of(V1Api::FirebaseAppDistributionService)
             .to receive(:get_project_app_aab_info)
             .and_raise(Google::Apis::Error.new({}, status_code: '404'))
 
@@ -257,10 +259,10 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
         end
 
         def stub_get_aab_info(integration_state = 'INTEGRATED')
-          allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
+          allow_any_instance_of(V1Api::FirebaseAppDistributionService)
             .to receive(:get_project_app_aab_info)
             .with("#{android_app_name}/aabInfo")
-            .and_return(Google::Apis::FirebaseappdistributionV1::GoogleFirebaseAppdistroV1AabInfo.new(integration_state: integration_state))
+            .and_return(V1Api::GoogleFirebaseAppdistroV1AabInfo.new(integration_state: integration_state))
         end
 
         it 'raises error if play account is not linked' do
@@ -318,13 +320,13 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
 
         it 'crashes if it exceeds polling threshold' do
           stub_const('Fastlane::Actions::FirebaseAppDistributionAction::MAX_POLLING_RETRIES', 0)
-          allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
+          allow_any_instance_of(V1Api::FirebaseAppDistributionService)
             .to receive(:http)
             .and_return({ name: 'operation-name' }.to_json)
-          allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
+          allow_any_instance_of(V1Api::FirebaseAppDistributionService)
             .to receive(:get_project_app_release_operation)
             .with('operation-name')
-            .and_return(Google::Apis::FirebaseappdistributionV1::GoogleLongrunningOperation.new(
+            .and_return(V1Api::GoogleLongrunningOperation.new(
                           done: false
             ))
 
@@ -340,12 +342,12 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
           let(:release) { { name: "release-name", displayVersion: 'display-version' } }
 
           before do
-            allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
+            allow_any_instance_of(V1Api::FirebaseAppDistributionService)
               .to receive(:http)
               .and_return({ name: 'operation-name', result: release }.to_json)
-            allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
+            allow_any_instance_of(V1Api::FirebaseAppDistributionService)
               .to receive(:get_project_app_release_operation)
-              .and_return(Google::Apis::FirebaseappdistributionV1::GoogleLongrunningOperation.new(
+              .and_return(V1Api::GoogleLongrunningOperation.new(
                             done: true,
                             response: {
                               'release' => release
@@ -354,8 +356,8 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
           end
 
           it 'returns release and updates FIREBASE_APP_DISTRO_RELEASE' do
-            expect_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService).to_not(receive(:distribute_project_app_release))
-            expect_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService).to_not(receive(:patch_project_app_release))
+            expect_any_instance_of(V1Api::FirebaseAppDistributionService).to_not(receive(:distribute_project_app_release))
+            expect_any_instance_of(V1Api::FirebaseAppDistributionService).to_not(receive(:patch_project_app_release))
 
             action.run({
                          app: android_app_id,
@@ -367,7 +369,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
 
           describe 'when distributing to testers' do
             it 'raises error if request returns a 400' do
-              allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
+              allow_any_instance_of(V1Api::FirebaseAppDistributionService)
                 .to receive(:distribute_project_app_release)
                 .and_raise(Google::Apis::Error.new({}, status_code: '400'))
 
@@ -382,16 +384,16 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
             end
 
             it 'distributes to testers, returns release and updates FIREBASE_APP_DISTRO_RELEASE' do
-              allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
+              allow_any_instance_of(V1Api::FirebaseAppDistributionService)
                 .to receive(:distribute_project_app_release)
-              expect_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
+              expect_any_instance_of(V1Api::FirebaseAppDistributionService)
                 .to receive(:distribute_project_app_release) do |_, release_name, request|
                 expect(request.tester_emails).to eq(%w[user1@example.com user2@example.com])
                 # Response will fail if tester_emails or group_aliases field is nil
                 # it sets absent values to empty arrays
                 expect(request.group_aliases).to eq([])
               end
-              expect_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
+              expect_any_instance_of(V1Api::FirebaseAppDistributionService)
                 .to_not(receive(:patch_project_app_release))
 
               returned_release = action.run({
@@ -405,16 +407,16 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
             end
 
             it 'distributes to groups, returns release and updates FIREBASE_APP_DISTRO_RELEASE' do
-              allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
+              allow_any_instance_of(V1Api::FirebaseAppDistributionService)
                 .to receive(:distribute_project_app_release)
-              expect_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
+              expect_any_instance_of(V1Api::FirebaseAppDistributionService)
                 .to receive(:distribute_project_app_release) do |_, release_name, request|
                 expect(request.group_aliases).to eq(%w[test-group-1 test-group-2])
                 # Response will fail if tester_emails or group_aliases field is nil
                 # it sets absent values to empty arrays
                 expect(request.tester_emails).to eq([])
               end
-              expect_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
+              expect_any_instance_of(V1Api::FirebaseAppDistributionService)
                 .to_not(receive(:patch_project_app_release))
 
               returned_release = action.run({
@@ -428,14 +430,14 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
             end
 
             it 'distributes to groups and testers, returns release and updates FIREBASE_APP_DISTRO_RELEASE' do
-              allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
+              allow_any_instance_of(V1Api::FirebaseAppDistributionService)
                 .to receive(:distribute_project_app_release)
-              expect_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
+              expect_any_instance_of(V1Api::FirebaseAppDistributionService)
                 .to receive(:distribute_project_app_release) do |_, release_name, request|
                 expect(request.group_aliases).to eq(%w[test-group-1 test-group-2])
                 expect(request.tester_emails).to eq(%w[user1@example.com user2@example.com])
               end
-              expect_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
+              expect_any_instance_of(V1Api::FirebaseAppDistributionService)
                 .to_not(receive(:patch_project_app_release))
 
               returned_release = action.run({
@@ -452,7 +454,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
 
           describe 'when updating release notes' do
             it 'raises error if request returns a 400' do
-              allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
+              allow_any_instance_of(V1Api::FirebaseAppDistributionService)
                 .to receive(:patch_project_app_release)
                 .and_raise(Google::Apis::Error.new({}, status_code: '400', body: 'release notes too long'))
 
@@ -467,10 +469,10 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
 
             it 'distributes to groups and testers, returns release and updates FIREBASE_APP_DISTRO_RELEASE' do
               updated_release = release.merge({ releaseNotes: { text: 'updated' } })
-              allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
+              allow_any_instance_of(V1Api::FirebaseAppDistributionService)
                 .to receive(:patch_project_app_release)
-                .and_return(Google::Apis::FirebaseappdistributionV1::GoogleFirebaseAppdistroV1Release.from_json(updated_release.to_json))
-              allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
+                .and_return(V1Api::GoogleFirebaseAppdistroV1Release.from_json(updated_release.to_json))
+              allow_any_instance_of(V1Api::FirebaseAppDistributionService)
                 .to receive(:distribute_project_app_release)
 
               returned_release = action.run({
