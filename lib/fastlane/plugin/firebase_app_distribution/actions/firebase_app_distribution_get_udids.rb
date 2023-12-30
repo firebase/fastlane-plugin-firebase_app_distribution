@@ -4,7 +4,6 @@ require 'shellwords'
 require 'googleauth'
 require_relative '../helper/firebase_app_distribution_helper'
 require_relative '../helper/firebase_app_distribution_error_message'
-require_relative '../client/firebase_app_distribution_api_client'
 require_relative '../helper/firebase_app_distribution_auth_client'
 
 module Fastlane
@@ -14,11 +13,17 @@ module Fastlane
       extend Helper::FirebaseAppDistributionHelper
 
       def self.run(params)
-        client = init_client(params[:service_credentials_file], params[:firebase_cli_token], params[:debug])
-        fad_api_client = Client::FirebaseAppDistributionApiClient.new(client.authorization.access_token, params[:debug])
+        client = init_v1alpha_client(params[:service_credentials_file], params[:firebase_cli_token], params[:debug])
 
-        app_id = params[:app]
-        udids = fad_api_client.get_udids(app_id)
+        project_number = params[:project_number]
+        if blank?(project_number)
+          app_id = params[:app]
+          if blank?(app_id)
+            UI.user_error!("Must specify `project_number`.")
+          end
+          project_number = project_number_from_app_id(app_id)
+        end
+        udids = client.get_project_tester_udids(project_name(project_number)).tester_udids
 
         if udids.empty?
           UI.important("App Distribution fetched 0 tester UDIDs. Nothing written to output file.")
@@ -32,7 +37,7 @@ module Fastlane
         File.open(output_file, 'w') do |f|
           f.write("Device ID\tDevice Name\tDevice Platform\n")
           udids.each do |tester_udid|
-            f.write("#{tester_udid[:udid]}\t#{tester_udid[:name]}\t#{tester_udid[:platform]}\n")
+            f.write("#{tester_udid.udid}\t#{tester_udid.name}\t#{tester_udid.platform}\n")
           end
         end
       end
@@ -52,10 +57,18 @@ module Fastlane
 
       def self.available_options
         [
+          FastlaneCore::ConfigItem.new(key: :project_number,
+                                       conflicting_options: [:app],
+                                       env_name: "FIREBASEAPPDISTRO_PROJECT_NUMBER",
+                                       description: "Your Firebase project number. You can find the project number in the Firebase console, on the General Settings page",
+                                       type: Integer,
+                                       optional: true),
           FastlaneCore::ConfigItem.new(key: :app,
+                                       conflicting_options: [:project_number],
                                        env_name: "FIREBASEAPPDISTRO_APP",
                                        description: "Your app's Firebase App ID. You can find the App ID in the Firebase console, on the General Settings page",
-                                       optional: false,
+                                       optional: true,
+                                       deprecated: "Use project_number (FIREBASEAPPDISTRO_PROJECT_NUMBER) instead",
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :output_file,
                                        env_name: "FIREBASEAPPDISTRO_OUTPUT_FILE",

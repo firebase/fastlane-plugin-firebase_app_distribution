@@ -37,10 +37,10 @@ module Fastlane
 
         # TODO(lkellogg): This sets the send timeout for all POST requests made by the client, but
         # ideally the timeout should only apply to the binary upload
-        client = init_client(params[:service_credentials_file],
-                             params[:firebase_cli_token],
-                             params[:debug],
-                             timeout)
+        client = init_v1_client(params[:service_credentials_file],
+                                params[:firebase_cli_token],
+                                params[:debug],
+                                timeout)
 
         # If binary is an AAB, get the AAB info for this app, which includes the integration state
         # and certificate data

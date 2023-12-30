@@ -22,7 +22,7 @@ module Fastlane
           UI.user_error!("Must specify `display_name`.")
         end
 
-        client = init_client(params[:service_credentials_file], params[:firebase_cli_token], params[:debug])
+        client = init_v1_client(params[:service_credentials_file], params[:firebase_cli_token], params[:debug])
 
         project_number = params[:project_number]
         group_alias = params[:alias]

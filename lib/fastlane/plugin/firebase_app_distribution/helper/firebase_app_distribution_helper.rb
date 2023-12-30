@@ -1,5 +1,8 @@
 require 'fastlane_core/ui/ui'
+require 'google/apis/firebaseappdistribution_v1'
+require 'google/apis/firebaseappdistribution_v1alpha'
 require 'cfpropertylist'
+
 module Fastlane
   UI = FastlaneCore::UI unless Fastlane.const_defined?("UI")
   module Helper
@@ -53,8 +56,12 @@ module Fastlane
         !blank?(value)
       end
 
+      def project_number_from_app_id(app_id)
+        app_id.split(':')[1]
+      end
+
       def app_name_from_app_id(app_id)
-        "#{project_name(app_id.split(':')[1])}/apps/#{app_id}"
+        "#{project_name(project_number_from_app_id(app_id))}/apps/#{app_id}"
       end
 
       def project_name(project_number)
@@ -65,7 +72,17 @@ module Fastlane
         "#{project_name(project_number)}/groups/#{group_alias}"
       end
 
-      def init_client(service_credentials_file, firebase_cli_token, debug, timeout = nil)
+      def init_v1_client(service_credentials_file, firebase_cli_token, debug, timeout = nil)
+        init_client(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService.new,
+                    service_credentials_file, firebase_cli_token, debug, timeout)
+      end
+
+      def init_v1alpha_client(service_credentials_file, firebase_cli_token, debug, timeout = nil)
+        init_client(Google::Apis::FirebaseappdistributionV1alpha::FirebaseAppDistributionService.new,
+                    service_credentials_file, firebase_cli_token, debug, timeout)
+      end
+
+      def init_client(client, service_credentials_file, firebase_cli_token, debug, timeout = nil)
         if debug
           UI.important("Warning: Debug logging enabled. Output may include sensitive information.")
           Google::Apis.logger.level = Logger::DEBUG
@@ -77,7 +94,6 @@ module Fastlane
           Google::Apis::ClientOptions.default.send_timeout_sec = timeout
         end
 
-        client = Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService.new
         client.authorization = get_authorization(service_credentials_file, firebase_cli_token, debug)
         client
       end
