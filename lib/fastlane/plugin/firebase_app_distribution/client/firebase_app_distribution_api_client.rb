@@ -79,6 +79,10 @@ module Fastlane
         "/v1alpha/apps/#{app_id}/testers:getTesterUdids"
       end
 
+      def create_release_test_url(app_name, release_id)
+        "/v1alpha/#{app_name}/releases/#{release_id}/tests"
+      end
+
       def connection
         @connection ||= Faraday.new(url: BASE_URL) do |conn|
           conn.response(:json, parser_options: { symbolize_names: true })

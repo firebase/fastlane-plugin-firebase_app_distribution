@@ -103,6 +103,12 @@ module Fastlane
           UI.message("⏩ No testers or groups passed in. Skipping this step.")
         end
 
+        test_devices = 
+          get_value_from_value_or_file(params[:test_devices], params[:test_devices_file])
+        if (!test_devices.empty?) {
+          client.
+        }
+
         UI.success("🎉 App Distribution upload finished successfully. Setting Actions.lane_context[SharedValues::FIREBASE_APP_DISTRO_RELEASE] to the uploaded release.")
 
         UI.message("🔗 View this release in the Firebase console: #{release.firebase_console_uri}") if release.firebase_console_uri
@@ -335,7 +341,7 @@ module Fastlane
                                        verify_block: proc do |value|
                                          UI.user_error!("firebase_app_distribution: '#{value}' is not a valid value for android_artifact_type. Should be 'APK' or 'AAB'") unless ['APK', 'AAB'].include?(value)
                                        end),
-          # Generic
+          # General
           FastlaneCore::ConfigItem.new(key: :app,
                                        env_name: "FIREBASEAPPDISTRO_APP",
                                        description: "Your app's Firebase App ID. You can find the App ID in the Firebase console, on the General Settings page",
@@ -346,6 +352,18 @@ module Fastlane
                                        env_name: "FIREBASEAPPDISTRO_FIREBASE_CLI_PATH",
                                        description: "The absolute path of the firebase cli command",
                                        type: String),
+          FastlaneCore::ConfigItem.new(key: :debug,
+                                      description: "Print verbose debug output",
+                                      optional: true,
+                                      default_value: false,
+                                      is_string: false),
+
+          # Release Distribution
+          FastlaneCore::ConfigItem.new(key: :upload_timeout,
+                                       description: "The amount of seconds before the upload will  timeout, if not completed",
+                                       optional: true,
+                                       default_value: DEFAULT_UPLOAD_TIMEOUT_SECONDS,
+                                       type: Integer)
           FastlaneCore::ConfigItem.new(key: :groups,
                                        env_name: "FIREBASEAPPDISTRO_GROUPS",
                                        description: "The group aliases used for distribution, separated by commas",
@@ -376,24 +394,28 @@ module Fastlane
                                        description: "Release notes file for this build",
                                        optional: true,
                                        type: String),
+
+          # Release Testing
+          FastlaneCore::ConfigItem.new(key: :test_devices,
+                                       description: "Comma-separated list of devices to run automated tests on, in the format '<model id>|<os version id>|<locale>|<orientation>' (e.g. 'shiba|34|en|portrait'). Run 'gcloud firebase test ios models list' to see available devices.",
+                                       optional: true,
+                                       default_value: false,
+                                       type: String),
+          FastlaneCore::ConfigItem.new(key: :test_devices_file,
+                                       description: "Comma-separated list of devices to run automated tests on, in the format '<model id>|<os version id>|<locale>|<orientation>' (e.g. 'shiba|34|en|portrait'). Run 'gcloud firebase test ios models list' to see available devices.",
+                                       optional: true,
+                                       default_value: false,
+                                       type: String),
+
+          # Auth
           FastlaneCore::ConfigItem.new(key: :firebase_cli_token,
                                        description: "Auth token generated using the Firebase CLI's login:ci command",
                                        optional: true,
                                        type: String),
-          FastlaneCore::ConfigItem.new(key: :debug,
-                                       description: "Print verbose debug output",
-                                       optional: true,
-                                       default_value: false,
-                                       is_string: false),
           FastlaneCore::ConfigItem.new(key: :service_credentials_file,
                                        description: "Path to Google service account json",
                                        optional: true,
-                                       type: String),
-          FastlaneCore::ConfigItem.new(key: :upload_timeout,
-                                       description: "The amount of seconds before the upload will timeout, if not completed",
-                                       optional: true,
-                                       default_value: DEFAULT_UPLOAD_TIMEOUT_SECONDS,
-                                       type: Integer)
+                                       type: String)
         ]
       end
 
@@ -410,7 +432,8 @@ module Fastlane
           <<-CODE
             firebase_app_distribution(
               app: "<your Firebase app ID>",
-              testers: "snatchev@google.com, rebeccahe@google.com"
+              testers: "snatchev@google.com, rebeccahe@google.com",
+              test_devices: "shiba|34|en|portrait,b0q|33|en|portrait",
             )
           CODE
         ]
