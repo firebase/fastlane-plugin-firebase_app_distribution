@@ -37,12 +37,13 @@ module Fastlane
 
         # TODO(lkellogg): This sets the send timeout for all POST requests made by the client, but
         # ideally the timeout should only apply to the binary upload
-        client = init_client(params[:service_credentials_file],
-                             params[:firebase_cli_token],
-                             params[:debug],
-                             timeout)
+        client = init_v1_client(params[:service_credentials_file],
+                                params[:firebase_cli_token],
+                                params[:debug],
+                                timeout)
 
-        # If binary is an AAB, get the AAB info for this app, which includes the integration state and certificate data
+        # If binary is an AAB, get the AAB info for this app, which includes the integration state
+        # and certificate data
         if binary_type == :AAB
           aab_info = get_aab_info(client, app_name)
           validate_aab_setup!(aab_info)
@@ -50,21 +51,9 @@ module Fastlane
 
         binary_type = binary_type_from_path(binary_path)
         UI.message("⌛ Uploading the #{binary_type}.")
-
-        # For some reason calling the client.upload_medium returns nil when
-        # it should return a long running operation object
-        # (https://github.com/googleapis/google-api-ruby-client/blob/main/generated/google-apis-firebaseappdistribution_v1/lib/google/apis/firebaseappdistribution_v1/service.rb#L79).
-        # We could use client.http, but is much slower
-        # (https://github.com/firebase/fastlane-plugin-firebase_app_distribution/issues/330),
-        # so we still use the old client for now.
-        # TODO(kbolay) Prefer client.upload_medium, assuming it is sufficiently fast
-        fad_api_client = Client::FirebaseAppDistributionApiClient.new(client.authorization.access_token, params[:debug])
-        operation_name = fad_api_client.upload_binary(app_name,
-                                                      binary_path,
-                                                      platform.to_s,
-                                                      get_upload_timeout(params))
-
-        release = poll_upload_release_operation(client, operation_name, binary_type)
+        operation = upload_binary(app_name, binary_path, client, timeout)
+        UI.message("🕵️ Validating upload.")
+        release = poll_upload_release_operation(client, operation, binary_type)
 
         if binary_type == :AAB && aab_info && !aab_certs_included?(aab_info.test_certificate)
           updated_aab_info = get_aab_info(client, app_name)
@@ -86,6 +75,7 @@ module Fastlane
           release.release_notes = Google::Apis::FirebaseappdistributionV1::GoogleFirebaseAppdistroV1ReleaseNotes.new(
             text: release_notes
           )
+          UI.message("📜 Setting release notes.")
           release = update_release(client, release)
         end
 
@@ -98,6 +88,7 @@ module Fastlane
             tester_emails: emails,
             group_aliases: group_aliases
           )
+          UI.message("📦 Distributing release.")
           distribute_release(client, release, request)
         else
           UI.message("⏩ No testers or groups passed in. Skipping this step.")
@@ -222,8 +213,8 @@ module Fastlane
         release_notes_param || Actions.lane_context[SharedValues::FL_CHANGELOG]
       end
 
-      def self.poll_upload_release_operation(client, operation_name, binary_type)
-        operation = client.get_project_app_release_operation(operation_name)
+      def self.poll_upload_release_operation(client, operation, binary_type)
+        operation = client.get_project_app_release_operation(operation.name)
         MAX_POLLING_RETRIES.times do
           if operation.done && operation.response && operation.response['release']
             release = extract_release(operation)
@@ -255,6 +246,30 @@ module Fastlane
         end
 
         extract_release(operation)
+      end
+
+      def self.upload_binary(app_name, binary_path, client, timeout)
+        options = Google::Apis::RequestOptions.new
+        options.max_elapsed_time = timeout # includes retries (default = no retries)
+        options.header = {
+          'Content-Type' => 'application/octet-stream',
+          'X-Goog-Upload-File-Name' => CGI.escape(File.basename(binary_path)),
+          'X-Goog-Upload-Protocol' => 'raw'
+        }
+
+        # For some reason calling the client.upload_medium returns nil when
+        # it should return a long running operation object, so we make a
+        # standard http call instead and convert it to a long running object
+        # https://github.com/googleapis/google-api-ruby-client/blob/main/generated/google-apis-firebaseappdistribution_v1/lib/google/apis/firebaseappdistribution_v1/service.rb#L79
+        # TODO(kbolay) Prefer client.upload_medium
+        response = client.http(
+          :post,
+          "https://firebaseappdistribution.googleapis.com/upload/v1/#{app_name}/releases:upload",
+          body: File.open(binary_path, 'rb'),
+          options: options
+        )
+
+        Google::Apis::FirebaseappdistributionV1::GoogleLongrunningOperation.from_json(response)
       end
 
       def self.extract_release(operation)

@@ -11,7 +11,7 @@ module Fastlane
       extend Helper::FirebaseAppDistributionHelper
 
       def self.run(params)
-        client = init_client(params[:service_credentials_file], params[:firebase_cli_token], params[:debug])
+        client = init_v1_client(params[:service_credentials_file], params[:firebase_cli_token], params[:debug])
 
         if blank?(params[:emails]) && blank?(params[:file])
           UI.user_error!("Must specify `emails` or `file`.")
