@@ -1,6 +1,4 @@
 require 'fastlane_core/ui/ui'
-require 'google/apis/firebaseappdistribution_v1'
-require 'google/apis/firebaseappdistribution_v1alpha'
 require 'cfpropertylist'
 
 module Fastlane
@@ -72,17 +70,7 @@ module Fastlane
         "#{project_name(project_number)}/groups/#{group_alias}"
       end
 
-      def init_v1_client(service_credentials_file, firebase_cli_token, debug, timeout = nil)
-        init_client(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService.new,
-                    service_credentials_file, firebase_cli_token, debug, timeout)
-      end
-
-      def init_v1alpha_client(service_credentials_file, firebase_cli_token, debug, timeout = nil)
-        init_client(Google::Apis::FirebaseappdistributionV1alpha::FirebaseAppDistributionService.new,
-                    service_credentials_file, firebase_cli_token, debug, timeout)
-      end
-
-      def init_client(client, service_credentials_file, firebase_cli_token, debug, timeout = nil)
+      def init_google_api_client(debug, timeout = nil)
         if debug
           UI.important("Warning: Debug logging enabled. Output may include sensitive information.")
           Google::Apis.logger.level = Logger::DEBUG
@@ -93,9 +81,6 @@ module Fastlane
         unless timeout.nil?
           Google::Apis::ClientOptions.default.send_timeout_sec = timeout
         end
-
-        client.authorization = get_authorization(service_credentials_file, firebase_cli_token, debug)
-        client
       end
 
       def deep_symbolize_keys(hash)

@@ -1,7 +1,6 @@
 require 'fastlane/action'
 require 'fastlane_core/ui/ui'
 require 'google/apis/firebaseappdistribution_v1'
-
 require_relative '../helper/firebase_app_distribution_helper'
 require_relative '../helper/firebase_app_distribution_auth_client'
 
@@ -20,7 +19,9 @@ module Fastlane
           UI.user_error!("Must specify `display_name`.")
         end
 
-        client = init_v1_client(params[:service_credentials_file], params[:firebase_cli_token], params[:debug])
+        init_google_api_client(params[:debug])
+        client = Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService.new
+        client.authorization = get_authorization(params[:service_credentials_file], params[:firebase_cli_token], params[:debug])
 
         project_number = params[:project_number]
         group_alias = params[:alias]

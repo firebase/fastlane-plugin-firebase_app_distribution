@@ -13,7 +13,9 @@ module Fastlane
       extend Helper::FirebaseAppDistributionHelper
 
       def self.run(params)
-        client = init_v1_client(params[:service_credentials_file], params[:firebase_cli_token], params[:debug])
+        init_google_api_client(params[:debug])
+        client = Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService.new
+        client.authorization = get_authorization(params[:service_credentials_file], params[:firebase_cli_token], params[:debug])
 
         UI.message("⏳ Fetching latest release for app #{params[:app]}...")
 

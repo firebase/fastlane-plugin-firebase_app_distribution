@@ -2,6 +2,7 @@ require 'fastlane/action'
 require 'open3'
 require 'shellwords'
 require 'googleauth'
+require 'google/apis/firebaseappdistribution_v1'
 require_relative '../helper/firebase_app_distribution_helper'
 require_relative '../helper/firebase_app_distribution_error_message'
 require_relative '../helper/firebase_app_distribution_auth_client'
@@ -37,10 +38,9 @@ module Fastlane
 
         # TODO(lkellogg): This sets the send timeout for all POST requests made by the client, but
         # ideally the timeout should only apply to the binary upload
-        client = init_v1_client(params[:service_credentials_file],
-                                params[:firebase_cli_token],
-                                params[:debug],
-                                timeout)
+        init_google_api_client(params[:debug], timeout)
+        client = Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService.new
+        client.authorization = get_authorization(params[:service_credentials_file], params[:firebase_cli_token], params[:debug])
 
         # If binary is an AAB, get the AAB info for this app, which includes the integration state
         # and certificate data
