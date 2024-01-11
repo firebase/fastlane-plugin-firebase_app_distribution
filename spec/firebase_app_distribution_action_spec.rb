@@ -228,13 +228,13 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
     it 'raises error if it cannot find a valid binary path' do
       expect do
         action.run(params.merge(ipa_path: nil))
-      end.to raise_error("Couldn't find binary")
+      end.to raise_error("Couldn't find binary.")
     end
 
     it 'raises error if binary does not exist' do
       expect do
         action.run(params)
-      end.to raise_error("Couldn't find binary at path debug.ipa")
+      end.to raise_error("Couldn't find binary at path debug.ipa.")
     end
 
     describe 'with android app' do
@@ -319,7 +319,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
         end
 
         it 'crashes if it exceeds polling threshold' do
-          stub_const('Fastlane::Actions::FirebaseAppDistributionAction::MAX_POLLING_RETRIES', 0)
+          stub_const('Fastlane::Actions::FirebaseAppDistributionAction::UPLOAD_MAX_POLLING_RETRIES', 0)
           allow_any_instance_of(V1Api::FirebaseAppDistributionService)
             .to receive(:http)
             .and_return({ name: 'operation-name' }.to_json)
