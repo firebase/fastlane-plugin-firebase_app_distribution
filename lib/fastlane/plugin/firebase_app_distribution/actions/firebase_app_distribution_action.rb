@@ -368,7 +368,7 @@ module Fastlane
 
           # Release Distribution
           FastlaneCore::ConfigItem.new(key: :upload_timeout,
-                                       description: "The amount of seconds before the upload will  timeout, if not completed",
+                                       description: "Amount of seconds before the upload will  timeout, if not completed",
                                        optional: true,
                                        default_value: DEFAULT_UPLOAD_TIMEOUT_SECONDS,
                                        type: Integer),
@@ -379,17 +379,17 @@ module Fastlane
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :groups_file,
                                        env_name: "FIREBASEAPPDISTRO_GROUPS_FILE",
-                                       description: "The group aliases used for distribution, separated by commas",
+                                       description: "Path to file containing group aliases used for distribution, separated by commas",
                                        optional: true,
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :testers,
                                        env_name: "FIREBASEAPPDISTRO_TESTERS",
-                                       description: "Pass email addresses of testers, separated by commas",
+                                       description: "Email addresses of testers, separated by commas",
                                        optional: true,
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :testers_file,
                                        env_name: "FIREBASEAPPDISTRO_TESTERS_FILE",
-                                       description: "Pass email addresses of testers, separated by commas",
+                                       description: "Path to file containing email addresses of testers, separated by commas",
                                        optional: true,
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :release_notes,
@@ -399,7 +399,7 @@ module Fastlane
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :release_notes_file,
                                        env_name: "FIREBASEAPPDISTRO_RELEASE_NOTES_FILE",
-                                       description: "Release notes file for this build",
+                                       description: "Path to file containing release notes for this build",
                                        optional: true,
                                        type: String),
 
@@ -409,7 +409,7 @@ module Fastlane
                                        optional: true,
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :service_credentials_file,
-                                       description: "Path to Google service account json",
+                                       description: "Path to Google service account json file",
                                        optional: true,
                                        type: String)
         ]
