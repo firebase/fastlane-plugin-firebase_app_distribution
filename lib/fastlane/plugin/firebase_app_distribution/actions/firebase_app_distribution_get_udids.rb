@@ -2,6 +2,7 @@ require 'fastlane/action'
 require 'open3'
 require 'shellwords'
 require 'googleauth'
+require 'google/apis/firebaseappdistribution_v1alpha'
 require_relative '../helper/firebase_app_distribution_helper'
 require_relative '../helper/firebase_app_distribution_error_message'
 require_relative '../helper/firebase_app_distribution_auth_client'
@@ -13,7 +14,9 @@ module Fastlane
       extend Helper::FirebaseAppDistributionHelper
 
       def self.run(params)
-        client = init_v1alpha_client(params[:service_credentials_file], params[:firebase_cli_token], params[:debug])
+        init_google_api_client(params[:debug])
+        client = Google::Apis::FirebaseappdistributionV1alpha::FirebaseAppDistributionService.new
+        client.authorization = get_authorization(params[:service_credentials_file], params[:firebase_cli_token], params[:debug])
 
         project_number = params[:project_number]
         if blank?(project_number)
