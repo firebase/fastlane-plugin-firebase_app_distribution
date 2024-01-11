@@ -20,8 +20,8 @@ module Fastlane
       extend Helper::FirebaseAppDistributionHelper
 
       DEFAULT_UPLOAD_TIMEOUT_SECONDS = 300
-      MAX_POLLING_RETRIES = 60
-      POLLING_INTERVAL_SECONDS = 5
+      UPLOAD_MAX_POLLING_RETRIES = 60
+      UPLOAD_POLLING_INTERVAL_SECONDS = 5
 
       def self.run(params)
         params.values # to validate all inputs before looking for the ipa/apk/aab
@@ -32,15 +32,16 @@ module Fastlane
         timeout = get_upload_timeout(params)
 
         binary_path = get_binary_path(platform, params)
-        UI.user_error!("Couldn't find binary") if binary_path.nil?
-        UI.user_error!("Couldn't find binary at path #{binary_path}") unless File.exist?(binary_path)
+        UI.user_error!("Couldn't find binary.") if binary_path.nil?
+        UI.user_error!("Couldn't find binary at path #{binary_path}.") unless File.exist?(binary_path)
         binary_type = binary_type_from_path(binary_path)
 
         # TODO(lkellogg): This sets the send timeout for all POST requests made by the client, but
         # ideally the timeout should only apply to the binary upload
         init_google_api_client(params[:debug], timeout)
+        authorization = get_authorization(params[:service_credentials_file], params[:firebase_cli_token], params[:debug])
         client = Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService.new
-        client.authorization = get_authorization(params[:service_credentials_file], params[:firebase_cli_token], params[:debug])
+        client.authorization = authorization
 
         # If binary is an AAB, get the AAB info for this app, which includes the integration state
         # and certificate data
@@ -50,9 +51,9 @@ module Fastlane
         end
 
         binary_type = binary_type_from_path(binary_path)
-        UI.message("⌛ Uploading the #{binary_type}.")
+        UI.message("📡 Uploading the #{binary_type}.")
         operation = upload_binary(app_name, binary_path, client, timeout)
-        UI.message("🕵️ Validating upload.")
+        UI.message("🕵️ Validating upload…")
         release = poll_upload_release_operation(client, operation, binary_type)
 
         if binary_type == :AAB && aab_info && !aab_certs_included?(aab_info.test_certificate)
@@ -214,24 +215,22 @@ module Fastlane
       end
 
       def self.poll_upload_release_operation(client, operation, binary_type)
-        operation = client.get_project_app_release_operation(operation.name)
-        MAX_POLLING_RETRIES.times do
+        UPLOAD_MAX_POLLING_RETRIES.times do
+          sleep(UPLOAD_POLLING_INTERVAL_SECONDS)
+          operation = client.get_project_app_release_operation(operation.name)
           if operation.done && operation.response && operation.response['release']
             release = extract_release(operation)
-            result = operation.response['result']
-            if result == 'RELEASE_UPDATED'
+            case operation.response['result']
+            when 'RELEASE_UPDATED'
               UI.success("✅ Uploaded #{binary_type} successfully; updated provisioning profile of existing release #{release_version(release)}.")
-              break
-            elsif result == 'RELEASE_UNMODIFIED'
+            when 'RELEASE_UNMODIFIED'
               UI.success("✅ The same #{binary_type} was found in release #{release_version(release)} with no changes, skipping.")
-              break
             else
               UI.success("✅ Uploaded #{binary_type} successfully and created release #{release_version(release)}.")
             end
             break
           elsif !operation.done
-            sleep(POLLING_INTERVAL_SECONDS)
-            operation = client.get_project_app_release_operation(operation.name)
+            next
           else
             if operation.error && operation.error.message
               UI.user_error!("#{ErrorMessage.upload_binary_error(binary_type)}: #{operation.error.message}")
@@ -350,7 +349,7 @@ module Fastlane
                                        verify_block: proc do |value|
                                          UI.user_error!("firebase_app_distribution: '#{value}' is not a valid value for android_artifact_type. Should be 'APK' or 'AAB'") unless ['APK', 'AAB'].include?(value)
                                        end),
-          # Generic
+          # General
           FastlaneCore::ConfigItem.new(key: :app,
                                        env_name: "FIREBASEAPPDISTRO_APP",
                                        description: "Your app's Firebase App ID. You can find the App ID in the Firebase console, on the General Settings page",
@@ -361,6 +360,18 @@ module Fastlane
                                        env_name: "FIREBASEAPPDISTRO_FIREBASE_CLI_PATH",
                                        description: "The absolute path of the firebase cli command",
                                        type: String),
+          FastlaneCore::ConfigItem.new(key: :debug,
+                                      description: "Print verbose debug output",
+                                      optional: true,
+                                      default_value: false,
+                                      type: Boolean),
+
+          # Release Distribution
+          FastlaneCore::ConfigItem.new(key: :upload_timeout,
+                                       description: "The amount of seconds before the upload will  timeout, if not completed",
+                                       optional: true,
+                                       default_value: DEFAULT_UPLOAD_TIMEOUT_SECONDS,
+                                       type: Integer),
           FastlaneCore::ConfigItem.new(key: :groups,
                                        env_name: "FIREBASEAPPDISTRO_GROUPS",
                                        description: "The group aliases used for distribution, separated by commas",
@@ -391,24 +402,16 @@ module Fastlane
                                        description: "Release notes file for this build",
                                        optional: true,
                                        type: String),
+
+          # Auth
           FastlaneCore::ConfigItem.new(key: :firebase_cli_token,
                                        description: "Auth token generated using the Firebase CLI's login:ci command",
                                        optional: true,
                                        type: String),
-          FastlaneCore::ConfigItem.new(key: :debug,
-                                       description: "Print verbose debug output",
-                                       optional: true,
-                                       default_value: false,
-                                       is_string: false),
           FastlaneCore::ConfigItem.new(key: :service_credentials_file,
                                        description: "Path to Google service account json",
                                        optional: true,
-                                       type: String),
-          FastlaneCore::ConfigItem.new(key: :upload_timeout,
-                                       description: "The amount of seconds before the upload will timeout, if not completed",
-                                       optional: true,
-                                       default_value: DEFAULT_UPLOAD_TIMEOUT_SECONDS,
-                                       type: Integer)
+                                       type: String)
         ]
       end
 
