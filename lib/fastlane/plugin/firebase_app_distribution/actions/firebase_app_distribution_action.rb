@@ -39,7 +39,7 @@ module Fastlane
         binary_type = binary_type_from_path(binary_path)
 
         # TODO(lkellogg): This sets the send timeout for all POST requests made by the client, but
-        # ideally the timeout should only apply to the binary upload
+        #     ideally the timeout should only apply to the binary upload
         init_google_api_client(params[:debug], timeout)
         authorization = get_authorization(params[:service_credentials_file], params[:firebase_cli_token], params[:service_credentials_json_data], params[:debug])
         client = Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService.new
@@ -274,7 +274,7 @@ module Fastlane
         # it should return a long running operation object, so we make a
         # standard http call instead and convert it to a long running object
         # https://github.com/googleapis/google-api-ruby-client/blob/main/generated/google-apis-firebaseappdistribution_v1/lib/google/apis/firebaseappdistribution_v1/service.rb#L79
-        # TODO(kbolay) Prefer client.upload_medium
+        # TODO(kbolay): Prefer client.upload_medium
         response = client.http(
           :post,
           "https://firebaseappdistribution.googleapis.com/upload/v1/#{app_name}/releases:upload",
@@ -363,6 +363,18 @@ module Fastlane
         end
 
         device_executions = string_to_array(test_devices).map do |td|
+          # TODO(kbolay): Use same format for device configuration as gcloud
+          #     Probably using ";" as delimited, because "," separates devices
+          #     i.e. "model=Nexus6;version=21;locale=en;orientation=portrait"
+          #
+          # def to_hash(str)
+          #   Hash[
+          #     str.split(';').map do |pair|
+          #       k, v = pair.split('=', 2)
+          #       [k, v.to_i]
+          #     end
+          #   ]
+          # end
           props = td.split('|', 4)
           Google::Apis::FirebaseappdistributionV1alpha::GoogleFirebaseAppdistroV1alphaDeviceExecution.new(
             device: Google::Apis::FirebaseappdistributionV1alpha::GoogleFirebaseAppdistroV1alphaTestDevice.new(
