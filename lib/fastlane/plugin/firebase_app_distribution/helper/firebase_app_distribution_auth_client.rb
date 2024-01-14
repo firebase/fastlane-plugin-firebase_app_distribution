@@ -20,6 +20,7 @@ module Fastlane
       # auth method is used, unset all other auth variables/parameters to nil/empty
       #
       # args
+      #   google_service_json_data - Google service account json file content as a string
       #   google_service_path - Absolute path to the Google service account file
       #   firebase_cli_token - Refresh token
       #   debug - Whether to enable debug-level logging
@@ -28,10 +29,13 @@ module Fastlane
       #   FIREBASE_TOKEN - see firebase_cli_token
       #
       # Crashes if given invalid or missing credentials
-      def get_authorization(google_service_path, firebase_cli_token, debug = false)
+      def get_authorization(google_service_json_data, google_service_path, firebase_cli_token, debug = false)
         if !google_service_path.nil? && !google_service_path.empty?
           UI.message("🔐 Authenticating with --service_credentials_file path parameter: #{google_service_path}")
-          service_account(google_service_path, debug)
+          service_account_from_file(google_service_path, debug)
+        elsif !google_service_json_data.nil? && !google_service_json_data.empty?
+          UI.message("🔐 Authenticating with --service_credentials_json content parameter: #{google_service_json_data}")
+          service_account_from_json(google_service_json_data, debug)
         elsif !firebase_cli_token.nil? && !firebase_cli_token.empty?
           UI.message("🔐 Authenticating with --firebase_cli_token parameter")
           firebase_token(firebase_cli_token, debug)
@@ -100,13 +104,37 @@ module Fastlane
         UI.user_error!(error_message)
       end
 
-      def service_account(google_service_path, debug)
+      def get_auth_service(json_data)
+        json_file = JSON.parse(json_data)
         # check if it's an external account or service account
-        json_file = JSON.parse(File.read(google_service_path))
-        auth = json_file["type"] == "external_account" ? Google::Auth::ExternalAccount::Credentials : Google::Auth::ServiceAccountCredentials
+        json_file["type"] == "external_account" ? Google::Auth::ExternalAccount::Credentials : Google::Auth::ServiceAccountCredentials
+      end
+
+      def service_account_from_json(google_service_json_data, debug)
+        auth = get_auth_service(google_service_json_data)
+        service_account_credentials = auth.make_creds(
+          json_key_io: StringIO.new(google_service_json_data),
+          scope: SCOPE
+        )
+        service_account_credentials.fetch_access_token!
+        service_account_credentials
+      rescue Errno::ENOENT
+        UI.user_error!("#{ErrorMessage::SERVICE_CREDENTIALS_NOT_FOUND}: #{google_service_path}")
+      rescue Signet::AuthorizationError => error
+        error_message = "#{ErrorMessage::SERVICE_CREDENTIALS_ERROR}: \"#{google_service_path}\""
+        if debug
+          error_message += "\n#{error_details(error)}"
+        else
+          error_message += ". #{debug_instructions}"
+        end
+        UI.user_error!(error_message)
+      end
+
+      def service_account_from_file(google_service_path, debug)
+        auth = get_auth_service(File.read(google_service_path))
         service_account_credentials = auth.make_creds(
           json_key_io: File.open(google_service_path),
-          scope: SCOPE
+        scope: SCOPE
         )
         service_account_credentials.fetch_access_token!
         service_account_credentials

@@ -60,26 +60,31 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
             .and_return(empty_val)
         end
 
+        it 'auths with service account credentials json data parameter' do
+          expect(auth_client.get_authorization(fake_service_account_contents_json, empty_val, empty_val))
+            .to eq(fake_service_creds)
+        end
+
         it 'auths with service account credentials path parameter' do
-          expect(auth_client.get_authorization("google_service_path", empty_val))
+          expect(auth_client.get_authorization(empty_val, "google_service_path", empty_val))
             .to eq(fake_service_creds)
         end
 
         it 'auths with external account credentials path parameter' do
           allow(File).to receive(:read)
             .and_return(fake_external_account_contents_json)
-          expect(auth_client.get_authorization("google_service_path", empty_val))
+          expect(auth_client.get_authorization(empty_val, "google_service_path", empty_val))
             .to eq(fake_service_creds)
         end
 
         it 'auths with application_default_auth' do
           allow(application_default_auth).to receive(:get_application_default).and_return(fake_application_default_creds)
-          expect(auth_client.get_authorization(empty_val, empty_val))
+          expect(auth_client.get_authorization(empty_val, empty_val, empty_val))
             .to eq(fake_application_default_creds)
         end
 
         it 'auths with firebase token parameter' do
-          expect(auth_client.get_authorization(empty_val, "refresh_token"))
+          expect(auth_client.get_authorization(empty_val, empty_val, "refresh_token"))
             .to eq(fake_oauth_client)
         end
 
@@ -87,7 +92,7 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
           allow(ENV).to receive(:[])
             .with("FIREBASE_TOKEN")
             .and_return("refresh_token")
-          expect(auth_client.get_authorization(empty_val, empty_val))
+          expect(auth_client.get_authorization(empty_val, empty_val, empty_val))
             .to eq(fake_oauth_client)
         end
 
@@ -95,42 +100,42 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
           expect(File).to receive(:open)
             .with("invalid_service_path")
             .and_raise(Errno::ENOENT.new("file not found"))
-          expect { auth_client.get_authorization("invalid_service_path", empty_val) }
+          expect { auth_client.get_authorization(empty_val, "invalid_service_path", empty_val) }
             .to raise_error("#{ErrorMessage::SERVICE_CREDENTIALS_NOT_FOUND}: invalid_service_path")
         end
 
         it 'crashes if the service credentials are invalid' do
           expect(fake_service_creds).to receive(:fetch_access_token!)
             .and_raise(Signet::AuthorizationError.new("error_message", { response: fake_error_response }))
-          expect { auth_client.get_authorization("invalid_service_path", empty_val, false) }
+          expect { auth_client.get_authorization(empty_val, "invalid_service_path", empty_val, false) }
             .to raise_error("#{ErrorMessage::SERVICE_CREDENTIALS_ERROR}: \"invalid_service_path\". For more information, try again with firebase_app_distribution's \"debug\" parameter set to \"true\".")
         end
 
         it 'crashes if the service credentials are invalid in debug mode' do
           expect(fake_service_creds).to receive(:fetch_access_token!)
             .and_raise(Signet::AuthorizationError.new("error_message", { response: fake_error_response }))
-          expect { auth_client.get_authorization("invalid_service_path", empty_val, true) }
+          expect { auth_client.get_authorization(empty_val, "invalid_service_path", empty_val, true) }
             .to raise_error("#{ErrorMessage::SERVICE_CREDENTIALS_ERROR}: \"invalid_service_path\"\nerror_message\nResponse status: 400")
         end
 
         it 'crashes if given an invalid firebase token' do
           expect(firebase_auth).to receive(:new)
             .and_raise(Signet::AuthorizationError.new("error_message", { response: fake_error_response }))
-          expect { auth_client.get_authorization(empty_val, "invalid_refresh_token", false) }
+          expect { auth_client.get_authorization(empty_val, empty_val, "invalid_refresh_token", false) }
             .to raise_error("#{ErrorMessage::REFRESH_TOKEN_ERROR} For more information, try again with firebase_app_distribution's \"debug\" parameter set to \"true\".")
         end
 
         it 'prints redacted token and error if given an invalid token in debug mode' do
           expect(firebase_auth).to receive(:new)
             .and_raise(Signet::AuthorizationError.new("error_message", { response: fake_error_response }))
-          expect { auth_client.get_authorization(empty_val, "invalid_refresh_token", true) }
+          expect { auth_client.get_authorization(empty_val, empty_val, "invalid_refresh_token", true) }
             .to raise_error("#{ErrorMessage::REFRESH_TOKEN_ERROR}\nRefresh token used: \"XXXXXXXXXXXXXXXXtoken\" (redacted)\nerror_message\nResponse status: 400")
         end
 
         it 'prints full token and error if given a short invalid token in debug mode' do
           expect(firebase_auth).to receive(:new)
             .and_raise(Signet::AuthorizationError.new("error_message", { response: fake_error_response }))
-          expect { auth_client.get_authorization(empty_val, "bad", true) }
+          expect { auth_client.get_authorization(empty_val, empty_val, "bad", true) }
             .to raise_error("#{ErrorMessage::REFRESH_TOKEN_ERROR}\nRefresh token used: \"bad\"\nerror_message\nResponse status: 400")
         end
 
@@ -141,13 +146,13 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
             allow(File).to receive(:read)
               .and_return(fake_firebase_tools_contents)
             expect(File).to receive(:exist?).and_return(true)
-            expect(auth_client.get_authorization(empty_val, empty_val)).to eq(fake_oauth_client)
+            expect(auth_client.get_authorization(empty_val, empty_val, empty_val)).to eq(fake_oauth_client)
           end
 
           it 'crashes if file does not exist' do
             expect(File).to receive(:exist?)
               .and_return(false)
-            expect { auth_client.get_authorization(empty_val, empty_val) }
+            expect { auth_client.get_authorization(empty_val, empty_val, empty_val) }
               .to raise_error(ErrorMessage::MISSING_CREDENTIALS)
           end
 
@@ -155,7 +160,7 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
             allow(File).to receive(:read)
               .and_return(fake_firebase_tools_contents_no_tokens_field)
             expect(File).to receive(:exist?).and_return(true)
-            expect { auth_client.get_authorization(empty_val, empty_val) }
+            expect { auth_client.get_authorization(empty_val, empty_val, empty_val) }
               .to raise_error(ErrorMessage::MISSING_CREDENTIALS)
           end
 
@@ -163,7 +168,7 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
             allow(File).to receive(:read)
               .and_return(fake_firebase_tools_contents_no_refresh_field)
             expect(File).to receive(:exist?).and_return(true)
-            expect { auth_client.get_authorization(empty_val, empty_val) }
+            expect { auth_client.get_authorization(empty_val, empty_val, empty_val) }
               .to raise_error(ErrorMessage::MISSING_CREDENTIALS)
           end
 
@@ -171,7 +176,7 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
             allow(File).to receive(:read)
               .and_return(fake_firebase_tools_contents_invalid_json)
             expect(File).to receive(:exist?).and_return(true)
-            expect { auth_client.get_authorization(empty_val, empty_val) }
+            expect { auth_client.get_authorization(empty_val, empty_val, empty_val) }
               .to raise_error(ErrorMessage::PARSE_FIREBASE_TOOLS_JSON_ERROR)
           end
         end
