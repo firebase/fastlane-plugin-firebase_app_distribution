@@ -412,6 +412,10 @@ module Fastlane
                                        description: "Path to Google service account json file",
                                        optional: true,
                                        type: String)
+          FastlaneCore::ConfigItem.new(key: :service_credentials_json_data,
+                                       description: "Google service account json file content",
+                                       optional: true,
+                                       type: String),
         ]
       end
 
