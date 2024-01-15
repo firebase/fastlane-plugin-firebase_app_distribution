@@ -97,7 +97,7 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
         end
 
         it 'crashes if the service credentials file is not found' do
-          expect(File).to receive(:open)
+          expect(File).to receive(:read)
             .with("invalid_service_path")
             .and_raise(Errno::ENOENT.new("file not found"))
           expect { auth_client.get_authorization("invalid_service_path", empty_val, empty_val) }

@@ -105,25 +105,24 @@ module Fastlane
       end
 
       def service_account_from_json(google_service_json_data, debug)
-        get_service_account_credentials(google_service_json_data, StringIO.new(google_service_json_data), 'google_service_json_data', debug)
+        get_service_account_credentials(google_service_json_data, 'google_service_json_data', debug)
       end
 
       def service_account_from_file(google_service_path, debug)
-        get_service_account_credentials(File.read(google_service_path), File.open(google_service_path), google_service_path, debug)
+        get_service_account_credentials(File.read(google_service_path), google_service_path, debug)
       rescue Errno::ENOENT
         UI.user_error!("#{ErrorMessage::SERVICE_CREDENTIALS_NOT_FOUND}: #{google_service_path}")
       end
 
-      def get_service_account_credentials(json_data, json_key_io, on_error_message, debug)
+      def get_service_account_credentials(json_data, on_error_message, debug)
         auth = get_auth_service(json_data)
         service_account_credentials = auth.make_creds(
-          json_key_io: json_key_io,
+          json_key_io: StringIO.new(json_data),
           scope: SCOPE
         )
         service_account_credentials.fetch_access_token!
         service_account_credentials
       rescue Signet::AuthorizationError => error
-        # UI.user_error!(get_service_credential_error(google_service_path, error, debug))
         UI.user_error!(get_service_credential_error(on_error_message, error, debug))
       end
 
