@@ -34,7 +34,7 @@ module Fastlane
           UI.message("🔐 Authenticating with --service_credentials_file path parameter: #{google_service_path}")
           service_account_from_file(google_service_path, debug)
         elsif !google_service_json_data.nil? && !google_service_json_data.empty?
-          UI.message("🔐 Authenticating with --service_credentials_json content parameter: #{google_service_json_data}")
+          UI.message("🔐 Authenticating with --service_credentials_json content parameter")
           service_account_from_json(google_service_json_data, debug)
         elsif !firebase_cli_token.nil? && !firebase_cli_token.empty?
           UI.message("🔐 Authenticating with --firebase_cli_token parameter")
