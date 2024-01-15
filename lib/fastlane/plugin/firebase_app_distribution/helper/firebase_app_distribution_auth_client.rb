@@ -110,14 +110,18 @@ module Fastlane
         json_file["type"] == "external_account" ? Google::Auth::ExternalAccount::Credentials : Google::Auth::ServiceAccountCredentials
       end
 
-      def service_account_from_json(google_service_json_data, debug)
-        auth = get_auth_service(google_service_json_data)
+      def get_service_account_credentials(json_data, json_key_io)
+        auth = get_auth_service(json_data)
         service_account_credentials = auth.make_creds(
-          json_key_io: StringIO.new(google_service_json_data),
+          json_key_io: json_key_io,
           scope: SCOPE
-        )
+        )      
         service_account_credentials.fetch_access_token!
-        service_account_credentials
+        service_account_credentials  
+      end
+
+      def service_account_from_json(google_service_json_data, debug)
+        get_service_account_credentials(google_service_json_data, StringIO.new(google_service_json_data))
       rescue Signet::AuthorizationError => error
         error_message = "#{ErrorMessage::SERVICE_CREDENTIALS_ERROR}: \"#{google_service_path}\""
         if debug
@@ -129,13 +133,7 @@ module Fastlane
       end
 
       def service_account_from_file(google_service_path, debug)
-        auth = get_auth_service(File.read(google_service_path))
-        service_account_credentials = auth.make_creds(
-          json_key_io: File.open(google_service_path),
-        scope: SCOPE
-        )
-        service_account_credentials.fetch_access_token!
-        service_account_credentials
+        get_service_account_credentials(File.read(google_service_path), File.open(google_service_path))
       rescue Errno::ENOENT
         UI.user_error!("#{ErrorMessage::SERVICE_CREDENTIALS_NOT_FOUND}: #{google_service_path}")
       rescue Signet::AuthorizationError => error
