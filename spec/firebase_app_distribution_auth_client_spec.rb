@@ -61,19 +61,19 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
         end
 
         it 'auths with service account credentials json data parameter' do
-          expect(auth_client.get_authorization(fake_service_account_contents_json, empty_val, empty_val))
+          expect(auth_client.get_authorization(empty_val, empty_val, fake_service_account_contents_json))
             .to eq(fake_service_creds)
         end
 
         it 'auths with service account credentials path parameter' do
-          expect(auth_client.get_authorization(empty_val, "google_service_path", empty_val))
+          expect(auth_client.get_authorization("google_service_path", empty_val,empty_val))
             .to eq(fake_service_creds)
         end
 
         it 'auths with external account credentials path parameter' do
           allow(File).to receive(:read)
             .and_return(fake_external_account_contents_json)
-          expect(auth_client.get_authorization(empty_val, "google_service_path", empty_val))
+          expect(auth_client.get_authorization("google_service_path", empty_val,empty_val))
             .to eq(fake_service_creds)
         end
 
@@ -84,7 +84,7 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
         end
 
         it 'auths with firebase token parameter' do
-          expect(auth_client.get_authorization(empty_val, empty_val, "refresh_token"))
+          expect(auth_client.get_authorization(empty_val, "refresh_token", empty_val))
             .to eq(fake_oauth_client)
         end
 
@@ -100,56 +100,56 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
           expect(File).to receive(:open)
             .with("invalid_service_path")
             .and_raise(Errno::ENOENT.new("file not found"))
-          expect { auth_client.get_authorization(empty_val, "invalid_service_path", empty_val) }
+          expect { auth_client.get_authorization("invalid_service_path", empty_val, empty_val) }
             .to raise_error("#{ErrorMessage::SERVICE_CREDENTIALS_NOT_FOUND}: invalid_service_path")
         end
 
         it 'crashes if the service credentials json is invalid' do
           expect(fake_service_creds).to receive(:fetch_access_token!)
             .and_raise(Signet::AuthorizationError.new("error_message", { response: fake_error_response }))
-          expect { auth_client.get_authorization(fake_service_account_contents_json, empty_val, empty_val, false) }
+          expect { auth_client.get_authorization(empty_val, empty_val, fake_service_account_contents_json, false) }
             .to raise_error("#{ErrorMessage::SERVICE_CREDENTIALS_ERROR}: \"google_service_json_data\". For more information, try again with firebase_app_distribution's \"debug\" parameter set to \"true\".")
         end
 
         it 'crashes if the service credentials json is invalid in debug mode' do
           expect(fake_service_creds).to receive(:fetch_access_token!)
             .and_raise(Signet::AuthorizationError.new("error_message", { response: fake_error_response }))
-          expect { auth_client.get_authorization(fake_service_account_contents_json, empty_val, empty_val, true) }
+          expect { auth_client.get_authorization(empty_val, empty_val, fake_service_account_contents_json, true) }
             .to raise_error("#{ErrorMessage::SERVICE_CREDENTIALS_ERROR}: \"google_service_json_data\"\nerror_message\nResponse status: 400")
         end
 
         it 'crashes if the service credentials are invalid' do
           expect(fake_service_creds).to receive(:fetch_access_token!)
             .and_raise(Signet::AuthorizationError.new("error_message", { response: fake_error_response }))
-          expect { auth_client.get_authorization(empty_val, "invalid_service_path", empty_val, false) }
+          expect { auth_client.get_authorization("invalid_service_path", empty_val, empty_val, false) }
             .to raise_error("#{ErrorMessage::SERVICE_CREDENTIALS_ERROR}: \"invalid_service_path\". For more information, try again with firebase_app_distribution's \"debug\" parameter set to \"true\".")
         end
 
         it 'crashes if the service credentials are invalid in debug mode' do
           expect(fake_service_creds).to receive(:fetch_access_token!)
             .and_raise(Signet::AuthorizationError.new("error_message", { response: fake_error_response }))
-          expect { auth_client.get_authorization(empty_val, "invalid_service_path", empty_val, true) }
+          expect { auth_client.get_authorization("invalid_service_path", empty_val, empty_val, true) }
             .to raise_error("#{ErrorMessage::SERVICE_CREDENTIALS_ERROR}: \"invalid_service_path\"\nerror_message\nResponse status: 400")
         end
 
         it 'crashes if given an invalid firebase token' do
           expect(firebase_auth).to receive(:new)
             .and_raise(Signet::AuthorizationError.new("error_message", { response: fake_error_response }))
-          expect { auth_client.get_authorization(empty_val, empty_val, "invalid_refresh_token", false) }
+          expect { auth_client.get_authorization(empty_val, "invalid_refresh_token", empty_val, false) }
             .to raise_error("#{ErrorMessage::REFRESH_TOKEN_ERROR} For more information, try again with firebase_app_distribution's \"debug\" parameter set to \"true\".")
         end
 
         it 'prints redacted token and error if given an invalid token in debug mode' do
           expect(firebase_auth).to receive(:new)
             .and_raise(Signet::AuthorizationError.new("error_message", { response: fake_error_response }))
-          expect { auth_client.get_authorization(empty_val, empty_val, "invalid_refresh_token", true) }
+          expect { auth_client.get_authorization(empty_val, "invalid_refresh_token", empty_val, true) }
             .to raise_error("#{ErrorMessage::REFRESH_TOKEN_ERROR}\nRefresh token used: \"XXXXXXXXXXXXXXXXtoken\" (redacted)\nerror_message\nResponse status: 400")
         end
 
         it 'prints full token and error if given a short invalid token in debug mode' do
           expect(firebase_auth).to receive(:new)
             .and_raise(Signet::AuthorizationError.new("error_message", { response: fake_error_response }))
-          expect { auth_client.get_authorization(empty_val, empty_val, "bad", true) }
+          expect { auth_client.get_authorization(empty_val, "bad", empty_val, true) }
             .to raise_error("#{ErrorMessage::REFRESH_TOKEN_ERROR}\nRefresh token used: \"bad\"\nerror_message\nResponse status: 400")
         end
 
