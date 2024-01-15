@@ -104,13 +104,17 @@ module Fastlane
         UI.user_error!(error_message)
       end
 
-      def get_auth_service(json_data)
-        json_file = JSON.parse(json_data)
-        # check if it's an external account or service account
-        json_file["type"] == "external_account" ? Google::Auth::ExternalAccount::Credentials : Google::Auth::ServiceAccountCredentials
+      def service_account_from_json(google_service_json_data, debug)
+        get_service_account_credentials(google_service_json_data, StringIO.new(google_service_json_data), 'google_service_json_data', debug)
       end
 
-      def get_service_account_credentials(json_data, json_key_io)
+      def service_account_from_file(google_service_path, debug)
+        get_service_account_credentials(File.read(google_service_path), File.open(google_service_path), google_service_path, debug)
+      rescue Errno::ENOENT
+        UI.user_error!("#{ErrorMessage::SERVICE_CREDENTIALS_NOT_FOUND}: #{google_service_path}")
+      end
+
+      def get_service_account_credentials(json_data, json_key_io, on_error_message, debug)
         auth = get_auth_service(json_data)
         service_account_credentials = auth.make_creds(
           json_key_io: json_key_io,
@@ -118,6 +122,15 @@ module Fastlane
         )
         service_account_credentials.fetch_access_token!
         service_account_credentials
+      rescue Signet::AuthorizationError => error
+        # UI.user_error!(get_service_credential_error(google_service_path, error, debug))
+        UI.user_error!(get_service_credential_error(on_error_message, error, debug))
+      end
+
+      def get_auth_service(json_data)
+        json_file = JSON.parse(json_data)
+        # check if it's an external account or service account
+        json_file["type"] == "external_account" ? Google::Auth::ExternalAccount::Credentials : Google::Auth::ServiceAccountCredentials
       end
 
       def get_service_credential_error(msg, error, debug)
@@ -128,20 +141,6 @@ module Fastlane
           error_message += ". #{debug_instructions}"
         end
         error_message
-      end
-
-      def service_account_from_json(google_service_json_data, debug)
-        get_service_account_credentials(google_service_json_data, StringIO.new(google_service_json_data))
-      rescue Signet::AuthorizationError => error
-        UI.user_error!(get_service_credential_error('google_service_json_data', error, debug))
-      end
-
-      def service_account_from_file(google_service_path, debug)
-        get_service_account_credentials(File.read(google_service_path), File.open(google_service_path))
-      rescue Errno::ENOENT
-        UI.user_error!("#{ErrorMessage::SERVICE_CREDENTIALS_NOT_FOUND}: #{google_service_path}")
-      rescue Signet::AuthorizationError => error
-        UI.user_error!(get_service_credential_error(google_service_path, error, debug))
       end
 
       def error_details(error)
