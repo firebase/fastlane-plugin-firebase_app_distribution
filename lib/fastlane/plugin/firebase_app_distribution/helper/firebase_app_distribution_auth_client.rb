@@ -120,16 +120,20 @@ module Fastlane
         service_account_credentials  
       end
 
-      def service_account_from_json(google_service_json_data, debug)
-        get_service_account_credentials(google_service_json_data, StringIO.new(google_service_json_data))
-      rescue Signet::AuthorizationError => error
-        error_message = "#{ErrorMessage::SERVICE_CREDENTIALS_ERROR}: \"#{google_service_path}\""
+      def get_service_credential_error(msg, error, debug)
+        error_message = "#{ErrorMessage::SERVICE_CREDENTIALS_ERROR}: \"#{msg}\""
         if debug
           error_message += "\n#{error_details(error)}"
         else
           error_message += ". #{debug_instructions}"
         end
-        UI.user_error!(error_message)
+        error_message
+      end
+
+      def service_account_from_json(google_service_json_data, debug)
+        get_service_account_credentials(google_service_json_data, StringIO.new(google_service_json_data))
+      rescue Signet::AuthorizationError => error
+        UI.user_error!(get_service_credential_error(nil, error, debug))
       end
 
       def service_account_from_file(google_service_path, debug)
@@ -137,13 +141,7 @@ module Fastlane
       rescue Errno::ENOENT
         UI.user_error!("#{ErrorMessage::SERVICE_CREDENTIALS_NOT_FOUND}: #{google_service_path}")
       rescue Signet::AuthorizationError => error
-        error_message = "#{ErrorMessage::SERVICE_CREDENTIALS_ERROR}: \"#{google_service_path}\""
-        if debug
-          error_message += "\n#{error_details(error)}"
-        else
-          error_message += ". #{debug_instructions}"
-        end
-        UI.user_error!(error_message)
+        UI.user_error!(get_service_credential_error(google_service_path, error, debug))
       end
 
       def error_details(error)
