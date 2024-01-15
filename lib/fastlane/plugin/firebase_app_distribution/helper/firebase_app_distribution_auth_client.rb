@@ -115,9 +115,9 @@ module Fastlane
         service_account_credentials = auth.make_creds(
           json_key_io: json_key_io,
           scope: SCOPE
-        )      
+        )
         service_account_credentials.fetch_access_token!
-        service_account_credentials  
+        service_account_credentials
       end
 
       def get_service_credential_error(msg, error, debug)
@@ -133,7 +133,7 @@ module Fastlane
       def service_account_from_json(google_service_json_data, debug)
         get_service_account_credentials(google_service_json_data, StringIO.new(google_service_json_data))
       rescue Signet::AuthorizationError => error
-        UI.user_error!(get_service_credential_error(nil, error, debug))
+        UI.user_error!(get_service_credential_error('google_service_json_data', error, debug))
       end
 
       def service_account_from_file(google_service_path, debug)

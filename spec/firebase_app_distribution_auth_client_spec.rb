@@ -104,6 +104,20 @@ describe Fastlane::Auth::FirebaseAppDistributionAuthClient do
             .to raise_error("#{ErrorMessage::SERVICE_CREDENTIALS_NOT_FOUND}: invalid_service_path")
         end
 
+        it 'crashes if the service credentials json is invalid' do
+          expect(fake_service_creds).to receive(:fetch_access_token!)
+            .and_raise(Signet::AuthorizationError.new("error_message", { response: fake_error_response }))
+          expect { auth_client.get_authorization(fake_service_account_contents_json, empty_val, empty_val, false) }
+            .to raise_error("#{ErrorMessage::SERVICE_CREDENTIALS_ERROR}: \"google_service_json_data\". For more information, try again with firebase_app_distribution's \"debug\" parameter set to \"true\".")
+        end
+
+        it 'crashes if the service credentials json is invalid in debug mode' do
+          expect(fake_service_creds).to receive(:fetch_access_token!)
+            .and_raise(Signet::AuthorizationError.new("error_message", { response: fake_error_response }))
+          expect { auth_client.get_authorization(fake_service_account_contents_json, empty_val, empty_val, true) }
+            .to raise_error("#{ErrorMessage::SERVICE_CREDENTIALS_ERROR}: \"google_service_json_data\"\nerror_message\nResponse status: 400")
+        end
+
         it 'crashes if the service credentials are invalid' do
           expect(fake_service_creds).to receive(:fetch_access_token!)
             .and_raise(Signet::AuthorizationError.new("error_message", { response: fake_error_response }))
