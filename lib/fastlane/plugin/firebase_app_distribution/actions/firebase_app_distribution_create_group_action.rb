@@ -21,7 +21,7 @@ module Fastlane
 
         init_google_api_client(params[:debug])
         client = Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService.new
-        client.authorization = get_authorization(params[:service_credentials_file], params[:firebase_cli_token], params[:debug])
+        client.authorization = get_authorization(params[:service_credentials_file], params[:firebase_cli_token], params[:service_credentials_json_data], params[:debug])
 
         project_number = params[:project_number]
         group_alias = params[:alias]
@@ -85,6 +85,10 @@ module Fastlane
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :service_credentials_file,
                                        description: "Path to Google service credentials file",
+                                       optional: true,
+                                       type: String),
+          FastlaneCore::ConfigItem.new(key: :service_credentials_json_data,
+                                       description: "Google service account json file content",
                                        optional: true,
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :firebase_cli_token,

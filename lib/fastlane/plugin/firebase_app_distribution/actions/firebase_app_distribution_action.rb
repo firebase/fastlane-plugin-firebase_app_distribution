@@ -39,7 +39,7 @@ module Fastlane
         # TODO(lkellogg): This sets the send timeout for all POST requests made by the client, but
         # ideally the timeout should only apply to the binary upload
         init_google_api_client(params[:debug], timeout)
-        authorization = get_authorization(params[:service_credentials_file], params[:firebase_cli_token], params[:debug])
+        authorization = get_authorization(params[:service_credentials_file], params[:firebase_cli_token], params[:service_credentials_json_data], params[:debug])
         client = Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService.new
         client.authorization = authorization
 
@@ -410,6 +410,10 @@ module Fastlane
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :service_credentials_file,
                                        description: "Path to Google service account json file",
+                                       optional: true,
+                                       type: String),
+          FastlaneCore::ConfigItem.new(key: :service_credentials_json_data,
+                                       description: "Google service account json file content",
                                        optional: true,
                                        type: String)
         ]
