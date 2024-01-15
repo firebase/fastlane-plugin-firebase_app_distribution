@@ -105,16 +105,16 @@ module Fastlane
       end
 
       def service_account_from_json(google_service_json_data, debug)
-        get_service_account_credentials(google_service_json_data, 'google_service_json_data', debug)
+        get_service_account_credentials(google_service_json_data, debug)
       end
 
       def service_account_from_file(google_service_path, debug)
-        get_service_account_credentials(File.read(google_service_path), google_service_path, debug)
+        get_service_account_credentials(File.read(google_service_path), debug)
       rescue Errno::ENOENT
         UI.user_error!("#{ErrorMessage::SERVICE_CREDENTIALS_NOT_FOUND}: #{google_service_path}")
       end
 
-      def get_service_account_credentials(json_data, on_error_message, debug)
+      def get_service_account_credentials(json_data, debug)
         auth = get_auth_service(json_data)
         service_account_credentials = auth.make_creds(
           json_key_io: StringIO.new(json_data),
@@ -123,7 +123,7 @@ module Fastlane
         service_account_credentials.fetch_access_token!
         service_account_credentials
       rescue Signet::AuthorizationError => error
-        UI.user_error!(get_service_credential_error(on_error_message, error, debug))
+        UI.user_error!(get_service_credential_error(error, debug))
       end
 
       def get_auth_service(json_data)
@@ -132,12 +132,12 @@ module Fastlane
         json_file["type"] == "external_account" ? Google::Auth::ExternalAccount::Credentials : Google::Auth::ServiceAccountCredentials
       end
 
-      def get_service_credential_error(msg, error, debug)
-        error_message = "#{ErrorMessage::SERVICE_CREDENTIALS_ERROR}: \"#{msg}\""
+      def get_service_credential_error(error, debug)
+        error_message = "#{ErrorMessage::SERVICE_CREDENTIALS_ERROR}: "
         if debug
           error_message += "\n#{error_details(error)}"
         else
-          error_message += ". #{debug_instructions}"
+          error_message += "#{debug_instructions}"
         end
         error_message
       end
