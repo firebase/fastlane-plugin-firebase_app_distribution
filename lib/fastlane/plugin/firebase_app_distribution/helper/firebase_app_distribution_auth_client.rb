@@ -29,7 +29,7 @@ module Fastlane
       #   FIREBASE_TOKEN - see firebase_cli_token
       #
       # Crashes if given invalid or missing credentials
-      def get_authorization(google_service_json_data, google_service_path, firebase_cli_token, debug = false)
+      def get_authorization(google_service_path, firebase_cli_token, google_service_json_data, debug = false)
         if !google_service_path.nil? && !google_service_path.empty?
           UI.message("🔐 Authenticating with --service_credentials_file path parameter: #{google_service_path}")
           service_account_from_file(google_service_path, debug)
