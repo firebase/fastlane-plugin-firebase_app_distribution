@@ -118,8 +118,6 @@ module Fastlane
         )
         service_account_credentials.fetch_access_token!
         service_account_credentials
-      rescue Errno::ENOENT
-        UI.user_error!("#{ErrorMessage::SERVICE_CREDENTIALS_NOT_FOUND}: #{google_service_path}")
       rescue Signet::AuthorizationError => error
         error_message = "#{ErrorMessage::SERVICE_CREDENTIALS_ERROR}: \"#{google_service_path}\""
         if debug
