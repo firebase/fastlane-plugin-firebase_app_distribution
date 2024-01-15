@@ -13,9 +13,7 @@ module Fastlane
     module SharedValues
       FIREBASE_APP_DISTRO_RELEASE ||= :FIREBASE_APP_DISTRO_RELEASE
     end
-
-    # rubocop:disable Metrics/ClassLength
-    class FirebaseAppDistributionAction < Action
+    class FirebaseAppDistributionAction < Action # rubocop:disable Metrics/ClassLength
       extend Auth::FirebaseAppDistributionAuthClient
       extend Helper::FirebaseAppDistributionHelper
 
@@ -411,11 +409,11 @@ module Fastlane
           FastlaneCore::ConfigItem.new(key: :service_credentials_file,
                                        description: "Path to Google service account json file",
                                        optional: true,
-                                       type: String)
+                                       type: String),
           FastlaneCore::ConfigItem.new(key: :service_credentials_json_data,
                                        description: "Google service account json file content",
                                        optional: true,
-                                       type: String),
+                                       type: String)
         ]
       end
 
