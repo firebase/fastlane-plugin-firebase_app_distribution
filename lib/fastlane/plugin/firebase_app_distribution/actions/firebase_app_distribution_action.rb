@@ -362,26 +362,14 @@ module Fastlane
           end
         end
 
-        device_executions = string_to_array(test_devices).map do |td|
-          # TODO(kbolay): Use same format for device configuration as gcloud
-          #     Probably using ";" as delimited, because "," separates devices
-          #     i.e. "model=Nexus6;version=21;locale=en;orientation=portrait"
-          #
-          # def to_hash(str)
-          #   Hash[
-          #     str.split(';').map do |pair|
-          #       k, v = pair.split('=', 2)
-          #       [k, v.to_i]
-          #     end
-          #   ]
-          # end
-          props = td.split('|', 4)
+        device_executions = string_to_array(test_devices, ';').map do |td_string|
+          td_hash = Hash[td_string.split(',').map { |kv| kv.split('=') }]
           Google::Apis::FirebaseappdistributionV1alpha::GoogleFirebaseAppdistroV1alphaDeviceExecution.new(
             device: Google::Apis::FirebaseappdistributionV1alpha::GoogleFirebaseAppdistroV1alphaTestDevice.new(
-              model: props[0],
-              version: props[1],
-              orientation: props[2],
-              locale: props[3]
+              model: td_hash['model'],
+              version: td_hash['version'],
+              orientation: td_hash['orientation'],
+              locale: td_hash['locale']
             )
           )
         end
