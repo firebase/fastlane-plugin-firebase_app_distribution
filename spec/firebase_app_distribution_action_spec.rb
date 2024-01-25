@@ -589,10 +589,9 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
                 action.run({
                              app: android_app_id,
                              android_artifact_path: 'path/to.apk',
-                             test_password: 'password',
                              test_devices: 'bad=key,model=model1,version=version1,locale=locale1,orientation=orientation1'
                            })
-              end.to raise_error('Unrecognized key in test_devices. Can only contain keys model, version, locale, and orientation.')
+              end.to raise_error('Unrecognized key in test_devices. Can only contain keys model, version, locale, orientation.')
             end
 
             it 'passes device information' do

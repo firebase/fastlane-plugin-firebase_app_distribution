@@ -363,7 +363,7 @@ module Fastlane
         end
 
         device_executions = string_to_array(test_devices, ';').map do |td_string|
-          td_hash = Hash[td_string.split(',').map { |kv| kv.split('=') }]
+          td_hash = parse_test_device_string(td_string)
           Google::Apis::FirebaseappdistributionV1alpha::GoogleFirebaseAppdistroV1alphaDeviceExecution.new(
             device: Google::Apis::FirebaseappdistributionV1alpha::GoogleFirebaseAppdistroV1alphaTestDevice.new(
               model: td_hash['model'],
@@ -407,6 +407,18 @@ module Fastlane
           end
         end
         UI.test_failure!("Tests are running longer than expected.")
+      end
+
+      def self.parse_test_device_string(td_string)
+        allowed_keys = %w[model version locale orientation]
+        key_value_pairs = td_string.split(',').map do |key_value_string|
+          key, value = key_value_string.split('=')
+          unless allowed_keys.include?(key)
+            UI.user_error!("Unrecognized key in test_devices. Can only contain keys #{allowed_keys.join(', ')}.")
+          end
+          [key, value]
+        end
+        Hash[key_value_pairs]
       end
 
       def self.device_to_s(device)
