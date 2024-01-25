@@ -513,12 +513,12 @@ module Fastlane
           # Release Testing
           FastlaneCore::ConfigItem.new(key: :test_devices,
                                        env_name: "FIREBASEAPPDISTRO_TEST_DEVICES",
-                                       description: "Comma-separated list of devices to run automated tests on, in the format '<model id>|<os version id>|<locale>|<orientation>' (e.g. 'shiba|34|en|portrait'). Run 'gcloud firebase test android|ios models list' to see available devices",
+                                       description: "List of devices to run automated tests on, in the format 'model=<model-id>,version=<os-version-id>,locale=<locale>,orientation=<orientation>;model=<model-id>,...'. Run 'gcloud firebase test android|ios models list' to see available devices",
                                        optional: true,
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :test_devices_file,
                                        env_name: "FIREBASEAPPDISTRO_TEST_DEVICES_FILE",
-                                       description: "Path to file containing comma-separated list of devices to run automated tests on, in the format '<model id>|<os version id>|<locale>|<orientation>' (e.g. 'shiba|34|en|portrait'). Run 'gcloud firebase test andoid|ios models list' to see available devices",
+                                       description: "Path to file containing a list of devices to run automated tests on, in the format 'model=<model-id>,version=<os-version-id>,locale=<locale>,orientation=<orientation>;model=<model-id>,...'. Run 'gcloud firebase test android|ios models list' to see available devices",
                                        optional: true,
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :test_username,
@@ -573,7 +573,7 @@ module Fastlane
             firebase_app_distribution(
               app: "<your Firebase app ID>",
               testers: "snatchev@google.com, rebeccahe@google.com",
-              test_devices: "shiba|34|en|portrait,b0q|33|en|portrait",
+              test_devices: "model=shiba,version=34,locale=en,orientation=portrait;model=b0q,version=33,locale=en,orientation=portrait",
             )
           CODE
         ]
