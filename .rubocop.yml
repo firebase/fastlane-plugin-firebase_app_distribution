@@ -99,7 +99,7 @@ Metrics/LineLength:
 Metrics/ParameterLists:
   Max: 17
 Metrics/PerceivedComplexity:
-  Max: 18
+  Max: 20
 Style/GuardClause:
   Enabled: false
 Style/StringLiterals:

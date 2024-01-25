@@ -22,6 +22,8 @@ module Fastlane
       DEFAULT_UPLOAD_TIMEOUT_SECONDS = 300
       UPLOAD_MAX_POLLING_RETRIES = 60
       UPLOAD_POLLING_INTERVAL_SECONDS = 5
+      TEST_MAX_POLLING_RETRIES = 25
+      TEST_POLLING_INTERVAL_SECONDS = 30
 
       def self.run(params)
         params.values # to validate all inputs before looking for the ipa/apk/aab
@@ -37,11 +39,13 @@ module Fastlane
         binary_type = binary_type_from_path(binary_path)
 
         # TODO(lkellogg): This sets the send timeout for all POST requests made by the client, but
-        # ideally the timeout should only apply to the binary upload
+        #     ideally the timeout should only apply to the binary upload
         init_google_api_client(params[:debug], timeout)
         authorization = get_authorization(params[:service_credentials_file], params[:firebase_cli_token], params[:service_credentials_json_data], params[:debug])
         client = Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService.new
         client.authorization = authorization
+        alpha_client = Google::Apis::FirebaseappdistributionV1alpha::FirebaseAppDistributionService.new
+        alpha_client.authorization = authorization
 
         # If binary is an AAB, get the AAB info for this app, which includes the integration state
         # and certificate data
@@ -78,6 +82,16 @@ module Fastlane
           )
           UI.message("📜 Setting release notes.")
           release = update_release(client, release)
+        end
+
+        test_devices =
+          get_value_from_value_or_file(params[:test_devices], params[:test_devices_file])
+        if present?(test_devices)
+          UI.message("🤖 Starting automated tests.")
+          release_test = test_release(alpha_client, release, test_devices, params[:test_username], params[:test_password], params[:test_username_resource], params[:test_password_resource])
+          unless params[:test_async]
+            poll_test_finished(alpha_client, release_test.name)
+          end
         end
 
         testers = get_value_from_value_or_file(params[:testers], params[:testers_file])
@@ -260,7 +274,7 @@ module Fastlane
         # it should return a long running operation object, so we make a
         # standard http call instead and convert it to a long running object
         # https://github.com/googleapis/google-api-ruby-client/blob/main/generated/google-apis-firebaseappdistribution_v1/lib/google/apis/firebaseappdistribution_v1/service.rb#L79
-        # TODO(kbolay) Prefer client.upload_medium
+        # TODO(kbolay): Prefer client.upload_medium
         response = client.http(
           :post,
           "https://firebaseappdistribution.googleapis.com/upload/v1/#{app_name}/releases:upload",
@@ -318,6 +332,99 @@ module Fastlane
         end
       end
 
+      def self.test_release(alpha_client, release, test_devices, username = nil, password = nil, username_resource = nil, password_resource = nil)
+        if username_resource.nil? ^ password_resource.nil?
+          UI.user_error!("Username and password resource names for automated tests need to be specified together.")
+        end
+        field_hints = nil
+        if !username_resource.nil? && !password_resource.nil?
+          field_hints =
+            Google::Apis::FirebaseappdistributionV1alpha::GoogleFirebaseAppdistroV1alphaLoginCredentialFieldHints.new(
+              username_resource_name: username_resource,
+              password_resource_name: password_resource
+            )
+        end
+
+        if username.nil? ^ password.nil?
+          UI.user_error!("Username and password for automated tests need to be specified together.")
+        end
+        login_credential = nil
+        if !username.nil? && !password.nil?
+          login_credential =
+            Google::Apis::FirebaseappdistributionV1alpha::GoogleFirebaseAppdistroV1alphaLoginCredential.new(
+              username: username,
+              password: password,
+              field_hints: field_hints
+            )
+        else
+          unless field_hints.nil?
+            UI.user_error!("Must specify username and password for automated tests if resource names are set.")
+          end
+        end
+
+        device_executions = string_to_array(test_devices, ';').map do |td_string|
+          td_hash = parse_test_device_string(td_string)
+          Google::Apis::FirebaseappdistributionV1alpha::GoogleFirebaseAppdistroV1alphaDeviceExecution.new(
+            device: Google::Apis::FirebaseappdistributionV1alpha::GoogleFirebaseAppdistroV1alphaTestDevice.new(
+              model: td_hash['model'],
+              version: td_hash['version'],
+              orientation: td_hash['orientation'],
+              locale: td_hash['locale']
+            )
+          )
+        end
+
+        release_test =
+          Google::Apis::FirebaseappdistributionV1alpha::GoogleFirebaseAppdistroV1alphaReleaseTest.new(
+            login_credential: login_credential,
+            device_executions: device_executions
+          )
+        alpha_client.create_project_app_release_test(release.name, release_test)
+      rescue Google::Apis::Error => err
+        UI.crash!(err)
+      end
+
+      def self.poll_test_finished(alpha_client, release_test_name)
+        TEST_MAX_POLLING_RETRIES.times do
+          UI.message("⏳ Waiting for test(s) to complete…")
+          sleep(TEST_POLLING_INTERVAL_SECONDS)
+          release_test = alpha_client.get_project_app_release_test(release_test_name)
+          if release_test.device_executions.all? { |e| e.state == 'PASSED' }
+            UI.success("✅ Passed automated test(s).")
+            return
+          end
+          release_test.device_executions.each do |de|
+            case de.state
+            when 'PASSED', 'IN_PROGRESS'
+              next
+            when 'FAILED'
+              UI.test_failure!("Automated test failed for #{device_to_s(de.device)}: #{de.failed_reason}.")
+            when 'INCONCLUSIVE'
+              UI.test_failure!("Automated test inconclusive for #{device_to_s(de.device)}: #{de.inconclusive_reason}.")
+            else
+              UI.test_failure!("Unsupported automated test state for #{device_to_s(de.device)}: #{de.state}.")
+            end
+          end
+        end
+        UI.test_failure!("Tests are running longer than expected.")
+      end
+
+      def self.parse_test_device_string(td_string)
+        allowed_keys = %w[model version locale orientation]
+        key_value_pairs = td_string.split(',').map do |key_value_string|
+          key, value = key_value_string.split('=')
+          unless allowed_keys.include?(key)
+            UI.user_error!("Unrecognized key in test_devices. Can only contain keys #{allowed_keys.join(', ')}.")
+          end
+          [key, value]
+        end
+        Hash[key_value_pairs]
+      end
+
+      def self.device_to_s(device)
+        "#{device.model} (#{device.version}/#{device.orientation}/#{device.locale})"
+      end
+
       def self.available_options
         [
           # iOS Specific
@@ -358,7 +465,7 @@ module Fastlane
           FastlaneCore::ConfigItem.new(key: :firebase_cli_path,
                                        deprecated: "This plugin no longer uses the Firebase CLI",
                                        env_name: "FIREBASEAPPDISTRO_FIREBASE_CLI_PATH",
-                                       description: "The absolute path of the firebase cli command",
+                                       description: "Absolute path of the Firebase CLI command",
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :debug,
                                       description: "Print verbose debug output",
@@ -374,7 +481,7 @@ module Fastlane
                                        type: Integer),
           FastlaneCore::ConfigItem.new(key: :groups,
                                        env_name: "FIREBASEAPPDISTRO_GROUPS",
-                                       description: "The group aliases used for distribution, separated by commas",
+                                       description: "Group aliases used for distribution, separated by commas",
                                        optional: true,
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :groups_file,
@@ -402,6 +509,39 @@ module Fastlane
                                        description: "Path to file containing release notes for this build",
                                        optional: true,
                                        type: String),
+
+          # Release Testing
+          FastlaneCore::ConfigItem.new(key: :test_devices,
+                                       env_name: "FIREBASEAPPDISTRO_TEST_DEVICES",
+                                       description: "List of devices to run automated tests on, in the format 'model=<model-id>,version=<os-version-id>,locale=<locale>,orientation=<orientation>;model=<model-id>,...'. Run 'gcloud firebase test android|ios models list' to see available devices",
+                                       optional: true,
+                                       type: String),
+          FastlaneCore::ConfigItem.new(key: :test_devices_file,
+                                       env_name: "FIREBASEAPPDISTRO_TEST_DEVICES_FILE",
+                                       description: "Path to file containing a list of devices to run automated tests on, in the format 'model=<model-id>,version=<os-version-id>,locale=<locale>,orientation=<orientation>;model=<model-id>,...'. Run 'gcloud firebase test android|ios models list' to see available devices",
+                                       optional: true,
+                                       type: String),
+          FastlaneCore::ConfigItem.new(key: :test_username,
+                                       description: "Username for automatic login",
+                                       optional: true,
+                                       type: String),
+          FastlaneCore::ConfigItem.new(key: :test_password,
+                                       description: "Password for automatic login",
+                                       optional: true,
+                                       type: String),
+          FastlaneCore::ConfigItem.new(key: :test_username_resource,
+                                       description: "Resource name of the username field for automatic login",
+                                       optional: true,
+                                       type: String),
+          FastlaneCore::ConfigItem.new(key: :test_password_resource,
+                                       description: "Resource name of the password field for automatic login",
+                                       optional: true,
+                                       type: String),
+          FastlaneCore::ConfigItem.new(key: :test_async,
+                                       description: "Don't wait for automatic test results",
+                                       optional: false,
+                                       default_value: false,
+                                       type: Boolean),
 
           # Auth
           FastlaneCore::ConfigItem.new(key: :firebase_cli_token,
@@ -432,7 +572,8 @@ module Fastlane
           <<-CODE
             firebase_app_distribution(
               app: "<your Firebase app ID>",
-              testers: "snatchev@google.com, rebeccahe@google.com"
+              testers: "snatchev@google.com, rebeccahe@google.com",
+              test_devices: "model=shiba,version=34,locale=en,orientation=portrait;model=b0q,version=33,locale=en,orientation=portrait",
             )
           CODE
         ]

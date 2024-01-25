@@ -212,6 +212,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
 
   describe '#run' do
     V1Api = Google::Apis::FirebaseappdistributionV1
+    V1AlphaApi = Google::Apis::FirebaseappdistributionV1alpha
 
     let(:params) do
       {
@@ -483,6 +484,134 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
 
               expect(returned_release).to eq(updated_release)
               expect(Fastlane::Actions.lane_context[Fastlane::Actions::SharedValues::FIREBASE_APP_DISTRO_RELEASE]).to eq(updated_release)
+            end
+          end
+
+          describe 'when performing automated tests' do
+            before do
+              allow_any_instance_of(V1Api::FirebaseAppDistributionService)
+                .to receive(:distribute_project_app_release)
+            end
+
+            it 'fails if only username_resource is specified' do
+              expect do
+                action.run({
+                             app: android_app_id,
+                             android_artifact_path: 'path/to.apk',
+                             test_username_resource: 'username_resource',
+                             test_devices: 'model=model1,version=version1,locale=locale1,orientation=orientation1'
+                           })
+              end.to raise_error('Username and password resource names for automated tests need to be specified together.')
+            end
+
+            it 'fails if only password_resource is specified' do
+              expect do
+                action.run({
+                             app: android_app_id,
+                             android_artifact_path: 'path/to.apk',
+                             test_password_resource: 'password_resource',
+                             test_devices: 'model=model1,version=version1,locale=locale1,orientation=orientation1'
+                           })
+              end.to raise_error('Username and password resource names for automated tests need to be specified together.')
+            end
+
+            it 'fails if resource names are set but username and password is not set' do
+              expect do
+                action.run({
+                             app: android_app_id,
+                             android_artifact_path: 'path/to.apk',
+                             test_username_resource: 'username_resource',
+                             test_password_resource: 'password_resource',
+                             test_devices: 'model=model1,version=version1,locale=locale1,orientation=orientation1'
+                           })
+              end.to raise_error('Must specify username and password for automated tests if resource names are set.')
+            end
+
+            it 'fails if only username is specified' do
+              expect do
+                action.run({
+                             app: android_app_id,
+                             android_artifact_path: 'path/to.apk',
+                             test_username: 'username',
+                             test_devices: 'model=model1,version=version1,locale=locale1,orientation=orientation1'
+                           })
+              end.to raise_error('Username and password for automated tests need to be specified together.')
+            end
+
+            it 'fails if only password is specified' do
+              expect do
+                action.run({
+                             app: android_app_id,
+                             android_artifact_path: 'path/to.apk',
+                             test_password: 'password',
+                             test_devices: 'model=model1,version=version1,locale=locale1,orientation=orientation1'
+                           })
+              end.to raise_error('Username and password for automated tests need to be specified together.')
+            end
+
+            it 'passes login credential' do
+              allow_any_instance_of(V1AlphaApi::FirebaseAppDistributionService).to receive(:create_project_app_release_test) do |_, release_name, request|
+                expect(request.login_credential.username).to eq('username')
+                expect(request.login_credential.password).to eq('password')
+                expect(request.login_credential.field_hints).to be_nil
+              end
+              action.run({
+                           app: android_app_id,
+                           android_artifact_path: 'path/to.apk',
+                           test_username: 'username',
+                           test_password: 'password',
+                           test_devices: 'model=model1,version=version1,locale=locale1,orientation=orientation1',
+                           test_async: true
+                         })
+            end
+
+            it 'passes login credential with field hints' do
+              allow_any_instance_of(V1AlphaApi::FirebaseAppDistributionService).to receive(:create_project_app_release_test) do |_, release_name, request|
+                expect(request.login_credential.username).to eq('username')
+                expect(request.login_credential.password).to eq('password')
+                expect(request.login_credential.field_hints.username_resource_name).to eq('username_resource')
+                expect(request.login_credential.field_hints.password_resource_name).to eq('password_resource')
+              end
+              action.run({
+                           app: android_app_id,
+                           android_artifact_path: 'path/to.apk',
+                           test_username_resource: 'username_resource',
+                           test_password_resource: 'password_resource',
+                           test_username: 'username',
+                           test_password: 'password',
+                           test_devices: 'model=model1,version=version1,locale=locale1,orientation=orientation1',
+                           test_async: true
+                         })
+            end
+
+            it 'fails if test device contains a unexpected key' do
+              expect do
+                action.run({
+                             app: android_app_id,
+                             android_artifact_path: 'path/to.apk',
+                             test_devices: 'bad=key,model=model1,version=version1,locale=locale1,orientation=orientation1'
+                           })
+              end.to raise_error('Unrecognized key in test_devices. Can only contain keys model, version, locale, orientation.')
+            end
+
+            it 'passes device information' do
+              allow_any_instance_of(V1AlphaApi::FirebaseAppDistributionService).to receive(:create_project_app_release_test) do |_, release_name, request|
+                expect(request.device_executions[0].device.model).to eq('model1')
+                expect(request.device_executions[0].device.version).to eq('version1')
+                expect(request.device_executions[0].device.orientation).to eq('orientation1')
+                expect(request.device_executions[0].device.locale).to eq('locale1')
+                expect(request.device_executions[1].device.model).to eq('model2')
+                expect(request.device_executions[1].device.version).to eq('version2')
+                expect(request.device_executions[1].device.orientation).to eq('orientation2')
+                expect(request.device_executions[1].device.locale).to eq('locale2')
+              end
+              devices = 'model=model1,version=version1,locale=locale1,orientation=orientation1;version=version2,model=model2,orientation=orientation2,locale=locale2'
+              action.run({
+                                              app: android_app_id,
+                                              android_artifact_path: 'path/to.apk',
+                                              test_devices: devices,
+                                              test_async: true
+                                            })
             end
           end
         end
