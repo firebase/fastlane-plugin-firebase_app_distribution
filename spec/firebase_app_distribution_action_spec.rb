@@ -584,6 +584,17 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
                          })
             end
 
+            it 'fails if test device contains a unexpected key' do
+              expect do
+                action.run({
+                             app: android_app_id,
+                             android_artifact_path: 'path/to.apk',
+                             test_password: 'password',
+                             test_devices: 'bad=key,model=model1,version=version1,locale=locale1,orientation=orientation1'
+                           })
+              end.to raise_error('Unrecognized key in test_devices. Can only contain keys model, version, locale, and orientation.')
+            end
+
             it 'passes device information' do
               allow_any_instance_of(V1AlphaApi::FirebaseAppDistributionService).to receive(:create_project_app_release_test) do |_, release_name, request|
                 expect(request.device_executions[0].device.model).to eq('model1')

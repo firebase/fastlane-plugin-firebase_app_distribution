@@ -27,7 +27,7 @@ module Fastlane
 
       # Returns the array representation of a string with trimmed comma
       # seperated values.
-      def string_to_array(string, delimiter=",")
+      def string_to_array(string, delimiter = ",")
         return [] if string.nil?
         # Strip string and then strip individual values
         string.strip.split(delimiter).map(&:strip)
