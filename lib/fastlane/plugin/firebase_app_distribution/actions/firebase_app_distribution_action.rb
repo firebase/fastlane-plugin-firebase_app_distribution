@@ -87,7 +87,7 @@ module Fastlane
         test_devices =
           get_value_from_value_or_file(params[:test_devices], params[:test_devices_file])
         if present?(test_devices)
-          UI.message("🤖 Starting automated tests.")
+          UI.message("🤖 Starting automated tests. Note: This feature is in beta.")
           release_test = test_release(alpha_client, release, test_devices, params[:test_username], params[:test_password], params[:test_username_resource], params[:test_password_resource])
           unless params[:test_async]
             poll_test_finished(alpha_client, release_test.name)
@@ -386,7 +386,7 @@ module Fastlane
 
       def self.poll_test_finished(alpha_client, release_test_name)
         TEST_MAX_POLLING_RETRIES.times do
-          UI.message("⏳ Waiting for test(s) to complete…")
+          UI.message("⏳ The automated test results are pending.")
           sleep(TEST_POLLING_INTERVAL_SECONDS)
           release_test = alpha_client.get_project_app_release_test(release_test_name)
           if release_test.device_executions.all? { |e| e.state == 'PASSED' }
@@ -406,7 +406,7 @@ module Fastlane
             end
           end
         end
-        UI.test_failure!("Tests are running longer than expected.")
+        UI.test_failure!("It took longer than expected to process your test, please try again.")
       end
 
       def self.parse_test_device_string(td_string)
@@ -513,12 +513,12 @@ module Fastlane
           # Release Testing
           FastlaneCore::ConfigItem.new(key: :test_devices,
                                        env_name: "FIREBASEAPPDISTRO_TEST_DEVICES",
-                                       description: "List of devices to run automated tests on, in the format 'model=<model-id>,version=<os-version-id>,locale=<locale>,orientation=<orientation>;model=<model-id>,...'. Run 'gcloud firebase test android|ios models list' to see available devices",
+                                       description: "List of devices to run automated tests on, in the format 'model=<model-id>,version=<os-version-id>,locale=<locale>,orientation=<orientation>;model=<model-id>,...'. Run 'gcloud firebase test android|ios models list' to see available devices. Note: This feature is in beta.",
                                        optional: true,
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :test_devices_file,
                                        env_name: "FIREBASEAPPDISTRO_TEST_DEVICES_FILE",
-                                       description: "Path to file containing a list of devices to run automated tests on, in the format 'model=<model-id>,version=<os-version-id>,locale=<locale>,orientation=<orientation>;model=<model-id>,...'. Run 'gcloud firebase test android|ios models list' to see available devices",
+                                       description: "Path to file containing a list of devices to run automated tests on, in the format 'model=<model-id>,version=<os-version-id>,locale=<locale>,orientation=<orientation>;model=<model-id>,...'. Run 'gcloud firebase test android|ios models list' to see available devices. Note: This feature is in beta.",
                                        optional: true,
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :test_username,
@@ -530,15 +530,15 @@ module Fastlane
                                        optional: true,
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :test_username_resource,
-                                       description: "Resource name of the username field for automatic login",
+                                       description: "Resource name for the username field for automatic login",
                                        optional: true,
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :test_password_resource,
-                                       description: "Resource name of the password field for automatic login",
+                                       description: "Resource name for the password field for automatic login",
                                        optional: true,
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :test_async,
-                                       description: "Don't wait for automatic test results",
+                                       description: "Run tests asynchronously. Visit the Firebase console for the automatic test results.",
                                        optional: false,
                                        default_value: false,
                                        type: Boolean),
