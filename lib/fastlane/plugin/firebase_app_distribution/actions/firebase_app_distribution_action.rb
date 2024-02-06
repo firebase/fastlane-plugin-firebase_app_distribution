@@ -529,7 +529,7 @@ module Fastlane
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :test_password,
                                        env_name: "FIREBASEAPPDISTRO_TEST_PASSWORD",
-                                       description: "Password for automatic login. If using a real password consider using test_password_file or setting FIREBASEAPPDISTRO_TEST_PASSWORD to avoid exposing sensitive info.",
+                                       description: "Password for automatic login. If using a real password consider using test_password_file or setting FIREBASEAPPDISTRO_TEST_PASSWORD to avoid exposing sensitive info",
                                        optional: true,
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :test_password_file,
