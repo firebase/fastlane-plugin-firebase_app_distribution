@@ -28,8 +28,9 @@ module Fastlane
         end
         udids = client.get_project_tester_udids(project_name(project_number)).tester_udids
 
-        if udids.empty?
-          UI.important("App Distribution fetched 0 tester UDIDs. Nothing written to output file.")
+        if udids.to_a.empty?
+          File.delete(params[:output_file]) if File.exist?(params[:output_file])
+          UI.important("App Distribution fetched 0 tester UDIDs. Removed output file.")
         else
           write_udids_to_file(udids, params[:output_file])
           UI.success("🎉 App Distribution tester UDIDs written to: #{params[:output_file]}")
