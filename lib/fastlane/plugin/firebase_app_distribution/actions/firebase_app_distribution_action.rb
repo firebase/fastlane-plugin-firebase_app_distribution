@@ -88,8 +88,9 @@ module Fastlane
           get_value_from_value_or_file(params[:test_devices], params[:test_devices_file])
         if present?(test_devices)
           UI.message("🤖 Starting automated tests. Note: This feature is in beta.")
-          release_test = test_release(alpha_client, release, test_devices, params[:test_username], params[:test_password], params[:test_username_resource], params[:test_password_resource])
-          unless params[:test_async]
+          test_password = get_value_from_value_or_file(params[:test_password], params[:test_password_file])
+          release_test = test_release(alpha_client, release, test_devices, params[:test_username], test_password, params[:test_username_resource], params[:test_password_resource])
+          unless params[:test_non_blocking]
             poll_test_finished(alpha_client, release_test.name)
           end
         end
@@ -522,23 +523,33 @@ module Fastlane
                                        optional: true,
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :test_username,
+                                       env_name: "FIREBASEAPPDISTRO_TEST_USERNAME",
                                        description: "Username for automatic login",
                                        optional: true,
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :test_password,
-                                       description: "Password for automatic login",
+                                       env_name: "FIREBASEAPPDISTRO_TEST_PASSWORD",
+                                       description: "Password for automatic login. If using a real password consider using test_password_file or setting FIREBASEAPPDISTRO_TEST_PASSWORD to avoid exposing sensitive info.",
                                        optional: true,
                                        type: String),
+          FastlaneCore::ConfigItem.new(key: :test_password_file,
+                                       env_name: "FIREBASEAPPDISTRO_TEST_PASSWORD_FILE",
+                                      description: "Path to file containing password for automatic login",
+                                      optional: true,
+                                      type: String),
           FastlaneCore::ConfigItem.new(key: :test_username_resource,
+                                       env_name: "FIREBASEAPPDISTRO_TEST_USERNAME_RESOURCE",
                                        description: "Resource name for the username field for automatic login",
                                        optional: true,
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :test_password_resource,
+                                       env_name: "FIREBASEAPPDISTRO_TEST_PASSWORD_RESOURCE",
                                        description: "Resource name for the password field for automatic login",
                                        optional: true,
                                        type: String),
-          FastlaneCore::ConfigItem.new(key: :test_async,
-                                       description: "Run tests asynchronously. Visit the Firebase console for the automatic test results",
+          FastlaneCore::ConfigItem.new(key: :test_non_blocking,
+                                       env_name: "FIREBASEAPPDISTRO_TEST_NON_BLOCKING",
+                                       description: "Run automated tests without waiting for them to finish. Visit the Firebase console for the test results",
                                        optional: false,
                                        default_value: false,
                                        type: Boolean),

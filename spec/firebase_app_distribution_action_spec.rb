@@ -561,7 +561,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
                            test_username: 'username',
                            test_password: 'password',
                            test_devices: 'model=model1,version=version1,locale=locale1,orientation=orientation1',
-                           test_async: true
+                           test_non_blocking: true
                          })
             end
 
@@ -580,7 +580,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
                            test_username: 'username',
                            test_password: 'password',
                            test_devices: 'model=model1,version=version1,locale=locale1,orientation=orientation1',
-                           test_async: true
+                           test_non_blocking: true
                          })
             end
 
@@ -610,7 +610,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
                                               app: android_app_id,
                                               android_artifact_path: 'path/to.apk',
                                               test_devices: devices,
-                                              test_async: true
+                                              test_non_blocking: true
                                             })
             end
           end
