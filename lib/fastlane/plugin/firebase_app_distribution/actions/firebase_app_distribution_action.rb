@@ -88,7 +88,7 @@ module Fastlane
           get_value_from_value_or_file(params[:test_devices], params[:test_devices_file])
         if present?(test_devices)
           UI.message("🤖 Starting automated tests. Note: This feature is in beta.")
-          test_password = get_value_from_value_or_file(params[:test_password], params[:test_password_file])
+          test_password = test_password_from_params(params)
           release_test = test_release(alpha_client, release, test_devices, params[:test_username], test_password, params[:test_username_resource], params[:test_password_resource])
           unless params[:test_non_blocking]
             poll_test_finished(alpha_client, release_test.name)
@@ -132,6 +132,12 @@ module Fastlane
       # supports markdown.
       def self.details
         "Release your beta builds with Firebase App Distribution"
+      end
+
+      def self.test_password_from_params(params)
+        test_password = get_value_from_value_or_file(params[:test_password], params[:test_password_file])
+        # Remove trailing newline if present
+        test_password && test_password.sub(/\r?\n$/, "")
       end
 
       def self.app_id_from_params(params)
