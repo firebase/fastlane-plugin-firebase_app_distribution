@@ -289,7 +289,7 @@ module Fastlane
         response = begin
           client.http(
             :post,
-            "https://firebaseappdistribution.googleapis.com/upload/v1/#{app_name}/releases:upload",
+            "#{client.root_url}#{client.upload_path}v1/#{app_name}/releases:upload",
             body: File.open(binary_path, 'rb'),
             options: options
           )
