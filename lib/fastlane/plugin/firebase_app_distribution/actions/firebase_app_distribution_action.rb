@@ -221,7 +221,7 @@ module Fastlane
       end
 
       def self.aab_certs_included?(test_certificate)
-        present?(test_certificate.hash_md5) && present?(test_certificate.hash_sha1) &&
+        !test_certificate.nil? && present?(test_certificate.hash_md5) && present?(test_certificate.hash_sha1) &&
           present?(test_certificate.hash_sha256)
       end
 
