@@ -34,7 +34,7 @@ module Fastlane
         timeout = get_upload_timeout(params)
 
         binary_path = get_binary_path(platform, params)
-        UI.user_error!("Couldn't find path for #{platform} binary.") if binary_path.nil?
+        UI.user_error!("Couldn't determine path for #{platform} binary.") if binary_path.nil?
         UI.user_error!("Couldn't find #{platform} binary at path #{binary_path}.") unless File.exist?(binary_path)
         binary_type = binary_type_from_path(binary_path)
 

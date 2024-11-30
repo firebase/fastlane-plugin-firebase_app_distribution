@@ -226,10 +226,10 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
       allow(action).to receive(:get_authorization).and_return(double('authorization', access_token: 'access-token'))
     end
 
-    it 'raises error if it cannot find a valid binary path' do
+    it 'raises error if it cannot determine a valid binary path' do
       expect do
         action.run(params.merge(ipa_path: nil))
-      end.to raise_error("Couldn't find path for ios binary.")
+      end.to raise_error("Couldn't determine path for ios binary.")
     end
 
     it 'raises error if binary does not exist' do
