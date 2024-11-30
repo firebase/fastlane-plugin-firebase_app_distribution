@@ -229,7 +229,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
     it 'raises error if it cannot find a valid binary path' do
       expect do
         action.run(params.merge(ipa_path: nil))
-      end.to raise_error("Couldn't find ios binary.")
+      end.to raise_error("Couldn't find path for ios binary.")
     end
 
     it 'raises error if binary does not exist' do
