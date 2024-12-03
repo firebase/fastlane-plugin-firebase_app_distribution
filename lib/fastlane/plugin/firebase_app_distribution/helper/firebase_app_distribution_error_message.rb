@@ -4,6 +4,8 @@ module ErrorMessage
   SERVICE_CREDENTIALS_NOT_FOUND = "Service credentials file does not exist. Please check the service credentials path and try again."
   PARSE_SERVICE_CREDENTIALS_ERROR = "Failed to extract service account information from the service credentials file."
   PARSE_FIREBASE_TOOLS_JSON_ERROR = "Encountered error parsing json file. Ensure the firebase-tools.json file is formatted correctly."
+  PERMISSION_DENIED_ERROR = "The authenticated user does not have the required permissions on the Firebase project"
+  UPLOAD_BINARY_ERROR = "App Distribution halted because it had a problem uploading the app binary."
   UPLOAD_RELEASE_NOTES_ERROR = "App Distribution halted because it had a problem uploading release notes."
   UPLOAD_TESTERS_ERROR = "App Distribution halted because it had a problem adding testers/groups."
   GET_RELEASE_TIMEOUT = "App Distribution failed to fetch release information."
