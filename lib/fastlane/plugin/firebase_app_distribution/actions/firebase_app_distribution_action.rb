@@ -292,7 +292,7 @@ module Fastlane
         rescue Google::Apis::Error => err
           case err.status_code.to_i
           when 403
-            UI.crash!("#{ErrorMessage::PERMISSION_DENIED_ERROR}")
+            UI.crash!(ErrorMessage::PERMISSION_DENIED_ERROR)
           else
             UI.crash!("#{ErrorMessage.upload_binary_error(binary_type)} (#{err}, status_code: #{err.status_code})")
           end
