@@ -307,7 +307,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
         end
       end
 
-      describe 'with a successful upload' do
+      describe 'with a binary file available' do
         let(:fake_binary_contents) { "Hello World" }
         let(:fake_binary) { double("Binary") }
 
@@ -317,6 +317,26 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
             .and_return(fake_binary)
           allow(fake_binary).to receive(:read)
             .and_return(fake_binary_contents)
+        end
+
+        it 'raises permission denied error if upload returns a 403', :focus do
+          allow_any_instance_of(V1Api::FirebaseAppDistributionService)
+            .to receive(:http)
+            .and_raise(Google::Apis::Error.new('error', status_code: '403'))
+
+          expect do
+            action.run(params)
+          end.to raise_error(ErrorMessage::PERMISSION_DENIED_ERROR)
+        end
+
+        it 'raises error with status code if upload returns an unexpected error', :focus do
+          allow_any_instance_of(V1Api::FirebaseAppDistributionService)
+            .to receive(:http)
+            .and_raise(Google::Apis::Error.new({}, status_code: '404'))
+
+          expect do
+            action.run(params)
+          end.to raise_error(/404/)
         end
 
         it 'crashes if it exceeds polling threshold' do

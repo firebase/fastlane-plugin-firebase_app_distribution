@@ -56,7 +56,7 @@ module Fastlane
 
         binary_type = binary_type_from_path(binary_path)
         UI.message("📡 Uploading the #{binary_type}.")
-        operation = upload_binary(app_name, binary_path, client, timeout)
+        operation = upload_binary(app_name, binary_path, binary_type, client, timeout)
         UI.message("🕵️ Validating upload…")
         release = poll_upload_release_operation(client, operation, binary_type)
 
@@ -268,7 +268,7 @@ module Fastlane
         extract_release(operation)
       end
 
-      def self.upload_binary(app_name, binary_path, client, timeout)
+      def self.upload_binary(app_name, binary_path, binary_type, client, timeout)
         options = Google::Apis::RequestOptions.new
         options.max_elapsed_time = timeout # includes retries (default = no retries)
         options.header = {
@@ -282,12 +282,21 @@ module Fastlane
         # standard http call instead and convert it to a long running object
         # https://github.com/googleapis/google-api-ruby-client/blob/main/generated/google-apis-firebaseappdistribution_v1/lib/google/apis/firebaseappdistribution_v1/service.rb#L79
         # TODO(kbolay): Prefer client.upload_medium
-        response = client.http(
-          :post,
-          "https://firebaseappdistribution.googleapis.com/upload/v1/#{app_name}/releases:upload",
-          body: File.open(binary_path, 'rb'),
-          options: options
-        )
+        response = begin
+          client.http(
+            :post,
+            "https://firebaseappdistribution.googleapis.com/upload/v1/#{app_name}/releases:upload",
+            body: File.open(binary_path, 'rb'),
+            options: options
+          )
+        rescue Google::Apis::Error => err
+          case err.status_code.to_i
+          when 403
+            UI.crash!("#{ErrorMessage::PERMISSION_DENIED_ERROR}")
+          else
+            UI.crash!("#{ErrorMessage.upload_binary_error(binary_type)} (#{err}, status_code: #{err.status_code})")
+          end
+        end
 
         Google::Apis::FirebaseappdistributionV1::GoogleLongrunningOperation.from_json(response)
       end
