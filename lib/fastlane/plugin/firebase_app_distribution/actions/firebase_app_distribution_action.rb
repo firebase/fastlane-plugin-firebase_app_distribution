@@ -13,8 +13,6 @@ module Fastlane
     module SharedValues
       FIREBASE_APP_DISTRO_RELEASE ||= :FIREBASE_APP_DISTRO_RELEASE
     end
-
-    # rubocop:disable Metrics/ClassLength
     class FirebaseAppDistributionAction < Action
       extend Auth::FirebaseAppDistributionAuthClient
       extend Helper::FirebaseAppDistributionHelper
@@ -195,7 +193,7 @@ module Fastlane
                  Dir[File.join("app", "build", "outputs", "apk", "release", "app-release.apk")].last
         end
 
-        UI.error "Unable to determine binary path for unsupported platform #{platform}."
+        UI.error("Unable to determine binary path for unsupported platform #{platform}.")
         nil
       end
 
