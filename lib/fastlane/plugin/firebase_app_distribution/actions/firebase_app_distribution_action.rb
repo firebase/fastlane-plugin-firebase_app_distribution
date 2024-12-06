@@ -163,7 +163,7 @@ module Fastlane
 
       def self.lane_platform
         # to_sym shouldn't be necessary, but possibly fixes #376
-        Actions.lane_context[Actions::SharedValues::PLATFORM_NAME].to_sym
+        Actions.lane_context[Actions::SharedValues::PLATFORM_NAME]&.to_sym
       end
 
       def self.platform_from_app_id(app_id)
