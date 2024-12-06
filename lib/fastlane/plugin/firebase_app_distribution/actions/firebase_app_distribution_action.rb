@@ -13,6 +13,8 @@ module Fastlane
     module SharedValues
       FIREBASE_APP_DISTRO_RELEASE ||= :FIREBASE_APP_DISTRO_RELEASE
     end
+
+    # rubocop:disable Metrics/ClassLength
     class FirebaseAppDistributionAction < Action
       extend Auth::FirebaseAppDistributionAuthClient
       extend Helper::FirebaseAppDistributionHelper
