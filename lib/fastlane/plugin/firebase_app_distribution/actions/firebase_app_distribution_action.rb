@@ -162,7 +162,8 @@ module Fastlane
       end
 
       def self.lane_platform
-        Actions.lane_context[Actions::SharedValues::PLATFORM_NAME]
+        # to_sym shouldn't be necessary, but possibly fixes #376
+        Actions.lane_context[Actions::SharedValues::PLATFORM_NAME]&.to_sym
       end
 
       def self.platform_from_app_id(app_id)
@@ -193,6 +194,9 @@ module Fastlane
                  Dir["*.apk"].last ||
                  Dir[File.join("app", "build", "outputs", "apk", "release", "app-release.apk")].last
         end
+
+        UI.error("Unable to determine binary path for unsupported platform #{platform}.")
+        nil
       end
 
       def self.get_upload_timeout(params)
@@ -586,11 +590,7 @@ module Fastlane
       end
 
       def self.is_supported?(platform)
-        # Adjust this if your plugin only works for a particular platform (iOS vs. Android, for example)
-        # See: https://docs.fastlane.tools/advanced/#control-configuration-by-lane-and-by-platform
-        #
-        # [:ios, :mac, :android].include?(platform)
-        true
+        [:ios, :android].include?(platform)
       end
 
       def self.example_code
