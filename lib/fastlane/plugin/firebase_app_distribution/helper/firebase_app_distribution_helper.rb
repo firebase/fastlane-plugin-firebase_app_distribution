@@ -1,5 +1,8 @@
 require 'fastlane_core/ui/ui'
 require 'cfpropertylist'
+require 'google/apis/core'
+require 'google/apis/options'
+require_relative './firebase_app_distribution_error_message'
 
 module Fastlane
   UI = FastlaneCore::UI unless Fastlane.const_defined?("UI")

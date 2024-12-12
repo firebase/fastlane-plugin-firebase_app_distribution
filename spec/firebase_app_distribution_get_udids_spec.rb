@@ -1,5 +1,4 @@
 require 'fastlane/action'
-require 'google/apis/firebaseappdistribution_v1alpha'
 
 describe Fastlane::Actions::FirebaseAppDistributionGetUdidsAction do
   let(:action) { Fastlane::Actions::FirebaseAppDistributionGetUdidsAction }
@@ -9,29 +8,27 @@ describe Fastlane::Actions::FirebaseAppDistributionGetUdidsAction do
   let(:output_file_path) { '/path/to/output/file.txt' }
 
   describe '#run' do
-    V1alphaApi = Google::Apis::FirebaseappdistributionV1alpha
-
     before do
       allow(action).to receive(:get_authorization).and_return(double("creds"))
     end
 
     describe 'when there are testers with udids' do
       before(:each) do
-        response = V1alphaApi::GoogleFirebaseAppdistroV1alphaGetTesterUdidsResponse.new(
+        response = Google::Apis::FirebaseappdistributionV1alpha::GoogleFirebaseAppdistroV1alphaGetTesterUdidsResponse.new(
           tester_udids: [
-            V1alphaApi::GoogleFirebaseAppdistroV1alphaTesterUdid.new(
+            Google::Apis::FirebaseappdistributionV1alpha::GoogleFirebaseAppdistroV1alphaTesterUdid.new(
               udid: 'device-udid-1',
               name: 'device-name-1',
               platform: 'ios'
             ),
-            V1alphaApi::GoogleFirebaseAppdistroV1alphaTesterUdid.new(
+            Google::Apis::FirebaseappdistributionV1alpha::GoogleFirebaseAppdistroV1alphaTesterUdid.new(
               udid: 'device-udid-2',
               name: 'device-name-2',
               platform: 'ios'
             )
           ]
         )
-        allow_any_instance_of(V1alphaApi::FirebaseAppDistributionService)
+        allow_any_instance_of(Google::Apis::FirebaseappdistributionV1alpha::FirebaseAppDistributionService)
           .to receive(:get_project_tester_udids)
           .with('projects/1234567890')
           .and_return(response)
@@ -53,10 +50,10 @@ describe Fastlane::Actions::FirebaseAppDistributionGetUdidsAction do
 
     describe 'when there are no testers with udids' do
       before(:each) do
-        response = V1alphaApi::GoogleFirebaseAppdistroV1alphaGetTesterUdidsResponse.new(
+        response = Google::Apis::FirebaseappdistributionV1alpha::GoogleFirebaseAppdistroV1alphaGetTesterUdidsResponse.new(
           tester_udids: []
         )
-        allow_any_instance_of(V1alphaApi::FirebaseAppDistributionService)
+        allow_any_instance_of(Google::Apis::FirebaseappdistributionV1alpha::FirebaseAppDistributionService)
           .to receive(:get_project_tester_udids)
           .with('projects/1234567890')
           .and_return(response)

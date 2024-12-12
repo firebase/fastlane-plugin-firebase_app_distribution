@@ -1,4 +1,6 @@
 ---
+require:
+- rubocop/require_tools
 Style/MultipleComparison:
   Enabled: false
 Style/PercentLiteralDelimiters:
@@ -152,9 +154,6 @@ Style/IfInsideElse:
   Enabled: false
 Style/CollectionMethods:
   Enabled: false
-CrossPlatform/ForkUsage:
-  Exclude:
-  - "**/plugins/template/**/*"
 Style/MethodCallWithArgsParentheses:
   Enabled: true
   IgnoredMethods:
