@@ -625,11 +625,24 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
               end
               devices = 'model=model1,version=version1,locale=locale1,orientation=orientation1;version=version2,model=model2,orientation=orientation2,locale=locale2'
               action.run({
-                                              app: android_app_id,
-                                              android_artifact_path: 'path/to.apk',
-                                              test_devices: devices,
-                                              test_non_blocking: true
-                                            })
+                           app: android_app_id,
+                           android_artifact_path: 'path/to.apk',
+                           test_devices: devices,
+                           test_non_blocking: true
+                         })
+            end
+
+            it 'passes test case IDs' do
+              allow_any_instance_of(Google::Apis::FirebaseappdistributionV1alpha::FirebaseAppDistributionService).to receive(:create_project_app_release_test) do |_, release_name, request|
+                expect(["#{android_app_name}/testCases/foo", "#{android_app_name}/testCases/bar", "#{android_app_name}/testCases/baz"]).to include(request.test_case)
+              end
+              action.run({
+                           app: android_app_id,
+                           android_artifact_path: 'path/to.apk',
+                           test_devices: 'model=model1,version=version1,locale=locale1,orientation=orientation1',
+                           test_case_ids: "foo, bar, baz",
+                           test_non_blocking: true
+                         })
             end
           end
         end
