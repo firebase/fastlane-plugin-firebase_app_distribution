@@ -1,6 +1,8 @@
 require 'fastlane/action'
-require 'google/apis/firebaseappdistribution_v1'
+require 'fastlane_core'
+require_relative '../helper/firebase_app_distribution_apis'
 require_relative '../helper/firebase_app_distribution_auth_client'
+require_relative '../helper/firebase_app_distribution_error_message'
 require_relative '../helper/firebase_app_distribution_helper'
 
 module Fastlane
