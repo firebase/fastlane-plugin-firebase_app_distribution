@@ -84,6 +84,16 @@ describe Fastlane::Helper::FirebaseAppDistributionHelper do
       array = helper.string_to_array(" ")
       expect(array).to eq([])
     end
+
+    it 'returns an array when the string is seperated by newlines' do
+      array = helper.string_to_array("string1\n   string2  \nstring3\n")
+      expect(array).to eq(%w[string1 string2 string3])
+    end
+
+    it 'returns an array when the string is seperated by semicolons and/or newlines when asked to do so' do
+      array = helper.string_to_array("string1;string2\nstring3\n", /[;\n]/)
+      expect(array).to eq(%w[string1 string2 string3])
+    end
   end
 
   describe '#get_ios_app_id_from_archive_plist' do
