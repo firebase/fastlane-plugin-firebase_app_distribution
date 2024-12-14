@@ -393,7 +393,7 @@ module Fastlane
           end
         end
 
-        device_executions = string_to_array(test_devices, ';').map do |td_string|
+        device_executions = string_to_array(test_devices, /[;\n]/).map do |td_string|
           td_hash = parse_test_device_string(td_string)
           Google::Apis::FirebaseappdistributionV1alpha::GoogleFirebaseAppdistroV1alphaDeviceExecution.new(
             device: Google::Apis::FirebaseappdistributionV1alpha::GoogleFirebaseAppdistroV1alphaTestDevice.new(
