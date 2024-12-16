@@ -362,7 +362,7 @@ module Fastlane
 
       def self.test_release(alpha_client, release, test_devices, test_cases, username = nil, password = nil, username_resource = nil, password_resource = nil)
         if present?(test_cases) && (!username_resource.nil? || !password_resource.nil?)
-          UI.user_error!("Password and username resource names are not supported for the AI testing agent.")
+          UI.user_error!("Password and username resource names are not supported for the testing agent.")
         end
         if username_resource.nil? ^ password_resource.nil?
           UI.user_error!("Username and password resource names for automated tests need to be specified together.")
