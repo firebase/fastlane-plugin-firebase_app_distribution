@@ -1,3 +1,4 @@
+require 'fastlane/action'
 require 'fastlane_core/ui/ui'
 require 'cfpropertylist'
 require 'google/apis/core'
@@ -36,15 +37,49 @@ module Fastlane
         string.strip.split(delimiter).map(&:strip)
       end
 
+      def app_id_from_params(params)
+        plist_path = params[:googleservice_info_plist_path]
+        if params[:app]
+          app_id = params[:app]
+        elsif xcode_archive_path
+          app_id = get_ios_app_id_from_archive_plist(xcode_archive_path, plist_path)
+        elsif plist_path
+          app_id = get_ios_app_id_from_plist(plist_path)
+        end
+        if app_id.nil?
+          UI.crash!(ErrorMessage::MISSING_APP_ID)
+        end
+        app_id
+      end
+
+      def lane_platform
+        # to_sym shouldn't be necessary, but possibly fixes #376
+        Actions.lane_context[Actions::SharedValues::PLATFORM_NAME]&.to_sym
+      end
+
+      def xcode_archive_path
+        # prevents issues on cross-platform build environments where an XCode build happens within
+        # the same lane
+        return nil if lane_platform == :android
+
+        # rubocop:disable Require/MissingRequireStatement
+        Actions.lane_context[Actions::SharedValues::XCODEBUILD_ARCHIVE]
+        # rubocop:enable Require/MissingRequireStatement
+      end
+
       def parse_plist(path)
         CFPropertyList.native_types(CFPropertyList::List.new(file: path).value)
       end
 
-      def get_ios_app_id_from_archive_plist(archive_path, plist_path)
+      def get_ios_app_id_from_archive_plist(archive_path, relative_plist_path)
         app_path = parse_plist("#{archive_path}/Info.plist")["ApplicationProperties"]["ApplicationPath"]
         UI.shell_error!("can't extract application path from Info.plist at #{archive_path}") if app_path.empty?
-        identifier = parse_plist("#{archive_path}/Products/#{app_path}/#{plist_path}")["GOOGLE_APP_ID"]
-        UI.shell_error!("can't extract GOOGLE_APP_ID") if identifier.empty?
+        return get_ios_app_id_from_plist("#{archive_path}/Products/#{app_path}/#{relative_plist_path}")
+      end
+
+      def get_ios_app_id_from_plist(plist_path)
+        identifier = parse_plist(plist_path)["GOOGLE_APP_ID"]
+        UI.shell_error!("can't extract GOOGLE_APP_ID from #{plist_path}") if identifier.empty?
         return identifier
       end
 

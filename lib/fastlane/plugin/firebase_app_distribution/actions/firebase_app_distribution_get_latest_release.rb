@@ -19,15 +19,15 @@ module Fastlane
         client = Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService.new
         client.authorization = get_authorization(params[:service_credentials_file], params[:firebase_cli_token], params[:service_credentials_json_data], params[:debug])
 
-        UI.message("⏳ Fetching latest release for app #{params[:app]}...")
-
-        parent = app_name_from_app_id(params[:app])
+        app_id = app_id_from_params(params)
+        UI.message("⏳ Fetching latest release for app #{app_id}...")
+        parent = app_name_from_app_id(app_id)
 
         begin
           releases = client.list_project_app_releases(parent, page_size: 1).releases
         rescue Google::Apis::Error => err
           if err.status_code.to_i == 404
-            UI.user_error!("#{ErrorMessage::INVALID_APP_ID}: #{params[:app]}")
+            UI.user_error!("#{ErrorMessage::INVALID_APP_ID}: #{app_id}")
           else
             UI.crash!(err)
           end
@@ -35,7 +35,7 @@ module Fastlane
 
         if releases.nil? || releases.empty?
           latest_release = nil
-          UI.important("No releases for app #{params[:app]} found in App Distribution. Returning nil and setting Actions.lane_context[SharedValues::FIREBASE_APP_DISTRO_LATEST_RELEASE].")
+          UI.important("No releases for app #{app_id} found in App Distribution. Returning nil and setting Actions.lane_context[SharedValues::FIREBASE_APP_DISTRO_LATEST_RELEASE].")
         else
           # latest_release = append_json_style_fields(response.releases[0].to_h)
           latest_release = map_release_hash(releases[0])
@@ -80,10 +80,19 @@ module Fastlane
 
       def self.available_options
         [
+          # iOS Specific
+          FastlaneCore::ConfigItem.new(key: :googleservice_info_plist_path,
+                                       env_name: "GOOGLESERVICE_INFO_PLIST_PATH",
+                                       description: "Path to your GoogleService-Info.plist file, relative to the archived product path (or directly, if no archived product path is found)",
+                                       default_value: "GoogleService-Info.plist",
+                                       optional: true,
+                                       type: String),
+
+          # General
           FastlaneCore::ConfigItem.new(key: :app,
                                        env_name: "FIREBASEAPPDISTRO_APP",
                                        description: "Your app's Firebase App ID. You can find the App ID in the Firebase console, on the General Settings page",
-                                       optional: false,
+                                       optional: true,
                                        type: String),
           FastlaneCore::ConfigItem.new(key: :firebase_cli_token,
                                        description: "Auth token generated using Firebase CLI's login:ci command",
