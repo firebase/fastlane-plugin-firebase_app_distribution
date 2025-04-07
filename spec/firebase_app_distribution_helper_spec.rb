@@ -136,4 +136,80 @@ describe Fastlane::Helper::FirebaseAppDistributionHelper do
       end.to raise_error("Unsupported distribution file format, should be .ipa, .apk or .aab")
     end
   end
+
+  describe '#xcode_archive_path' do
+    it 'returns the archive path is set, and platform is not Android' do
+      allow(Fastlane::Actions).to receive(:lane_context).and_return({
+        XCODEBUILD_ARCHIVE: '/path/to/archive'
+      })
+      expect(helper.xcode_archive_path).to eq('/path/to/archive')
+    end
+
+    it 'returns nil if platform is Android' do
+      allow(Fastlane::Actions).to receive(:lane_context).and_return({
+        XCODEBUILD_ARCHIVE: '/path/to/archive',
+        PLATFORM_NAME: :android
+      })
+      expect(helper.xcode_archive_path).to be_nil
+    end
+
+    it 'returns nil if the archive path is not set' do
+      allow(Fastlane::Actions).to receive(:lane_context).and_return({})
+      expect(helper.xcode_archive_path).to be_nil
+    end
+  end
+
+  describe '#app_id_from_params' do
+    it 'returns the app id from the app parameter if set' do
+      expect(helper).not_to(receive(:xcode_archive_path))
+
+      params = { app: 'app-id' }
+      result = helper.app_id_from_params(params)
+
+      expect(result).to eq('app-id')
+    end
+
+    it 'raises if the app parameter is not set and there is no archive path' do
+      allow(helper).to receive(:xcode_archive_path).and_return(nil)
+
+      params = {}
+      expect { helper.app_id_from_params(params) }
+        .to raise_error(ErrorMessage::MISSING_APP_ID)
+    end
+
+    it 'returns the app id from the plist if the archive path is set' do
+      allow(helper).to receive(:xcode_archive_path).and_return('/path/to/archive')
+      allow(helper).to receive(:get_ios_app_id_from_archive_plist)
+        .with('/path/to/archive', '/path/to/plist')
+        .and_return('app-id-from-plist')
+
+      params = { googleservice_info_plist_path: '/path/to/plist' }
+      result = helper.app_id_from_params(params)
+
+      expect(result).to eq('app-id-from-plist')
+    end
+
+    it 'returns the app id from the plist if there is no archive path and it is found directly at the given path' do
+      allow(helper).to receive(:xcode_archive_path).and_return(nil)
+      allow(helper).to receive(:get_ios_app_id_from_plist)
+        .with('/path/to/plist')
+        .and_return('app-id-from-plist')
+
+      params = { googleservice_info_plist_path: '/path/to/plist' }
+      result = helper.app_id_from_params(params)
+
+      expect(result).to eq('app-id-from-plist')
+    end
+
+    it 'raises if the app parameter is not set and the plist is empty' do
+      allow(helper).to receive(:xcode_archive_path).and_return('/path/to/archive')
+      allow(helper).to receive(:get_ios_app_id_from_archive_plist)
+        .with('/path/to/archive', '/path/to/plist')
+        .and_return(nil)
+
+      params = { googleservice_info_plist_path: '/path/to/plist' }
+      expect { helper.app_id_from_params(params) }
+        .to raise_error(ErrorMessage::MISSING_APP_ID)
+    end
+  end
 end

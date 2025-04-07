@@ -142,34 +142,6 @@ module Fastlane
         test_password && test_password.sub(/\r?\n$/, "")
       end
 
-      def self.app_id_from_params(params)
-        if params[:app]
-          app_id = params[:app]
-        elsif xcode_archive_path
-          plist_path = params[:googleservice_info_plist_path]
-          app_id = get_ios_app_id_from_archive_plist(xcode_archive_path, plist_path)
-        end
-        if app_id.nil?
-          UI.crash!(ErrorMessage::MISSING_APP_ID)
-        end
-        app_id
-      end
-
-      def self.xcode_archive_path
-        # prevents issues on cross-platform build environments where an XCode build happens within
-        # the same lane
-        return nil if lane_platform == :android
-
-        # rubocop:disable Require/MissingRequireStatement
-        Actions.lane_context[SharedValues::XCODEBUILD_ARCHIVE]
-        # rubocop:enable Require/MissingRequireStatement
-      end
-
-      def self.lane_platform
-        # to_sym shouldn't be necessary, but possibly fixes #376
-        Actions.lane_context[Actions::SharedValues::PLATFORM_NAME]&.to_sym
-      end
-
       def self.platform_from_app_id(app_id)
         if app_id.include?(':ios:')
           :ios
@@ -492,7 +464,7 @@ module Fastlane
                                        optional: true),
           FastlaneCore::ConfigItem.new(key: :googleservice_info_plist_path,
                                        env_name: "GOOGLESERVICE_INFO_PLIST_PATH",
-                                       description: "Path to your GoogleService-Info.plist file, relative to the archived product path",
+                                       description: "Path to your GoogleService-Info.plist file, relative to the archived product path (or directly, if no archived product path is found)",
                                        default_value: "GoogleService-Info.plist",
                                        optional: true,
                                        type: String),
