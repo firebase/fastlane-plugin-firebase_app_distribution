@@ -40,10 +40,13 @@ module Fastlane
       def app_id_from_params(params)
         plist_path = params[:googleservice_info_plist_path]
         if params[:app]
+          UI.message("Using app ID from 'app' parameter")
           app_id = params[:app]
         elsif xcode_archive_path
+          UI.message("Using app ID from the GoogleService-Info.plist file located using the 'googleservice_info_plist_path' parameter, relative to the archive path: #{xcode_archive_path}")
           app_id = get_ios_app_id_from_archive_plist(xcode_archive_path, plist_path)
         elsif plist_path
+          UI.message("Using app ID from the GoogleService-Info.plist file located using the 'googleservice_info_plist_path' parameter directly since no archive path was found")
           app_id = get_ios_app_id_from_plist(plist_path)
         end
         if app_id.nil?
