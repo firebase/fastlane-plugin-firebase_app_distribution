@@ -11,7 +11,7 @@ module ErrorMessage
   GET_RELEASE_TIMEOUT = "App Distribution failed to fetch release information."
   REFRESH_TOKEN_ERROR = "App Distribution could not generate credentials from the refresh token specified."
   APP_NOT_ONBOARDED_ERROR = "App Distribution not onboarded."
-  INVALID_APP_ID = "App Distribution could not find your app. Make sure to onboard your app by pressing the \"Get started\" button on the App Distribution page in the Firebase console: https://console.firebase.google.com/project/_/appdistribution. App ID"
+  INVALID_APP_ID = "App Distribution could not find your app. Make sure to onboard your app by pressing the \"Get started\" button on the App Distribution page in the Firebase console: https://console.firebase.google.com/project/_/appdistribution."
   INVALID_PROJECT = "App Distribution could not find your Firebase project. Make sure to onboard an app in your project by pressing the \"Get started\" button on the App Distribution page in the Firebase console: https://console.firebase.google.com/project/_/appdistribution."
   INVALID_PATH = "Could not read content from"
   INVALID_TESTERS = "Could not enable access for testers. Check that the tester emails are formatted correctly, the groups exist and you are using group aliases (not group names) for specifying groups."
