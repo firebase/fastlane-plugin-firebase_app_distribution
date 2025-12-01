@@ -118,7 +118,7 @@ module Fastlane
       def get_service_account_credentials(json_data, debug)
         json_file = JSON.parse(json_data)
         # check if it's an external account or service account
-        auth = json_file["type"] == "external_account" ? Google::Auth::ExternalAccount::Credentials : Google::Auth::ServiceAccountCredentials
+        auth = json_file["type"] == "external_account" ? Google::Auth::ExternalAccount::Credentials : Google::Auth::DefaultCredentials
         service_account_credentials = auth.make_creds(
           json_key_io: StringIO.new(json_data),
           scope: SCOPE
