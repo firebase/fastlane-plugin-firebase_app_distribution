@@ -257,22 +257,11 @@ module Fastlane
         options.max_elapsed_time = timeout # includes retries (default = no retries)
         options.header = {
           'Content-Type' => 'application/octet-stream',
-          'X-Goog-Upload-File-Name' => CGI.escape(File.basename(binary_path)),
-          'X-Goog-Upload-Protocol' => 'raw'
+          'X-Goog-Upload-File-Name' => CGI.escape(File.basename(binary_path))
         }
 
-        # For some reason calling the client.upload_medium returns nil when
-        # it should return a long running operation object, so we make a
-        # standard http call instead and convert it to a long running object
-        # https://github.com/googleapis/google-api-ruby-client/blob/main/generated/google-apis-firebaseappdistribution_v1/lib/google/apis/firebaseappdistribution_v1/service.rb#L79
-        # TODO(kbolay): Prefer client.upload_medium
-        response = begin
-          client.http(
-            :post,
-            "https://firebaseappdistribution.googleapis.com/upload/v1/#{app_name}/releases:upload",
-            body: File.open(binary_path, 'rb'),
-            options: options
-          )
+        begin
+          client.upload_medium(app_name, File.open(binary_path, 'rb'), upload_source: binary_path, options: options)
         rescue Google::Apis::Error => err
           case err.status_code.to_i
           when 403
@@ -281,8 +270,6 @@ module Fastlane
             UI.crash!("#{ErrorMessage.upload_binary_error(binary_type)} (#{err}, status_code: #{err.status_code})")
           end
         end
-
-        Google::Apis::FirebaseappdistributionV1::GoogleLongrunningOperation.from_json(response)
       end
 
       def self.extract_release(operation)

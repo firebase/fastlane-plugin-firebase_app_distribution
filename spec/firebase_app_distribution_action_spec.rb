@@ -254,7 +254,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
 
         it 'raises permission denied error if upload returns a 403', :focus do
           allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
-            .to receive(:http)
+            .to receive(:upload_medium)
             .and_raise(Google::Apis::Error.new('error', status_code: '403'))
 
           expect do
@@ -264,7 +264,7 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
 
         it 'raises error with status code if upload returns an unexpected error', :focus do
           allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
-            .to receive(:http)
+            .to receive(:upload_medium)
             .and_raise(Google::Apis::Error.new({}, status_code: '404'))
 
           expect do
@@ -275,8 +275,10 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
         it 'crashes if it exceeds polling threshold' do
           stub_const('Fastlane::Actions::FirebaseAppDistributionAction::UPLOAD_MAX_POLLING_RETRIES', 0)
           allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
-            .to receive(:http)
-            .and_return({ name: 'operation-name' }.to_json)
+            .to receive(:upload_medium)
+            .and_return(Google::Apis::FirebaseappdistributionV1::GoogleLongrunningOperation.new(
+                          done: false
+            ))
           allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
             .to receive(:get_project_app_release_operation)
             .with('operation-name')
@@ -298,8 +300,10 @@ describe Fastlane::Actions::FirebaseAppDistributionAction do
           before do
             stub_const('Fastlane::Actions::FirebaseAppDistributionAction::UPLOAD_POLLING_INTERVAL_SECONDS', 0)
             allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
-              .to receive(:http)
-              .and_return({ name: 'operation-name', result: release }.to_json)
+              .to receive(:upload_medium)
+              .and_return(Google::Apis::FirebaseappdistributionV1::GoogleLongrunningOperation.new(
+                            done: true
+              ))
             allow_any_instance_of(Google::Apis::FirebaseappdistributionV1::FirebaseAppDistributionService)
               .to receive(:get_project_app_release_operation)
               .and_return(Google::Apis::FirebaseappdistributionV1::GoogleLongrunningOperation.new(
