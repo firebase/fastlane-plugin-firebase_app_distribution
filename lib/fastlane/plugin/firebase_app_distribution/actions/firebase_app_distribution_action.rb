@@ -21,6 +21,7 @@ module Fastlane
       extend Helper::FirebaseAppDistributionHelper
 
       DEFAULT_UPLOAD_TIMEOUT_SECONDS = 300
+      DEFAULT_UPLOAD_RETRIES = 3
       UPLOAD_MAX_POLLING_RETRIES = 60
       UPLOAD_POLLING_INTERVAL_SECONDS = 5
       TEST_MAX_POLLING_RETRIES = 40
@@ -33,6 +34,7 @@ module Fastlane
         app_name = app_name_from_app_id(app_id)
         platform = lane_platform || platform_from_app_id(app_id)
         timeout = get_upload_timeout(params)
+        retries = get_upload_retries(params)
 
         binary_path = get_binary_path(platform, params)
         UI.user_error!("Couldn't determine path for #{platform} binary.") if binary_path.nil?
@@ -57,7 +59,7 @@ module Fastlane
 
         binary_type = binary_type_from_path(binary_path)
         UI.message("📡 Uploading the #{binary_type}.")
-        operation = upload_binary(client, app_name, binary_path, binary_type, timeout)
+        operation = upload_binary(client, app_name, binary_path, binary_type, timeout, retries)
         UI.message("🕵️ Validating upload…")
         release = poll_upload_release_operation(client, operation, binary_type)
 
@@ -185,6 +187,14 @@ module Fastlane
         end
       end
 
+      def self.get_upload_retries(params)
+        if params[:upload_retries]
+          return params[:upload_retries]
+        else
+          return DEFAULT_UPLOAD_RETRIES
+        end
+      end
+
       def self.validate_aab_setup!(aab_info)
         if aab_info && aab_info.integration_state != 'INTEGRATED' && aab_info.integration_state != 'AAB_STATE_UNAVAILABLE'
           case aab_info.integration_state
@@ -252,27 +262,15 @@ module Fastlane
         extract_release(operation)
       end
 
-      def self.upload_binary(client, app_name, binary_path, binary_type, timeout)
-        options = Google::Apis::RequestOptions.new
-        options.max_elapsed_time = timeout # includes retries (default = no retries)
+      def self.upload_binary(client, app_name, binary_path, binary_type, timeout, retries)
+        options = Google::Apis::RequestOptions.new(max_elapsed_time: timeout, retries: retries)
         options.header = {
           'Content-Type' => 'application/octet-stream',
-          'X-Goog-Upload-File-Name' => CGI.escape(File.basename(binary_path)),
-          'X-Goog-Upload-Protocol' => 'raw'
+          'X-Goog-Upload-File-Name' => CGI.escape(File.basename(binary_path))
         }
 
-        # For some reason calling the client.upload_medium returns nil when
-        # it should return a long running operation object, so we make a
-        # standard http call instead and convert it to a long running object
-        # https://github.com/googleapis/google-api-ruby-client/blob/main/generated/google-apis-firebaseappdistribution_v1/lib/google/apis/firebaseappdistribution_v1/service.rb#L79
-        # TODO(kbolay): Prefer client.upload_medium
-        response = begin
-          client.http(
-            :post,
-            "https://firebaseappdistribution.googleapis.com/upload/v1/#{app_name}/releases:upload",
-            body: File.open(binary_path, 'rb'),
-            options: options
-          )
+        begin
+          client.upload_medium(app_name, File.open(binary_path, 'rb'), upload_source: binary_path, options: options)
         rescue Google::Apis::Error => err
           case err.status_code.to_i
           when 403
@@ -281,8 +279,6 @@ module Fastlane
             UI.crash!("#{ErrorMessage.upload_binary_error(binary_type)} (#{err}, status_code: #{err.status_code})")
           end
         end
-
-        Google::Apis::FirebaseappdistributionV1::GoogleLongrunningOperation.from_json(response)
       end
 
       def self.extract_release(operation)
@@ -505,9 +501,14 @@ module Fastlane
 
           # Release Distribution
           FastlaneCore::ConfigItem.new(key: :upload_timeout,
-                                       description: "Amount of seconds before the upload will  timeout, if not completed",
+                                       description: "Amount of seconds before the upload will timeout, if not completed",
                                        optional: true,
                                        default_value: DEFAULT_UPLOAD_TIMEOUT_SECONDS,
+                                       type: Integer),
+          FastlaneCore::ConfigItem.new(key: :upload_retries,
+                                       description: "Maximum number of times the upload will retry, if not completed",
+                                       optional: true,
+                                       default_value: DEFAULT_UPLOAD_RETRIES,
                                        type: Integer),
           FastlaneCore::ConfigItem.new(key: :groups,
                                        env_name: "FIREBASEAPPDISTRO_GROUPS",
