@@ -264,6 +264,10 @@ module Fastlane
 
       def self.upload_binary(client, app_name, binary_path, binary_type, timeout, retries)
         options = Google::Apis::RequestOptions.new(max_elapsed_time: timeout, retries: retries)
+         options.header = {
+           'Content-Type' => 'application/octet-stream',
+           'X-Goog-Upload-File-Name' => CGI.escape(File.basename(binary_path))
+         }
 
         begin
           client.upload_medium(app_name, File.open(binary_path, 'rb'), upload_source: binary_path, options: options)
