@@ -29,7 +29,10 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency('rspec')
   spec.add_development_dependency('rspec_junit_formatter')
   spec.add_development_dependency('rake')
-  spec.add_development_dependency('rubocop', '0.49.1')
+  spec.add_development_dependency('rubocop', '~> 1.84')
   spec.add_development_dependency('rubocop-require_tools')
+  spec.add_development_dependency('rubocop-rake')
+  spec.add_development_dependency('rubocop-rspec')
   spec.add_development_dependency('simplecov')
+  spec.add_development_dependency('racc')
 end

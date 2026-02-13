@@ -1,6 +1,8 @@
 ---
 require:
 - rubocop/require_tools
+- rubocop-rake
+- rubocop-rspec
 Style/MultipleComparison:
   Enabled: false
 Style/PercentLiteralDelimiters:
@@ -11,19 +13,17 @@ Style/FrozenStringLiteralComment:
   Enabled: false
 Style/SafeNavigation:
   Enabled: false
-Performance/RegexpMatch:
-  Enabled: false
-Performance/StringReplacement:
-  Enabled: false
 Style/NumericPredicate:
   Enabled: false
 Metrics/BlockLength:
   Enabled: false
 Metrics/ModuleLength:
   Enabled: false
-Style/VariableNumber:
+Naming/VariableNumber:
   Enabled: false
-Style/MethodMissing:
+Lint/MissingSuper:
+  Enabled: false
+Style/MissingRespondToMissing:
   Enabled: false
 MultilineBlockChain:
   Enabled: false
@@ -32,8 +32,6 @@ Style/NumericLiteralPrefix:
 Style/TernaryParentheses:
   Enabled: false
 Style/EmptyMethod:
-  Enabled: false
-Style/BracesAroundHashParameters:
   Enabled: false
 Lint/UselessAssignment:
   Exclude:
@@ -50,9 +48,9 @@ Require/MissingRequireStatement:
   - "**/Rakefile"
   - fastlane/**/*
   - supply/**/*
-Layout/IndentHash:
+Layout/FirstHashElementIndentation:
   Enabled: false
-Layout/AlignHash:
+Layout/HashAlignment:
   Enabled: false
 Layout/DotPosition:
   Enabled: false
@@ -60,12 +58,12 @@ Style/DoubleNegation:
   Enabled: false
 Style/SymbolArray:
   Enabled: false
-Layout/IndentHeredoc:
+Layout/HeredocIndentation:
   Enabled: false
 Style/MixinGrouping:
   Exclude:
   - "**/spec/**/*"
-Lint/HandleExceptions:
+Lint/SuppressedException:
   Enabled: false
 Lint/UnusedBlockArgument:
   Enabled: false
@@ -96,7 +94,7 @@ Style/AndOr:
   EnforcedStyle: conditionals
 Metrics/ClassLength:
   Max: 320
-Metrics/LineLength:
+Layout/LineLength:
   Max: 370
 Metrics/ParameterLists:
   Max: 17
@@ -123,7 +121,7 @@ Layout/SpaceAroundOperators:
   Exclude:
   - "**/spec/actions_specs/xcodebuild_spec.rb"
 AllCops:
-  TargetRubyVersion: 2.3
+  TargetRubyVersion: 2.7
   Include:
   - "*/lib/assets/*Template"
   - "*/lib/assets/*TemplateAndroid"
@@ -133,7 +131,7 @@ AllCops:
   - "**/lib/assets/DefaultFastfileTemplate"
   - "**/lib/assets/MatchfileTemplate"
   - "**/spec/fixtures/broken_files/broken_file.rb"
-Style/FileName:
+Naming/FileName:
   Exclude:
   - "**/Dangerfile"
   - "**/Brewfile"
