@@ -18,11 +18,11 @@ Gem::Specification.new do |spec|
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ['lib']
 
-  spec.required_ruby_version = '>= 2.7'
+  spec.required_ruby_version = '>= 3.2'
 
   spec.add_dependency('fastlane', '>= 2.232.0')
-  spec.add_dependency('google-apis-firebaseappdistribution_v1', '~> 0.9.0')
-  spec.add_dependency('google-apis-firebaseappdistribution_v1alpha', '~> 0.12.0')
+  spec.add_dependency('google-apis-firebaseappdistribution_v1', '>= 0.9.0')
+  spec.add_dependency('google-apis-firebaseappdistribution_v1alpha', '>= 0.12.0')
 
   spec.add_development_dependency('pry')
   spec.add_development_dependency('bundler')
